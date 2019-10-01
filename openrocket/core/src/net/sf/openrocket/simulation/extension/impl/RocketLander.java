@@ -54,5 +54,10 @@ public class RocketLander extends AbstractSimulationExtension {
 			status.setRocketPosition(new Coordinate(0, 0, getLaunchAltitude()));
 			status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, getLaunchVelocity())));
 		}
+		@Override
+		public void postStep(SimulationStatus status) throws SimulationException {
+			status.getRocketPosition();
+			status.getRocketVelocity();
+		}
 	}
 }
