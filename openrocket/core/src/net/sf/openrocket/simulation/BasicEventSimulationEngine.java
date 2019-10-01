@@ -153,7 +153,9 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				
 				// Add appropriate events
 				if (!currentStatus.isLiftoff()) {
-					
+
+					/*
+					MODIFIED CODE HERE
 					// Avoid sinking into ground before liftoff
 					if (relativePosition.z < 0) {
 						currentStatus.setRocketPosition(origin);
@@ -163,6 +165,8 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 					if (relativePosition.z > 0.02) {
 						addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
 					}
+					*/
+					addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
 					
 				} else {
 					

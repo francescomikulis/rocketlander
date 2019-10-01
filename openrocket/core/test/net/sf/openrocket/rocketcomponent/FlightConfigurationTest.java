@@ -346,7 +346,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 		{ // Core Stage
 			final List<InstanceContext> coreStageContextList = instances.getInstanceContexts(coreStage);
 			final InstanceContext coreStageContext = coreStageContextList.get(0);
-			assertThat(coreStageContext.component.getClass(), equalTo(AxialStage.class));
+			assertThat((Class<AxialStage>) coreStageContext.component.getClass(), equalTo(AxialStage.class));
 			assertThat(coreStageContext.component.getID(), equalTo(rocket.getChild(1).getID()));
 			assertThat(coreStageContext.component.getInstanceCount(), equalTo(1));
 	
@@ -363,7 +363,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 			final ParallelStage boosterStage = (ParallelStage)coreStage.getChild(0).getChild(0);
 			final List<InstanceContext> boosterStageContextList = instances.getInstanceContexts(boosterStage);
 			final InstanceContext boosterStage0Context = boosterStageContextList.get(0);
-			assertThat(boosterStage0Context.component.getClass(), equalTo(ParallelStage.class));
+			assertThat((Class<ParallelStage>) boosterStage0Context.component.getClass(), equalTo(ParallelStage.class));
 			assertThat(boosterStage0Context.component.getID(), equalTo(boosterStage.getID()));
 			assertThat(boosterStage0Context.instanceNumber, equalTo(0));
 			{
@@ -374,7 +374,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 			}
 			
 			final InstanceContext boosterStage1Context = boosterStageContextList.get(1);
-			assertThat(boosterStage1Context.component.getClass(), equalTo(ParallelStage.class));
+			assertThat((Class<ParallelStage>) boosterStage1Context.component.getClass(), equalTo(ParallelStage.class));
 			assertThat(boosterStage1Context.component.getID(), equalTo(boosterStage.getID()));
 			assertThat(boosterStage1Context.instanceNumber, equalTo(1));
 			{
@@ -394,7 +394,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 				// this is the instance number per-parent
 				assertThat(boosterBodyContext.instanceNumber, equalTo(0));
 				
-				assertThat(boosterBodyContext.component.getClass(), equalTo(BodyTube.class));
+				assertThat((Class<BodyTube>) boosterBodyContext.component.getClass(), equalTo(BodyTube.class));
 				
 				final Coordinate bodyTubeLocation = boosterBodyContext.getLocation(); 
 				assertEquals(bodyTubeLocation.x, 0.564, EPSILON);
@@ -407,7 +407,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(8, mmtContextList.size());
 					
 					final InstanceContext motorTubeContext0 = mmtContextList.get(4);
-					assertThat(motorTubeContext0.component.getClass(), equalTo(InnerTube.class));
+					assertThat((Class<InnerTube>) motorTubeContext0.component.getClass(), equalTo(InnerTube.class));
 					assertThat(motorTubeContext0.instanceNumber, equalTo(0));
 					final Coordinate motorTube0Location = motorTubeContext0.getLocation(); 
 					assertEquals(motorTube0Location.x, 1.214, EPSILON);
@@ -415,7 +415,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(motorTube0Location.z, -0.015, EPSILON);
 
 					final InstanceContext motorTubeContext1 = mmtContextList.get(5);
-					assertThat(motorTubeContext1.component.getClass(), equalTo(InnerTube.class));
+					assertThat((Class<InnerTube>) motorTubeContext1.component.getClass(), equalTo(InnerTube.class));
 					assertThat(motorTubeContext1.instanceNumber, equalTo(1));
 					final Coordinate motorTube1Location = motorTubeContext1.getLocation(); 
 					assertEquals(motorTube1Location.x, 1.214, EPSILON);
@@ -423,7 +423,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(motorTube1Location.z, -0.015, EPSILON);
 
 					final InstanceContext motorTubeContext2 = mmtContextList.get(6);
-					assertThat(motorTubeContext2.component.getClass(), equalTo(InnerTube.class));
+					assertThat((Class<InnerTube>) motorTubeContext2.component.getClass(), equalTo(InnerTube.class));
 					assertThat(motorTubeContext2.instanceNumber, equalTo(2));
 					final Coordinate motorTube2Location = motorTubeContext2.getLocation(); 
 					assertEquals(motorTube2Location.x, 1.214, EPSILON);
@@ -431,7 +431,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(motorTube2Location.z, 0.015, EPSILON);
 
 					final InstanceContext motorTubeContext3 = mmtContextList.get(7);
-					assertThat(motorTubeContext3.component.getClass(), equalTo(InnerTube.class));
+					assertThat((Class<InnerTube>) motorTubeContext3.component.getClass(), equalTo(InnerTube.class));
 					assertThat(motorTubeContext3.instanceNumber, equalTo(3));
 					final Coordinate motorTube3Location = motorTubeContext3.getLocation(); 
 					assertEquals(motorTube3Location.x, 1.214, EPSILON);
@@ -444,7 +444,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(6, finContextList.size());
 					
 					final InstanceContext boosterFinContext0 = finContextList.get(3);
-					assertThat(boosterFinContext0.component.getClass(), equalTo(TrapezoidFinSet.class));
+					assertThat((Class<TrapezoidFinSet>) boosterFinContext0.component.getClass(), equalTo(TrapezoidFinSet.class));
 					assertThat(boosterFinContext0.instanceNumber, equalTo(0));
 					final Coordinate boosterFin0Location = boosterFinContext0.getLocation(); 
 					assertEquals(boosterFin0Location.x,  1.044, EPSILON);
@@ -452,7 +452,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(boosterFin0Location.z, -0.027223611, EPSILON);
 					
 					final InstanceContext boosterFinContext1 = finContextList.get(4);
-					assertThat(boosterFinContext1.component.getClass(), equalTo(TrapezoidFinSet.class));
+					assertThat((Class<TrapezoidFinSet>) boosterFinContext1.component.getClass(), equalTo(TrapezoidFinSet.class));
 					assertThat(boosterFinContext1.instanceNumber, equalTo(1));
 					final Coordinate boosterFin1Location = boosterFinContext1.getLocation(); 
 					assertEquals(boosterFin1Location.x,  1.044, EPSILON);
@@ -460,7 +460,7 @@ public class FlightConfigurationTest extends BaseTestCase {
 					assertEquals(boosterFin1Location.z, -0.00996453, EPSILON);
 					
 					final InstanceContext boosterFinContext2 = finContextList.get(5);
-					assertThat(boosterFinContext2.component.getClass(), equalTo(TrapezoidFinSet.class));
+					assertThat((Class<TrapezoidFinSet>) boosterFinContext2.component.getClass(), equalTo(TrapezoidFinSet.class));
 					assertThat(boosterFinContext2.instanceNumber, equalTo(2));
 					final Coordinate boosterFin2Location = boosterFinContext2.getLocation(); 
 					assertEquals(boosterFin2Location.x,  1.044, EPSILON);

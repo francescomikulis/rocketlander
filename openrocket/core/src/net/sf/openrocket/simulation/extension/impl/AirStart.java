@@ -19,7 +19,7 @@ public class AirStart extends AbstractSimulationExtension {
 	@Override
 	public String getName() {
 		String name;
-		if (getLaunchVelocity() > 0.01) {
+		if (getLaunchVelocity() != 0.0) {
 			name = trans.get("SimulationExtension.airstart.name.altvel");
 		} else {
 			name = trans.get("SimulationExtension.airstart.name.alt");

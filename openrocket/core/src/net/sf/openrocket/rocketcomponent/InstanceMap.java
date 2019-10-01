@@ -29,13 +29,15 @@ public class InstanceMap extends HashMap<RocketComponent, ArrayList<InstanceCont
 	
 	public void emplace(final RocketComponent component, boolean active, int number, final Transformation xform) {
 		final RocketComponent key = component;
-		
-		if(!containsKey(component)) {
-			put(key, new ArrayList<>());
-		}
 
 		final InstanceContext context = new InstanceContext(component, active, number, xform);
-		get(key).add(context);
+		if(!containsKey(component)) {
+			ArrayList<InstanceContext> arrayList = new ArrayList<>();
+			arrayList.add(context);
+			put(key, arrayList);
+		} else {
+			get(key).add(context);
+		}
 	}
 
 	public List<InstanceContext> getInstanceContexts(final RocketComponent key) {
