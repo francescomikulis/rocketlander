@@ -15,7 +15,7 @@ import java.util.HashMap;
 https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
  */
 
-public class MyObjectFileStore {
+public class RLMyObjectFileStore {
     private static String episodeFileName = "episodes.txt";
     private static String actionValueFunctionFileName = "actionValue.txt";
 

@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.function.BiFunction;
 
 
-public class Model {
-    private EpisodeManagment episodeManagment;
-    public Model(EpisodeManagment episodeManagment) {
+public class RLModel {
+    private RLEpisodeManagment episodeManagment;
+    public RLModel(RLEpisodeManagment episodeManagment) {
         this.episodeManagment = episodeManagment;
     }
 

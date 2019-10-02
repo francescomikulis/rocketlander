@@ -15,13 +15,13 @@ import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import net.sf.openrocket.simulation.extension.impl.Model.*;
+import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 
 import static net.sf.openrocket.startup.Preferences.WIND_AVERAGE;
 
 public class RocketLander extends AbstractSimulationExtension {
-	private static EpisodeManagment episodeManagment = new EpisodeManagment();
-	private static Model model = new Model(episodeManagment);
+	private static RLEpisodeManagment episodeManagment = new RLEpisodeManagment();
+	private static RLModel model = new RLModel(episodeManagment);
 	
 	@Override
 	public void initialize(SimulationConditions conditions) throws SimulationException {
@@ -83,6 +83,14 @@ public class RocketLander extends AbstractSimulationExtension {
 			System.out.println("CALLED START SIMULATION");
 		}
 
+		@Override
+		public double preSimpleThrustCalculation(SimulationStatus status) throws SimulationException {
+			// note we would want to also fix the fuel.  This ignores the fuel level of the rocket.
+
+			//status.getRocketVelocity();
+			//return 0.0;
+			return Double.NaN;
+		}
 
 		@Override
 		public boolean preStep(SimulationStatus status) throws SimulationException {

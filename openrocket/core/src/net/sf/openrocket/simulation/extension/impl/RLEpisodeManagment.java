@@ -5,11 +5,11 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class EpisodeManagment {
+public class RLEpisodeManagment {
     public static ArrayList<HashMap<String, ArrayList<Double>>> episodes = null;
-    MyObjectFileStore mof = new MyObjectFileStore();
+    RLMyObjectFileStore mof = new RLMyObjectFileStore();
 
-    public EpisodeManagment() {
+    public RLEpisodeManagment() {
         if (episodes == null) {
             try {
                 ArrayList<HashMap<String, ArrayList<Double>>> fromFile = mof.readEpisodes();
