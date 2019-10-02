@@ -9,6 +9,10 @@ import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.Coordinate;
 
+import java.util.HashMap;
+
+import static net.sf.openrocket.startup.Preferences.WIND_AVERAGE;
+
 public class RocketLander extends AbstractSimulationExtension {
 	
 	@Override
@@ -41,10 +45,19 @@ public class RocketLander extends AbstractSimulationExtension {
 	public double getLaunchVelocity() {
 		return config.getDouble("launchVelocity", 0.0);
 	}
-	
+
 	public void setLaunchVelocity(double launchVelocity) {
 		config.put("launchVelocity", launchVelocity);
 		fireChangeEvent();
+	}
+	
+	public void setWindAverage(double windAverage) {
+		config.put(WIND_AVERAGE, windAverage);
+		fireChangeEvent();
+	}
+
+	public double getWindSpeed() {
+		return config.getDouble(WIND_AVERAGE, 0.0);
 	}
 	
 	
@@ -56,8 +69,13 @@ public class RocketLander extends AbstractSimulationExtension {
 		}
 		@Override
 		public void postStep(SimulationStatus status) throws SimulationException {
-			status.getRocketPosition();
-			status.getRocketVelocity();
+			HashMap<String, String> data = new HashMap<>();
+			data.put("position", status.getRocketPosition().toString());
+			data.put("velocity", status.getRocketVelocity().toString());
+			data.put("quaternion", status.getRocketOrientationQuaternion().toString());
+			data.put("rotationVelocity", status.getRocketRotationVelocity().toString());
+			// System.out.println(data);
+			status.getFlightData();
 		}
 	}
 }
