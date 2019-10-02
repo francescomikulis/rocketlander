@@ -16,9 +16,30 @@ https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
  */
 
 public class MyObjectFileStore {
-    private static String fileName = "data.txt";
+    private static String episodeFileName = "episodes.txt";
+    private static String actionValueFunctionFileName = "actionValue.txt";
 
-    public void storeObject(ArrayList data) {
+    public void storeEpisodes(ArrayList episodes){
+        storeObject(episodeFileName, episodes);
+    }
+
+    public void storeActionValueFunction(ArrayList actionValueFunction){
+        storeObject(actionValueFunctionFileName, actionValueFunction);
+    }
+
+    public ArrayList readEpisodes(){
+        return (ArrayList) readObjects(episodeFileName);
+    }
+
+    public ArrayList readActionValueFunction(){
+        return (ArrayList) readObjects(actionValueFunctionFileName);
+    }
+
+    /*
+    Private implementation.  Details.
+     */
+
+    private void storeObject(String fileName, Object data) {
         OutputStream ops = null;
         ObjectOutputStream objOps = null;
         try {
@@ -38,14 +59,14 @@ public class MyObjectFileStore {
         }
     }
 
-    public ArrayList readObjects() {
+    private Object readObjects(String fileName) {
         InputStream fileIs = null;
         ObjectInputStream objIs = null;
-        ArrayList data = new ArrayList();
+        Object data = new Object();
         try {
             fileIs = new FileInputStream(fileName);
             objIs = new ObjectInputStream(fileIs);
-            data = (ArrayList) objIs.readObject();
+            data = objIs.readObject();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -59,14 +80,6 @@ public class MyObjectFileStore {
             }
         }
         return data;
-    }
-
-    public static void main(String a[]) {
-        MyObjectFileStore mof = new MyObjectFileStore();
-        ArrayList tester = new ArrayList();
-        tester.add(new Integer(5));
-        mof.storeObject(tester);
-        mof.readObjects();
     }
 }
 
