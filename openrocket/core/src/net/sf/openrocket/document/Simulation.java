@@ -363,11 +363,16 @@ public class Simulation implements ChangeSource, Cloneable {
 			}
 			
 			long t1, t2;
-			log.debug("Simulation: calling simulator");
-			t1 = System.currentTimeMillis();
-			simulatedData = simulator.simulate(simulationConditions);
-			t2 = System.currentTimeMillis();
-			log.debug("Simulation: returning from simulator, simulation took " + (t2 - t1) + "ms");
+
+			for (Integer i = 0; i < 5; i++) {
+				System.out.println("RUNNING SIMULATION #" + i.toString());
+				log.debug("Simulation: calling simulator");
+				t1 = System.currentTimeMillis();
+				simulatedData = simulator.simulate(simulationConditions);
+				t2 = System.currentTimeMillis();
+				log.debug("Simulation: returning from simulator, simulation took " + (t2 - t1) + "ms");
+			}
+
 			
 			// Set simulated info after simulation, will not be set in case of exception
 			simulatedConditions = options.clone();
