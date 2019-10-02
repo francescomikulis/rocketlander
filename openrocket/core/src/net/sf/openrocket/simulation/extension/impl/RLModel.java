@@ -3,6 +3,7 @@ package net.sf.openrocket.simulation.extension.impl;
 import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.simulation.SimulationStatus;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.BiFunction;
@@ -58,7 +59,7 @@ public class RLModel {
 
     // Required data structures.
 
-    public static class State {
+    public static class State implements Serializable {
         double altitude = 0;
         double velocity = 0;
 
@@ -68,7 +69,7 @@ public class RLModel {
         }
     }
 
-    public static class Action {
+    public static class Action implements Serializable {
         double thrust;
         double gimble_x = 0;
         double gimble_y = 0;

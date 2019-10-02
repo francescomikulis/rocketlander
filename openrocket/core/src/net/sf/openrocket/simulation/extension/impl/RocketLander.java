@@ -76,6 +76,7 @@ public class RocketLander extends AbstractSimulationExtension {
 		@Override
 		public void startSimulation(SimulationStatus status) throws SimulationException {
 			episode = episodeManagment.initializeEmptyEpisode();
+			episodeManagment.setupParameters(status);
 
 			status.setRocketPosition(new Coordinate(0, 0, getLaunchAltitude()));
 			status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, getLaunchVelocity())));
@@ -127,6 +128,7 @@ public class RocketLander extends AbstractSimulationExtension {
 		@Override
 		public void endSimulation(SimulationStatus status, SimulationException exception) {
 			episodeManagment.addEpisode(episode);
+			System.out.println(episodeManagment.readLastTimeStep(episode));
 		}
 	}
 }
