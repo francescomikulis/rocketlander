@@ -8,8 +8,11 @@ import net.sf.openrocket.util.Quaternion;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+
 public class RLEpisodeManagment {
     public static ArrayList<HashMap<String, ArrayList<Double>>> episodes = null;
+    public static HashMap<StateActionTuple, Double> valueFunctionTable = null;
     RLMyObjectFileStore mof = new RLMyObjectFileStore();
 
     public RLEpisodeManagment() {
@@ -21,6 +24,22 @@ public class RLEpisodeManagment {
                 episodes = new ArrayList<>();
             }
         }
+        if (valueFunctionTable == null) {
+            try {
+                HashMap<StateActionTuple, Double> fromFile = mof.readActionValueFunction();
+                valueFunctionTable = fromFile;
+            } catch (Exception e) {
+                valueFunctionTable = new HashMap<>();
+            }
+        }
+    }
+
+    public static ArrayList<HashMap<String, ArrayList<Double>>> getEpisodes() {
+        return episodes;
+    }
+
+    public static HashMap<StateActionTuple, Double> getValueFunctionTable() {
+        return valueFunctionTable;
     }
 
     public void setupParameters(SimulationStatus status) {
@@ -118,6 +137,7 @@ public class RLEpisodeManagment {
 
         if (episodes.size() % 5 == 0) {
             mof.storeEpisodes(episodes);
+            mof.storeActionValueFunction(valueFunctionTable);
         }
 
         ArrayList<Double> velocities =  episode.get("velocity_z");

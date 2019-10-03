@@ -19,20 +19,20 @@ public class RLMyObjectFileStore {
     private static String episodeFileName = "episodes.txt";
     private static String actionValueFunctionFileName = "actionValue.txt";
 
-    public void storeEpisodes(ArrayList episodes){
-        storeObject(episodeFileName, episodes);
-    }
-
-    public void storeActionValueFunction(ArrayList actionValueFunction){
-        storeObject(actionValueFunctionFileName, actionValueFunction);
-    }
-
     public ArrayList readEpisodes(){
         return (ArrayList) readObjects(episodeFileName);
     }
 
-    public ArrayList readActionValueFunction(){
-        return (ArrayList) readObjects(actionValueFunctionFileName);
+    public void storeEpisodes(ArrayList episodes){
+        storeObject(episodeFileName, episodes);
+    }
+
+    public HashMap readActionValueFunction(){
+        return (HashMap) readObjects(actionValueFunctionFileName);
+    }
+
+    public void storeActionValueFunction(HashMap actionValueFunction){
+        storeObject(actionValueFunctionFileName, actionValueFunction);
     }
 
     /*
