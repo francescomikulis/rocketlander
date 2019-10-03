@@ -135,10 +135,11 @@ public class RLEpisodeManagment {
     public void addEpisode(HashMap<String, ArrayList<Double>> episode) {
         episodes.add(episode);
 
-        if (episodes.size() % 5 == 0) {
+        // NOTE: HERE THE LOOP WAS DISABLED.
+        //if (episodes.size() % 5 == 0) {
             mof.storeEpisodes(episodes);
             mof.storeActionValueFunction(valueFunctionTable);
-        }
+        //}
 
         ArrayList<Double> velocities =  episode.get("velocity_z");
         System.out.println("Sim number: " + episodes.size() + " " + velocities.get(velocities.size()-1));

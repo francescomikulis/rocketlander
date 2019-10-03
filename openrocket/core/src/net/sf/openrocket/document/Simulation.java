@@ -364,6 +364,7 @@ public class Simulation implements ChangeSource, Cloneable {
 			
 			long t1, t2;
 
+			// NOTE: HERE THE LOOP WAS DISABLED.
 			//for (Integer i = 0; i < 5; i++) {
 			System.out.println("REMOVED FOR LOOP FOR SIMULATIONS.  RE-ENABLE HERE #");
 				System.out.println("RUNNING SIMULATION #");  // + i.toString());
