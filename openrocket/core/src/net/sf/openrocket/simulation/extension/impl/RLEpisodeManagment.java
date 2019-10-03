@@ -8,20 +8,18 @@ import net.sf.openrocket.util.Quaternion;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import net.sf.openrocket.simulation.extension.impl.RLModel.*;
-
 public class RLEpisodeManagment {
-    public static ArrayList<HashMap<String, ArrayList<Double>>> episodes = null;
+    public static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;
     public static HashMap<StateActionTuple, Double> valueFunctionTable = null;
     RLMyObjectFileStore mof = new RLMyObjectFileStore();
 
     public RLEpisodeManagment() {
-        if (episodes == null) {
+        if (episodesData == null) {
             try {
-                ArrayList<HashMap<String, ArrayList<Double>>> fromFile = mof.readEpisodes();
-                episodes = fromFile;
+                ArrayList<HashMap<String, ArrayList<Double>>> fromFile = mof.readEpisodesData();
+                episodesData = fromFile;
             } catch (Exception e) {
-                episodes = new ArrayList<>();
+                episodesData = new ArrayList<>();
             }
         }
         if (valueFunctionTable == null) {
@@ -34,8 +32,8 @@ public class RLEpisodeManagment {
         }
     }
 
-    public static ArrayList<HashMap<String, ArrayList<Double>>> getEpisodes() {
-        return episodes;
+    public static ArrayList<HashMap<String, ArrayList<Double>>> getEpisodesData() {
+        return episodesData;
     }
 
     public static HashMap<StateActionTuple, Double> getValueFunctionTable() {
@@ -64,6 +62,10 @@ public class RLEpisodeManagment {
             }
         }
         return episode;
+    }
+
+    public static Integer getMaxTimestepOfEpisode(HashMap<String, ArrayList<Double>> episode) {
+        return episode.get("position_x").size();
     }
 
     // read the last timeStep that was added to an episode
@@ -133,16 +135,16 @@ public class RLEpisodeManagment {
     }
 
     public void addEpisode(HashMap<String, ArrayList<Double>> episode) {
-        episodes.add(episode);
+        episodesData.add(episode);
 
         // NOTE: HERE THE LOOP WAS DISABLED.
-        //if (episodes.size() % 5 == 0) {
-            mof.storeEpisodes(episodes);
+        //if (episodesData.size() % 5 == 0) {
+            mof.storeEpisodesData(episodesData);
             mof.storeActionValueFunction(valueFunctionTable);
         //}
 
         ArrayList<Double> velocities =  episode.get("velocity_z");
-        System.out.println("Sim number: " + episodes.size() + " " + velocities.get(velocities.size()-1));
+        System.out.println("Sim number: " + episodesData.size() + " " + velocities.get(velocities.size()-1));
     }
 
     private boolean isSingleComponent(String key) {

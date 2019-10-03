@@ -48,8 +48,6 @@ public class RLModel {
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
-        Action baseAction = new Action(0, 0, 0);
-        bestActions.add(baseAction);
         for (Action action: possibleActions) {
             double v = func.apply(state, action);
             if (v > val) {
@@ -64,6 +62,26 @@ public class RLModel {
         }
         // ties broken completely at random
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));
+    }
+
+    public void updateStateActionValueFuncton(HashMap<String, ArrayList<Double>> episode) {
+        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManagment.valueFunctionTable;
+        double G = 0;
+        double discount = 1;
+        double alpha = 0.1;
+        int maxTimeStep = RLEpisodeManagment.getMaxTimestepOfEpisode(episode);
+        for (int i = maxTimeStep - 1; i >= 0; i--) {
+            State state = new State(episode.get("position_z").get(i), episode.get("velocity_z").get(i));
+
+            G = discount * G;
+            /// what action was taken?
+            Action action = new Action(0, 0, 0);
+
+
+            StateActionTuple stateActionTuple = new StateActionTuple(state, action);
+            double stateActionValue = valueFunctionTable.get(stateActionTuple);
+            valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
+        }
     }
 
 
