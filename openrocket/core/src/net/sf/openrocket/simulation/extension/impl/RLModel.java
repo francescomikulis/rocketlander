@@ -1,6 +1,5 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.simulation.SimulationStatus;
 
 import java.io.Serializable;
@@ -12,11 +11,21 @@ import java.util.function.BiFunction;
 
 public class RLModel {
     private Random randomGenerator = new Random();
-    private RLEpisodeManagment episodeManagment;
-    public RLModel(RLEpisodeManagment episodeManagment) {
-        this.episodeManagment = episodeManagment;
+    private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
+
+    private static class InstanceHolder {
+        private static final RLModel instance = new RLModel();
     }
 
+    public static RLModel getInstance() {
+        return InstanceHolder.instance;
+    }
+
+    private RLModel(){}
+
+    /***
+    In the future need to also consider the state and the velocity we are currently at.
+     ***/
     public ArrayList<Action> generatePossibleActions(State state) {
         ArrayList<Action> possibleActions = new ArrayList<>();
         possibleActions.add(new Action(0.0, 0, 0));
@@ -30,7 +39,7 @@ public class RLModel {
 
     private Double valueFunction(State state, Action action) {
         // given the state, be a lookup table and return a value for that state-action pair
-        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManagment.getValueFunctionTable();
+        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManager.getValueFunctionTable();
         StateActionTuple stateActionTuple = new StateActionTuple(state, action);
         // initialization
         if (!valueFunctionTable.containsKey(stateActionTuple))
@@ -41,7 +50,7 @@ public class RLModel {
     public Action run_policy(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
         State state = generateStateFromStatus(status);
         Action action = policy(state, this::valueFunction);
-        episodeManagment.addStateActionTuple(state, action, episodeStateAction);
+        episodeManager.addStateActionTuple(state, action, episodeStateAction);
         return action;
     }
 
@@ -66,10 +75,10 @@ public class RLModel {
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStateActionValueFuncton(HashMap<String, ArrayList<Double>> episodeData, ArrayList<StateActionTuple> stateActionTuples) {
-        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManagment.valueFunctionTable;
+    public void updateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
+        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManager.valueFunctionTable;
         // todo: Change this reference to the stateactiontuples
-        int maxTimeStep = RLEpisodeManagment.getMaxTimestepOfEpisode(episodeData);
+        int maxTimeStep = stateActionTuples.size();
         double G = stateActionTuples.get(maxTimeStep - 1).state.velocity;  // landing velocity
         double discount = 1;
         double alpha = 0.1;
