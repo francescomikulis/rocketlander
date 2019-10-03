@@ -71,11 +71,14 @@ public class RocketLander extends AbstractSimulationExtension {
 
 
 	private class RocketLanderListener extends AbstractSimulationListener {
-		HashMap<String, ArrayList<Double>> episode;
+		HashMap<String, ArrayList<Double>> episodeData;
+		ArrayList<StateActionTuple> episodeStateAction;
 
 		@Override
 		public void startSimulation(SimulationStatus status) throws SimulationException {
-			episode = episodeManagment.initializeEmptyEpisode();
+			episodeData = episodeManagment.initializeEmptyEpisode();
+			episodeStateAction = episodeManagment.initializeEmptyActionStateTuples();
+
 			episodeManagment.setupParameters(status);
 
 			status.setRocketPosition(new Coordinate(0, 0, getLaunchAltitude()));
@@ -90,14 +93,20 @@ public class RocketLander extends AbstractSimulationExtension {
 
 			//status.getRocketVelocity();
 			//return 0.0;
-			return Double.NaN;
+
+			Action action = model.run_policy(status, episodeStateAction);
+			if (action.thrust == 0.0) {
+				return 0;
+			} else {
+				return Double.NaN;
+			}
 		}
 
 		@Override
 		public boolean preStep(SimulationStatus status) throws SimulationException {
-			Action action = model.run_policy(status);
-			if (action.thrust == 0.0) {
-				Coordinate currentVel = status.getRocketVelocity();
+			Action action = model.run_policy(status, episodeStateAction);
+			//if (action.thrust == 0.0) {
+				//Coordinate currentVel = status.getRocketVelocity();
 
 				// NOTE THIS IS THE THRUST ACCESS
 				//status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
@@ -106,9 +115,6 @@ public class RocketLander extends AbstractSimulationExtension {
 
 				//Coordinate reducedVel = new Coordinate(currentVel.x * 0.99, currentVel.y * 0.99, currentVel.z * 0.99);
 				//status.setRocketVelocity(reducedVel);
-			} else {
-				// leave motor on.
-			}
 			return true;
 		}
 
@@ -123,12 +129,13 @@ public class RocketLander extends AbstractSimulationExtension {
 			//status.getFlightData();
 			*/
 
-			episodeManagment.addData(status, episode);
+			episodeManagment.addData(status, episodeData);
 		}
 		@Override
 		public void endSimulation(SimulationStatus status, SimulationException exception) {
-			episodeManagment.addEpisode(episode);
-			System.out.println(episodeManagment.readLastTimeStep(episode));
+			episodeManagment.addEpisode(episodeData);
+			model.updateStateActionValueFuncton(episodeData, episodeStateAction);
+			System.out.println(episodeManagment.readLastTimeStep(episodeData));
 		}
 	}
 }

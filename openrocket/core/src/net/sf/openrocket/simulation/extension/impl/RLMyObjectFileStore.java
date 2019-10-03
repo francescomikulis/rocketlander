@@ -16,15 +16,15 @@ https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
  */
 
 public class RLMyObjectFileStore {
-    private static String episodeFileName = "episodesData.txt";
+    private static String episodeDataFileName = "episodesData.txt";
     private static String actionValueFunctionFileName = "actionValue.txt";
 
     public ArrayList readEpisodesData(){
-        return (ArrayList) readObjects(episodeFileName);
+        return (ArrayList) readObjects(episodeDataFileName);
     }
 
     public void storeEpisodesData(ArrayList episodesData){
-        storeObject(episodeFileName, episodesData);
+        storeObject(episodeDataFileName, episodesData);
     }
 
     public HashMap readActionValueFunction(){

@@ -38,12 +38,14 @@ public class RLModel {
         return valueFunctionTable.get(stateActionTuple);
     }
 
-    public Action run_policy(SimulationStatus status) {
-        return policy(status, this::valueFunction);
+    public Action run_policy(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
+        State state = generateStateFromStatus(status);
+        Action action = policy(state, this::valueFunction);
+        episodeManagment.addStateActionTuple(state, action, episodeStateAction);
+        return action;
     }
 
-    private Action policy(SimulationStatus status, BiFunction<State, Action, Double> func) {
-        State state = generateStateFromStatus(status);
+    private Action policy(State state, BiFunction<State, Action, Double> func) {
         ArrayList<Action> possibleActions = generatePossibleActions(state);
 
         double val = Double.NEGATIVE_INFINITY;
@@ -64,23 +66,19 @@ public class RLModel {
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStateActionValueFuncton(HashMap<String, ArrayList<Double>> episode) {
+    public void updateStateActionValueFuncton(HashMap<String, ArrayList<Double>> episodeData, ArrayList<StateActionTuple> stateActionTuples) {
         HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManagment.valueFunctionTable;
-        double G = 0;
+        // todo: Change this reference to the stateactiontuples
+        int maxTimeStep = RLEpisodeManagment.getMaxTimestepOfEpisode(episodeData);
+        double G = stateActionTuples.get(maxTimeStep - 1).state.velocity;  // landing velocity
         double discount = 1;
         double alpha = 0.1;
-        int maxTimeStep = RLEpisodeManagment.getMaxTimestepOfEpisode(episode);
+
         for (int i = maxTimeStep - 1; i >= 0; i--) {
-            State state = new State(episode.get("position_z").get(i), episode.get("velocity_z").get(i));
-
-            G = discount * G;
-            /// what action was taken?
-            Action action = new Action(0, 0, 0);
-
-
-            StateActionTuple stateActionTuple = new StateActionTuple(state, action);
+            StateActionTuple stateActionTuple = stateActionTuples.get(i);
             double stateActionValue = valueFunctionTable.get(stateActionTuple);
             valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
+            G = discount * G;
         }
     }
 

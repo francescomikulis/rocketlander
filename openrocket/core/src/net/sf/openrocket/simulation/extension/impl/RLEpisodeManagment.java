@@ -8,8 +8,11 @@ import net.sf.openrocket.util.Quaternion;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+
 public class RLEpisodeManagment {
     public static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;
+    public static ArrayList<ArrayList<StateActionTuple>> episodesStateAction = null;
     public static HashMap<StateActionTuple, Double> valueFunctionTable = null;
     RLMyObjectFileStore mof = new RLMyObjectFileStore();
 
@@ -32,6 +35,10 @@ public class RLEpisodeManagment {
         }
     }
 
+    public static ArrayList<ArrayList<StateActionTuple>> getEpisodesStateAction() {
+        return episodesStateAction;
+    }
+
     public static ArrayList<HashMap<String, ArrayList<Double>>> getEpisodesData() {
         return episodesData;
     }
@@ -45,6 +52,10 @@ public class RLEpisodeManagment {
 
         // does not actually work.  This only fucks things up.
         // status.getMotors().iterator().next().getConfig().setIgnitionDelay(2);
+    }
+
+    public ArrayList<StateActionTuple> initializeEmptyActionStateTuples() {
+        return new ArrayList<>();
     }
 
     public HashMap<String, ArrayList<Double>> initializeEmptyEpisode() {
@@ -94,7 +105,9 @@ public class RLEpisodeManagment {
     }
 
 
-
+    public void addStateActionTuple(State state, Action action, ArrayList<StateActionTuple> episodeStateAction) {
+        episodeStateAction.add(new StateActionTuple(state, action));
+    }
 
     public void addData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode) {
         for (String key: dataKeys) {
@@ -139,7 +152,7 @@ public class RLEpisodeManagment {
 
         // NOTE: HERE THE LOOP WAS DISABLED.
         //if (episodesData.size() % 5 == 0) {
-            mof.storeEpisodesData(episodesData);
+            //mof.storeEpisodesData(episodesData);
             mof.storeActionValueFunction(valueFunctionTable);
         //}
 
