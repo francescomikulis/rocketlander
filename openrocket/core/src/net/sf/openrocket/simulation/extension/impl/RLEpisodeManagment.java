@@ -1,13 +1,12 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import com.sun.tools.javac.util.List;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
+import java.util.List;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 
 public class RLEpisodeManagment {
@@ -184,7 +183,11 @@ public class RLEpisodeManagment {
         return components;
     }
 
-    private static final ArrayList<String> dataKeys = new ArrayList<>(
-            List.of("thrust", "position_xyz", "velocity_xyz", "rotationV_xyz", "orientation_quat_wxyz")
-    );
+    private static final ArrayList<String> dataKeys = new ArrayList<String>()
+            {{add("thrust");
+            add( "position_xyz");
+            add("velocity_xyz");
+            add("rotationV_xyz");
+            add("orientation_quat_wxyz");
+    }};
 }
