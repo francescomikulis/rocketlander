@@ -366,6 +366,7 @@ public class Simulation implements ChangeSource, Cloneable {
 
 			// NOTE: HERE THE LOOP WAS DISABLED.
 			//for (Integer i = 0; i < 5; i++) {
+			System.out.println("START: " + System.currentTimeMillis());
 			System.out.println("REMOVED FOR LOOP FOR SIMULATIONS.  RE-ENABLE HERE #");
 				System.out.println("RUNNING SIMULATION #");  // + i.toString());
 				log.debug("Simulation: calling simulator");
@@ -373,6 +374,7 @@ public class Simulation implements ChangeSource, Cloneable {
 				simulatedData = simulator.simulate(simulationConditions);
 				t2 = System.currentTimeMillis();
 				log.debug("Simulation: returning from simulator, simulation took " + (t2 - t1) + "ms");
+			System.out.println(" END : " + System.currentTimeMillis());
 			//}
 
 			
