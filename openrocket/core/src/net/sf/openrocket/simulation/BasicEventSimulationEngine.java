@@ -380,7 +380,8 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				currentStatus.getFlightData().addEvent(event);
 				break;
 			}
-			
+
+			/* MODIFIED CODE HERE
 			case BURNOUT: {
 				// If motor burnout occurs without lift-off, abort
 				if (!currentStatus.isLiftoff()) {
@@ -404,6 +405,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				currentStatus.getFlightData().addEvent(event);
 				break;
 			}
+			 */
 			
 			case EJECTION_CHARGE: {
 				MotorClusterState motorState = (MotorClusterState) event.getData();

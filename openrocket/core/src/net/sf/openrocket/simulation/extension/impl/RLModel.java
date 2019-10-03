@@ -105,7 +105,7 @@ public class RLModel {
         }
 
         public void setAltitude(double altitude) {
-            this.altitude = round(altitude, 1);
+            this.altitude = round(altitude, -1);
         }
 
         public double getAltitude() {
@@ -113,7 +113,7 @@ public class RLModel {
         }
 
         public void setVelocity(double velocity) {
-            this.velocity = round(velocity, 1);
+            this.velocity = round(velocity, -1);
         }
 
         public double getVelocity() {
