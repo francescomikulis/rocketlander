@@ -101,7 +101,7 @@ public class RLModel {
         // todo: Change this reference to the stateactiontuples
         int maxTimeStep = stateActionTuples.size();
         double G = -Math.abs(stateActionTuples.get(maxTimeStep - 1).state.velocity);  // landing velocity
-        System.out.println("Starting with penalty: " + G);
+        // System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
         double alpha = 0.1;
         double reward = -0.01;

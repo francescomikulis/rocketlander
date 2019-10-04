@@ -8,6 +8,7 @@ import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
@@ -15,9 +16,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private ArrayList<StateActionTuple> episodeStateActions;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
+    private Random random;
 
     RocketLanderListener(RocketLander rocketLander) {
         this.rocketLander = rocketLander;
+        random = new Random();
+    }
+
+    private double calculateNumberWithIntegerVariation(double startNumber, int variation) {
+        return startNumber - random.nextInt(variation) + random.nextInt(variation);
     }
 
     @Override
@@ -29,11 +36,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeManager.setupParameters(status);
 
         // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(new Coordinate(0, 0, rocketLander.getLaunchAltitude()));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), 10)));
         // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, rocketLander.getLaunchVelocity())));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), 20))));
 
-        System.out.println("CALLED START SIMULATION");
+        //System.out.println("CALLED START SIMULATION");
     }
 
     @Override
@@ -70,6 +77,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // episodeManager.addEpisode(episodeData);
         model.updateStateActionValueFuncton(episodeStateActions);
-        System.out.println("Numbers of iterations: " + episodeStateActions.size() + " " + episodeStateActions.get(episodeStateActions.size()-1).state.velocity);
+        //System.out.println("Numbers of iterations: " + episodeStateActions.size() + " " + episodeStateActions.get(episodeStateActions.size()-1).state.velocity);
     }
 }
