@@ -52,15 +52,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         //status.getRocketVelocity();
         //return 0.0;
 
+        double MAX_THRUST = 150;
+
         RLModel.Action action = model.run_policy(status, episodeStateActions);
-        if (action.thrust == 0.0) {
-            // turn off
-            return 0;
-        } else {
-            // leave on
-            // return Double.NaN;
-            return 150;
-        }
+        // return Double.NaN;
+        return MAX_THRUST * action.thrust;
     }
 
     @Override

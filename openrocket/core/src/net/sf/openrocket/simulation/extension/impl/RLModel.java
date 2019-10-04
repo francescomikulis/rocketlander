@@ -5,15 +5,19 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
     private HashMap<StateActionTuple, Double> valueFunctionTable = null;
+    private static double THRUST_TOGGLE_PENALTY = 0.1;
+    private static double THRUST_ON_PENALTY = -0.5;
 
     private Semaphore mutex = new Semaphore(1);
 
@@ -35,10 +39,30 @@ public class RLModel {
     /***
     In the future need to also consider the state and the velocity we are currently at.
      ***/
-    public ArrayList<Action> generatePossibleActions(State state) {
+    public ArrayList<Action> generatePossibleActions(State state, double prevThurst) {
         ArrayList<Action> possibleActions = new ArrayList<>();
+        possibleActions.add(new Action(prevThurst, 0, 0));
+        if (prevThurst == 0.0) {
+            possibleActions.add(new Action(0.25, 0, 0));
+        } else if (prevThurst == 0.25) {
+            possibleActions.add(new Action(0.0, 0, 0));
+            possibleActions.add(new Action(0.5, 0, 0));
+        } else if (prevThurst == 0.5) {
+            possibleActions.add(new Action(0.25, 0, 0));
+            possibleActions.add(new Action(0.75, 0, 0));
+        } else if (prevThurst == 0.75) {
+            possibleActions.add(new Action(0.5, 0, 0));
+            possibleActions.add(new Action(1.0, 0, 0));
+        } else if (prevThurst == 1.00) {
+            possibleActions.add(new Action(0.75, 0, 0));
+        }
+        /*
         possibleActions.add(new Action(0.0, 0, 0));
+        possibleActions.add(new Action(0.25, 0, 0));
+        possibleActions.add(new Action(0.5, 0, 0));
+        possibleActions.add(new Action(0.75, 0, 0));
         possibleActions.add(new Action(1.0, 0, 0));
+         */
         return possibleActions;
     }
 
@@ -47,7 +71,17 @@ public class RLModel {
     }
 
     private Double valueFunction(StateActionTuple stateActionTuple) {
+        Action action = stateActionTuple.action;
+        if (action.thrust > 0) {
+            if (stateActionTuple.state.velocity > 0)
+                if (!valueFunctionTable.containsKey(stateActionTuple))
+                    return THRUST_ON_PENALTY;
+        }
         // given the state, be a lookup table and return a value for that state-action pair
+        /*
+        if (!valueFunctionTable.containsKey(stateActionTuple))
+            return 0.0;
+         */
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0;
         return valueFunctionTable.get(stateActionTuple);
@@ -59,14 +93,17 @@ public class RLModel {
     }
 
     public Action run_policy(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
+        double prevThrust = 0.0;
+        if (episodeStateAction.size() != 0)
+            prevThrust = episodeStateAction.get(episodeStateAction.size() - 1).action.thrust;
         State state = generateStateFromStatus(status);
-        Action action = policy(state, this::valueFunction);
+        Action action = policy(state, prevThrust, this::valueFunction);
         episodeManager.addStateActionTuple(state, action, episodeStateAction);
         return action;
     }
 
-    private Action policy(State state, BiFunction<State, Action, Double> func) {
-        ArrayList<Action> possibleActions = generatePossibleActions(state);
+    private Action policy(State state, double prevThurst, BiFunction<State, Action, Double> func) {
+        ArrayList<Action> possibleActions = generatePossibleActions(state, prevThurst);
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
@@ -104,16 +141,25 @@ public class RLModel {
         // System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
         double alpha = 0.1;
-        double reward = -0.0001;
+        double reward = -0.005;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);
             double stateActionValue = valueFunction(stateActionTuple);
             double positiveVelocityPenalty = 0;
+            double thrustTogglePenalty = 0;
+
+            if (i + 1 <= maxTimeStep - 1) {
+                // penalize thrust changes by the variation
+                double currentThrust = Math.abs(stateActionTuple.action.thrust);
+                double nextThrust = Math.abs(stateActionTuples.get(i + 1).action.thrust);
+                double absDelta = Math.abs(currentThrust - nextThrust);
+                thrustTogglePenalty = THRUST_TOGGLE_PENALTY * absDelta;
+            }
             if (stateActionTuple.state.velocity > 0)
-                positiveVelocityPenalty = stateActionTuple.state.velocity / 100;
+                positiveVelocityPenalty = stateActionTuple.state.velocity / 10;
             valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
-            G = (discount * G) + reward - positiveVelocityPenalty;
+            G = (discount * G) + reward - thrustTogglePenalty - positiveVelocityPenalty;
         }
     }
 
@@ -214,6 +260,18 @@ public class RLModel {
 
     public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
         this.valueFunctionTable = valueFunctionTable;
+    }
+
+    @FunctionalInterface
+    interface TriFunction<A,B,C,R> {
+
+        R apply(A a, B b, C c);
+
+        default <V> TriFunction<A, B, C, V> andThen(
+                Function<? super R, ? extends V> after) {
+            Objects.requireNonNull(after);
+            return (A a, B b, C c) -> after.apply(apply(a, b, c));
+        }
     }
 }
 
