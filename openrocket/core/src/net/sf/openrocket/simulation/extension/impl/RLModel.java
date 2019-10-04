@@ -6,12 +6,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 
 
 public class RLModel {
     private Random randomGenerator = new Random();
-    private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
+    private RLEpisodeManager episodeManager = null;
+    private HashMap<StateActionTuple, Double> valueFunctionTable = null;
+
+    private Semaphore mutex = new Semaphore(1);
 
     private static class InstanceHolder {
         private static final RLModel instance = new RLModel();
@@ -22,6 +26,11 @@ public class RLModel {
     }
 
     private RLModel(){}
+
+    public void initializeModel() {
+        episodeManager = RLEpisodeManager.getInstance();
+        episodeManager.safeActionValueFunctionInitialization();
+    }
 
     /***
     In the future need to also consider the state and the velocity we are currently at.
@@ -37,14 +46,16 @@ public class RLModel {
         return new State(status.getRocketPosition().z, status.getRocketVelocity().z);
     }
 
-    private Double valueFunction(State state, Action action) {
+    private Double valueFunction(StateActionTuple stateActionTuple) {
         // given the state, be a lookup table and return a value for that state-action pair
-        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManager.getValueFunctionTable();
-        StateActionTuple stateActionTuple = new StateActionTuple(state, action);
-        // initialization
         if (!valueFunctionTable.containsKey(stateActionTuple))
-            valueFunctionTable.put(stateActionTuple, 0.0);
+            return 0.0;
         return valueFunctionTable.get(stateActionTuple);
+    }
+
+    private Double valueFunction(State state, Action action) {
+        StateActionTuple stateActionTuple = new StateActionTuple(state, action);
+        return valueFunction(stateActionTuple);
     }
 
     public Action run_policy(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
@@ -76,18 +87,32 @@ public class RLModel {
     }
 
     public void updateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
-        HashMap<StateActionTuple, Double> valueFunctionTable = RLEpisodeManager.valueFunctionTable;
+        try {
+            mutex.acquire();
+            actuallyUpdateStateActionValueFuncton(stateActionTuples);
+        } catch (InterruptedException e) {
+            // exception handling code
+        } finally {
+            mutex.release();
+        }
+    }
+
+    private void actuallyUpdateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
         // todo: Change this reference to the stateactiontuples
         int maxTimeStep = stateActionTuples.size();
-        double G = stateActionTuples.get(maxTimeStep - 1).state.velocity;  // landing velocity
-        double discount = 1;
+        double G = -Math.abs(stateActionTuples.get(maxTimeStep - 1).state.velocity);  // landing velocity
+        double discount = 0.999;
         double alpha = 0.1;
+        double reward = -0.01;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);
-            double stateActionValue = valueFunctionTable.get(stateActionTuple);
+            if (valueFunctionTable == null) {
+                System.out.println("VALUE FUNCTION TABLE WAS NULL AT TIMESTEP: " + i);
+            }
+            double stateActionValue = valueFunction(stateActionTuple);
             valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
-            G = discount * G;
+            G = (discount * G) + reward;
         }
     }
 
@@ -105,7 +130,7 @@ public class RLModel {
         }
 
         public void setAltitude(double altitude) {
-            this.altitude = round(altitude, -1);
+            this.altitude = round(altitude, 0);
         }
 
         public double getAltitude() {
@@ -113,11 +138,21 @@ public class RLModel {
         }
 
         public void setVelocity(double velocity) {
-            this.velocity = round(velocity, -1);
+            this.velocity = round(velocity, 0);
         }
 
         public double getVelocity() {
             return altitude;
+        }
+
+        @Override
+        public String toString() {
+            return "State(" + this.altitude + ", " + this.velocity + ")";
+        }
+
+        @Override
+        public int hashCode() {
+            return Double.valueOf(altitude).hashCode() + Double.valueOf(velocity).hashCode();
         }
     }
 
@@ -155,11 +190,29 @@ public class RLModel {
         public double getGimble_y() {
             return gimble_y;
         }
+
+        @Override
+        public String toString() {
+            return "Action(" + this.thrust + ", " + this.gimble_x + ", " + this.gimble_y + ")";
+        }
+
+        @Override
+        public int hashCode() {
+            return Double.valueOf(thrust).hashCode() + Double.valueOf(gimble_x).hashCode() + Double.valueOf(gimble_y).hashCode();
+        }
     }
 
     private static double round (double value, int precision) {
-        int scale = (int) Math.pow(10, precision);
+        double scale = Math.pow(10, precision);
         return (double) Math.round(value * scale) / scale;
+    }
+
+    public HashMap<StateActionTuple, Double> getValueFunctionTable() {
+        return valueFunctionTable;
+    }
+
+    public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
+        this.valueFunctionTable = valueFunctionTable;
     }
 }
 

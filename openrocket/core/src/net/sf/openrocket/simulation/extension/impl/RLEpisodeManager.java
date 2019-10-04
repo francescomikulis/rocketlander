@@ -6,14 +6,16 @@ import net.sf.openrocket.util.Quaternion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 
 public class RLEpisodeManager {
-    public static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;
-    public static ArrayList<ArrayList<StateActionTuple>> episodesStateAction = null;
-    public static HashMap<StateActionTuple, Double> valueFunctionTable = null;
-    private RLObjectFileStore mof = RLObjectFileStore.getInstance();
+    private static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;
+    private static ArrayList<ArrayList<StateActionTuple>> episodesStateAction = null;
+
+    private RLModel model = null;
+    private RLObjectFileStore mof = null;
 
     private static class InstanceHolder {
         private static final RLEpisodeManager instance = new RLEpisodeManager();
@@ -23,8 +25,11 @@ public class RLEpisodeManager {
         return InstanceHolder.instance;
     }
 
-    private RLEpisodeManager() {
-        safeActionValueFunctionInitialization();
+    private RLEpisodeManager() {}
+
+    public void initializeEpisodeManager() {
+        model = RLModel.getInstance();
+        mof = RLObjectFileStore.getInstance();
     }
 
     public void setupParameters(SimulationStatus status) {
@@ -43,7 +48,17 @@ public class RLEpisodeManager {
     }
 
     public void storeActionValueFunction() {
-        mof.storeActionValueFunction(valueFunctionTable);
+        System.out.println("CLOSING!!!");
+        mof.storeActionValueFunction(model.getValueFunctionTable());
+        printAll();
+    }
+
+    public void printAll() {
+        for (Map.Entry<StateActionTuple, Double> entry: model.getValueFunctionTable().entrySet()) {
+            StateActionTuple stateActionTuple = entry.getKey();
+            double value = entry.getValue();
+            System.out.println(stateActionTuple + ": " + value);
+        }
     }
 
 
@@ -52,12 +67,12 @@ public class RLEpisodeManager {
 
     /* SAFE INITIALIZERS */
 
-    private void safeActionValueFunctionInitialization() {
-        if (valueFunctionTable == null) {
+    public void safeActionValueFunctionInitialization() {
+        if (model.getValueFunctionTable() == null) {
             try {
-                valueFunctionTable = mof.readActionValueFunction();
+                model.setValueFunctionTable(mof.readActionValueFunction());
             } catch (Exception e) {
-                valueFunctionTable = new HashMap<>();
+                model.setValueFunctionTable(new HashMap<>());
             }
         }
     }
@@ -196,16 +211,12 @@ public class RLEpisodeManager {
     Getters -- DO NOT MODIFY BELOW
      */
 
-    public static ArrayList<ArrayList<StateActionTuple>> getEpisodesStateAction() {
+    public ArrayList<ArrayList<StateActionTuple>> getEpisodesStateAction() {
         return episodesStateAction;
     }
 
-    public static ArrayList<HashMap<String, ArrayList<Double>>> getEpisodesData() {
+    public ArrayList<HashMap<String, ArrayList<Double>>> getEpisodesData() {
         return episodesData;
-    }
-
-    public static HashMap<StateActionTuple, Double> getValueFunctionTable() {
-        return valueFunctionTable;
     }
 
     private static final ArrayList<String> dataKeys = new ArrayList<String>() {

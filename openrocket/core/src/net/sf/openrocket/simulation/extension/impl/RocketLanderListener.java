@@ -10,8 +10,8 @@ import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import java.util.ArrayList;
 
 public class RocketLanderListener extends AbstractSimulationListener {
-    private static RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
-    private static RLModel model = RLModel.getInstance();
+    private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
+    private RLModel model = RLModel.getInstance();
     private ArrayList<StateActionTuple> episodeStateActions;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
@@ -23,8 +23,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public void startSimulation(SimulationStatus status) throws SimulationException {
         //episodeData = episodeManager.initializeEmptyEpisode();
+        episodeManager.initializeEpisodeManager();
+        model.initializeModel();
         episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
-
         episodeManager.setupParameters(status);
 
         // set the rocket position at the launch altitude as defined by the extension
@@ -69,7 +70,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // episodeManager.addEpisode(episodeData);
         model.updateStateActionValueFuncton(episodeStateActions);
-        episodeManager.storeActionValueFunction();
         System.out.println("Numbers of iterations: " + episodeStateActions.size() + " " + episodeStateActions.get(episodeStateActions.size()-1).state.velocity);
     }
 }
