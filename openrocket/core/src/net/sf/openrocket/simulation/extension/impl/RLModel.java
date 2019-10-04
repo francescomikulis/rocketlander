@@ -101,18 +101,19 @@ public class RLModel {
         // todo: Change this reference to the stateactiontuples
         int maxTimeStep = stateActionTuples.size();
         double G = -Math.abs(stateActionTuples.get(maxTimeStep - 1).state.velocity);  // landing velocity
+        System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
         double alpha = 0.1;
         double reward = -0.01;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);
-            if (valueFunctionTable == null) {
-                System.out.println("VALUE FUNCTION TABLE WAS NULL AT TIMESTEP: " + i);
-            }
             double stateActionValue = valueFunction(stateActionTuple);
+            double positiveVelocityPenalty = 0;
+            if (stateActionTuple.state.velocity > 0)
+                positiveVelocityPenalty = stateActionTuple.state.velocity / 100;
             valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
-            G = (discount * G) + reward;
+            G = (discount * G) + reward - positiveVelocityPenalty;
         }
     }
 
