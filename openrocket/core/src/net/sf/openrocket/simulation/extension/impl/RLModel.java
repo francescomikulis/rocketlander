@@ -104,7 +104,7 @@ public class RLModel {
         // System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
         double alpha = 0.1;
-        double reward = -0.01;
+        double reward = -0.0001;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);

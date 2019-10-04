@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
@@ -38,7 +39,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // set the rocket position at the launch altitude as defined by the extension
         status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), 10)));
         // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), 20))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), 10))));
 
         //System.out.println("CALLED START SIMULATION");
     }
@@ -57,7 +58,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
             return 0;
         } else {
             // leave on
-            return Double.NaN;
+            // return Double.NaN;
+            return 150;
         }
     }
 
