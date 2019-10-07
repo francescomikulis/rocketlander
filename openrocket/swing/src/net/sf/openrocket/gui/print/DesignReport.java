@@ -129,6 +129,7 @@ public class DesignReport {
 	private static final String MAX_VELOCITY = "Max Velocity";
 	private static final String DEPLOYMENT_VELOCITY = "Velocity at Deployment";
 	private static final String LANDING_VELOCITY = "Landing Velocity";
+	private static final String LANDING_VERTICAL_VELOCITY = "Landing Vertical Velocity";
 	private static final String ROCKET_DESIGN = "Rocket Design";
 	private static final double GRAVITY_CONSTANT = 9.80665d;
 	
@@ -488,6 +489,9 @@ public class DesignReport {
 				
 				labelTable.addCell(ITextHelper.createCell(LANDING_VELOCITY, 2, 2));
 				labelTable.addCell(ITextHelper.createCell(velocityUnit.toStringUnit(flight.getGroundHitVelocity()), 2, 2));
+
+				labelTable.addCell(ITextHelper.createCell(LANDING_VERTICAL_VELOCITY, 2, 2));
+				labelTable.addCell(ITextHelper.createCell(velocityUnit.toStringUnit(flight.getGroundHitVerticalVelocity()), 2, 2));
 				
 				//Add the table to the parent; have to wrap it in a cell
 				PdfPCell c = new PdfPCell(labelTable);

@@ -566,6 +566,21 @@ public class SimulationPanel extends JPanel {
 
 						return data.getGroundHitVelocity();
 					}
+				},
+
+				//// Ground hit velocity
+				new ValueColumn(trans.get("simpanel.col.Groundhitverticalvelocity"), UnitGroup.UNITS_VELOCITY) {
+					@Override
+					public Double valueAt(int row) {
+						if (row < 0 || row >= document.getSimulationCount())
+							return null;
+
+						FlightData data = document.getSimulation(row).getSimulatedData();
+						if (data == null)
+							return null;
+
+						return data.getGroundHitVerticalVelocity();
+					}
 				}
 
 				) {

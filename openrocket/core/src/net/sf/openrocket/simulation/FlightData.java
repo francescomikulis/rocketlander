@@ -49,6 +49,7 @@ public class FlightData {
 	private double timeToApogee = Double.NaN;
 	private double flightTime = Double.NaN;
 	private double groundHitVelocity = Double.NaN;
+	private double groundHitVerticalVelocity = Double.NaN;
 	private double launchRodVelocity = Double.NaN;
 	private double deploymentVelocity = Double.NaN;
 	
@@ -65,19 +66,20 @@ public class FlightData {
 	 * Construct a FlightData object with no data branches but the specified
 	 * summary information.  The resulting object is mutable.
 	 * 
-	 * @param maxAltitude			maximum altitude.
-	 * @param maxVelocity			maximum velocity.
-	 * @param maxAcceleration		maximum acceleration.
-	 * @param maxMachNumber			maximum Mach number.
-	 * @param timeToApogee			time to apogee.
-	 * @param flightTime			total flight time.
-	 * @param groundHitVelocity		ground hit velocity.
-	 * @param launchRodVelocity     velocity at launch rod clearance
-	 * @param deploymentVelocity    velocity at deployment
+	 * @param maxAltitude				maximum altitude.
+	 * @param maxVelocity				maximum velocity.
+	 * @param maxAcceleration			maximum acceleration.
+	 * @param maxMachNumber				maximum Mach number.
+	 * @param timeToApogee				time to apogee.
+	 * @param flightTime				total flight time.
+	 * @param groundHitVelocity			ground hit velocity.
+	 * @param groundHitVerticalVelocity	ground hit vertical velocity.
+	 * @param launchRodVelocity     	velocity at launch rod clearance
+	 * @param deploymentVelocity    	velocity at deployment
 	 */
 	public FlightData(double maxAltitude, double maxVelocity, double maxAcceleration,
 			double maxMachNumber, double timeToApogee, double flightTime,
-			double groundHitVelocity, double launchRodVelocity, double deploymentVelocity) {
+			double groundHitVelocity, double groundHitVerticalVelocity, double launchRodVelocity, double deploymentVelocity) {
 		this.maxAltitude = maxAltitude;
 		this.maxVelocity = maxVelocity;
 		this.maxAcceleration = maxAcceleration;
@@ -85,6 +87,7 @@ public class FlightData {
 		this.timeToApogee = timeToApogee;
 		this.flightTime = flightTime;
 		this.groundHitVelocity = groundHitVelocity;
+		this.groundHitVerticalVelocity = groundHitVerticalVelocity;
 		this.launchRodVelocity = launchRodVelocity;
 		this.deploymentVelocity = deploymentVelocity;
 	}
@@ -170,6 +173,10 @@ public class FlightData {
 	public double getGroundHitVelocity() {
 		return groundHitVelocity;
 	}
+
+	public double getGroundHitVerticalVelocity() {
+		return groundHitVerticalVelocity;
+	}
 	
 	public double getLaunchRodVelocity() {
 		return launchRodVelocity;
@@ -200,7 +207,8 @@ public class FlightData {
 		} else {
 			groundHitVelocity = Double.NaN;
 		}
-		
+		groundHitVerticalVelocity = Math.abs(branch.getLast(FlightDataType.TYPE_VELOCITY_Z));
+
 
 		// Time to apogee
 		List<Double> time = branch.get(FlightDataType.TYPE_TIME);
