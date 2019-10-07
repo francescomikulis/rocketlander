@@ -25,6 +25,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.DefaultEditorKit;
 
+import net.sf.openrocket.simulation.extension.impl.RLModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +85,7 @@ public class SimulationPanel extends JPanel {
 	private final JButton editButton;
 	private final JButton runButton;
 	private final JButton runMultipleButton;
+	private final JButton resetModelButton;
 	private final JButton deleteButton;
 	private final JButton plotButton;
 	private final JPopupMenu pm;
@@ -211,6 +213,32 @@ public class SimulationPanel extends JPanel {
 			}
 		});
 		this.add(runMultipleButton, "gapright para");
+
+		// MODIFIED CODE HERE
+
+		//// Reset the stateActionValueFunction
+		resetModelButton = new JButton(trans.get("simpanel.but.resetmodel"));
+		//// Re-run the selected simulations
+		resetModelButton.setToolTipText(trans.get("simpanel.but.ttip.resetmodel"));
+		resetModelButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JPanel panel = new JPanel(new MigLayout());
+				int ret = JOptionPane.showConfirmDialog(SimulationPanel.this,
+						new Object[] {
+								"Are you sure you want to reset the model?",
+								"<html><i>This operation cannot be undone.</i>",
+								"",
+								panel },
+						"Reset Model",
+						JOptionPane.OK_CANCEL_OPTION,
+						JOptionPane.WARNING_MESSAGE);
+				if (ret != JOptionPane.OK_OPTION)
+					return;
+				RLModel.getInstance().resetValueFunctionTable();
+			}
+		});
+		this.add(resetModelButton, "gapright para");
 
 		//// Delete simulations button
 		deleteButton = new JButton(trans.get("simpanel.but.deletesimulations"));

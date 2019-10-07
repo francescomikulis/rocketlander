@@ -16,6 +16,7 @@ public class DefaultSimulationOptionFactory {
 	public static final String SIMCONDITION_SITE_LAT = "SimConditionSiteLat";
 	public static final String SIMCONDITION_SITE_LON = "SimConditionSiteLon";
 	public static final String SIMCONDITION_SITE_ALT = "SimConditionSiteAlt";
+	public static final String SIMCONDITION_SITE_VEL = "SimConditionSiteVel";
 	public static final String SIMCONDITION_ATMOS_STD = "SimConditionsAtmosStd";
 	public static final String SIMCONDITION_ATMOS_TEMP = "SimConditionsAtmosTemp";
 	public static final String SIMCONDITION_ATMOS_PRESSURE = "SimConditionsAtmosPres";
@@ -43,6 +44,7 @@ public class DefaultSimulationOptionFactory {
 			defaults.setLaunchLatitude(prefs.getDouble(SIMCONDITION_SITE_LAT, defaults.getLaunchLatitude()));
 			defaults.setLaunchLongitude(prefs.getDouble(SIMCONDITION_SITE_LON, defaults.getLaunchLongitude()));
 			defaults.setLaunchAltitude(prefs.getDouble(SIMCONDITION_SITE_ALT, defaults.getLaunchAltitude()));
+			defaults.setLaunchAltitude(prefs.getDouble(SIMCONDITION_SITE_VEL, defaults.getLaunchVelocity()));
 			
 			defaults.setISAAtmosphere(prefs.getBoolean(SIMCONDITION_ATMOS_STD, defaults.isISAAtmosphere()));
 			defaults.setLaunchTemperature(prefs.getDouble(SIMCONDITION_ATMOS_TEMP, defaults.getLaunchTemperature()));
@@ -65,6 +67,7 @@ public class DefaultSimulationOptionFactory {
 		prefs.putDouble(SIMCONDITION_SITE_LAT, newDefaults.getLaunchLatitude());
 		prefs.putDouble(SIMCONDITION_SITE_LON, newDefaults.getLaunchLongitude());
 		prefs.putDouble(SIMCONDITION_SITE_ALT, newDefaults.getLaunchAltitude());
+		prefs.putDouble(SIMCONDITION_SITE_VEL, newDefaults.getLaunchVelocity());
 		prefs.putBoolean(SIMCONDITION_ATMOS_STD, newDefaults.isISAAtmosphere());
 		prefs.putDouble(SIMCONDITION_ATMOS_TEMP, newDefaults.getLaunchTemperature());
 		prefs.putDouble(SIMCONDITION_ATMOS_PRESSURE, newDefaults.getLaunchPressure());

@@ -318,6 +318,30 @@ public class SimulationConditionsPanel extends JPanel {
 		slider = new BasicSlider(m.getSliderModel(0, 250, 1000));
 		slider.setToolTipText(tip);
 		sub.add(slider, "w 75lp, wrap");
+
+		// MODIFIED CODE HERE
+
+		// Velocity:
+		label = new JLabel(trans.get("simedtdlg.lbl.Velocity"));
+		//// <html>The launch altitude above mean sea level.<br>
+		//// This affects the position of the rocket in the atmospheric model.
+		tip = trans.get("simedtdlg.lbl.ttip.Velocity");
+		label.setToolTipText(tip);
+		sub.add(label);
+
+		m = new DoubleModel(conditions, "LaunchVelocity", UnitGroup.UNITS_DISTANCE, 0);
+
+		spin = new JSpinner(m.getSpinnerModel());
+		spin.setEditor(new SpinnerEditor(spin));
+		spin.setToolTipText(tip);
+		sub.add(spin, "w 65lp!");
+
+		unit = new UnitSelector(m);
+		unit.setToolTipText(tip);
+		sub.add(unit, "growx");
+		slider = new BasicSlider(m.getSliderModel(-1000, 0, 1000));
+		slider.setToolTipText(tip);
+		sub.add(slider, "w 75lp, wrap");
 		
 		
 		

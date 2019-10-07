@@ -67,6 +67,7 @@ public class SimulationOptions implements ChangeSource, Cloneable {
 	 */
 	
 	private double launchAltitude = preferences.getDouble(Preferences.LAUNCH_ALTITUDE, 0);
+	private double launchVelocity = preferences.getDouble(Preferences.LAUNCH_VELOCITY, 0);
 	private double launchLatitude = preferences.getDouble(Preferences.LAUNCH_LATITUDE, 28.61);
 	private double launchLongitude = preferences.getDouble(Preferences.LAUNCH_LONGITUDE, -80.60);
 	private GeodeticComputationStrategy geodeticComputation = GeodeticComputationStrategy.SPHERICAL;
@@ -213,6 +214,19 @@ public class SimulationOptions implements ChangeSource, Cloneable {
 		if (MathUtil.equals(this.launchAltitude, altitude))
 			return;
 		this.launchAltitude = altitude;
+		fireChangeEvent();
+	}
+
+	// MODIFIED CODE HERE
+
+	public double getLaunchVelocity() {
+		return launchVelocity;
+	}
+
+	public void setLaunchVelocity(double verticalVelocity) {
+		if (MathUtil.equals(this.launchVelocity, verticalVelocity))
+			return;
+		this.launchVelocity = verticalVelocity;
 		fireChangeEvent();
 	}
 	
@@ -547,7 +561,7 @@ public class SimulationOptions implements ChangeSource, Cloneable {
 		conditions.setLaunchRodLength(getLaunchRodLength());
 		conditions.setLaunchRodAngle(getLaunchRodAngle());
 		conditions.setLaunchRodDirection(getLaunchRodDirection());
-		conditions.setLaunchSite(new WorldCoordinate(getLaunchLatitude(), getLaunchLongitude(), getLaunchAltitude()));
+		conditions.setLaunchSite(new WorldCoordinate(getLaunchLatitude(), getLaunchLongitude(), getLaunchAltitude(), getLaunchVelocity()));
 		conditions.setGeodeticComputation(getGeodeticComputation());
 		conditions.setRandomSeed(randomSeed);
 		

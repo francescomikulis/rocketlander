@@ -16,8 +16,10 @@ public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
     private HashMap<StateActionTuple, Double> valueFunctionTable = null;
+    private static boolean ONLY_GREEDY = true;
+    private static double MOTOR_INCREMENT_PER_TIMESTEP = 0.25;
     private static double THRUST_TOGGLE_PENALTY = 0.1;
-    private static double THRUST_ON_PENALTY = -0.5;
+    private static double THRUST_ON_PENALTY = -5;
 
     private Semaphore mutex = new Semaphore(1);
 
@@ -36,33 +38,56 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
+    private ArrayList<Double> generatePossibleThrust(double prevThrust) {
+        ArrayList<Double> possibleThurst = new ArrayList<>();
+        double CHANGE = MOTOR_INCREMENT_PER_TIMESTEP;
+        possibleThurst.add(prevThrust);
+        if (prevThrust <= CHANGE) {
+            possibleThurst.add(CHANGE);
+        } else if (prevThrust >= 1.0 - CHANGE) {
+            possibleThurst.add(1.0 - CHANGE);
+        } else {
+            possibleThurst.add(prevThrust - CHANGE);
+            possibleThurst.add(prevThrust + CHANGE);
+        }
+        return possibleThurst;
+    }
+
     /***
     In the future need to also consider the state and the velocity we are currently at.
      ***/
     public ArrayList<Action> generatePossibleActions(State state, double prevThurst) {
         ArrayList<Action> possibleActions = new ArrayList<>();
-        possibleActions.add(new Action(prevThurst, 0, 0));
-        if (prevThurst == 0.0) {
-            possibleActions.add(new Action(0.25, 0, 0));
-        } else if (prevThurst == 0.25) {
+
+        /*
+        ArrayList<Double> possibleThrustValues = generatePossibleThrust(prevThurst);
+        for (Double possibleThrust: possibleThrustValues)
+            possibleActions.add(new Action(possibleThrust, 0, 0));
+        */
+
+        if (state.altitude > 1.0) {
+            possibleActions.add(new Action(prevThurst, 0, 0));
+            if (prevThurst == 0.0) {
+                possibleActions.add(new Action(0.25, 0, 0));
+            } else if (prevThurst == 0.25) {
+                possibleActions.add(new Action(0.0, 0, 0));
+                possibleActions.add(new Action(0.5, 0, 0));
+            } else if (prevThurst == 0.5) {
+                possibleActions.add(new Action(0.25, 0, 0));
+                possibleActions.add(new Action(0.75, 0, 0));
+            } else if (prevThurst == 0.75) {
+                possibleActions.add(new Action(0.5, 0, 0));
+                possibleActions.add(new Action(1.0, 0, 0));
+            } else if (prevThurst == 1.00) {
+                possibleActions.add(new Action(0.75, 0, 0));
+            }
+        } else {
             possibleActions.add(new Action(0.0, 0, 0));
-            possibleActions.add(new Action(0.5, 0, 0));
-        } else if (prevThurst == 0.5) {
             possibleActions.add(new Action(0.25, 0, 0));
-            possibleActions.add(new Action(0.75, 0, 0));
-        } else if (prevThurst == 0.75) {
             possibleActions.add(new Action(0.5, 0, 0));
-            possibleActions.add(new Action(1.0, 0, 0));
-        } else if (prevThurst == 1.00) {
             possibleActions.add(new Action(0.75, 0, 0));
         }
-        /*
-        possibleActions.add(new Action(0.0, 0, 0));
-        possibleActions.add(new Action(0.25, 0, 0));
-        possibleActions.add(new Action(0.5, 0, 0));
-        possibleActions.add(new Action(0.75, 0, 0));
-        possibleActions.add(new Action(1.0, 0, 0));
-         */
+
         return possibleActions;
     }
 
@@ -73,9 +98,13 @@ public class RLModel {
     private Double valueFunction(StateActionTuple stateActionTuple) {
         Action action = stateActionTuple.action;
         if (action.thrust > 0) {
-            if (stateActionTuple.state.velocity > 0)
+            if (stateActionTuple.state.velocity > 0) {
+                double penalty = THRUST_ON_PENALTY * action.thrust * 100;
                 if (!valueFunctionTable.containsKey(stateActionTuple))
-                    return THRUST_ON_PENALTY;
+                    return THRUST_ON_PENALTY; // penalty
+                else
+                    return valueFunctionTable.get(stateActionTuple) - Math.abs(penalty);
+            }
         }
         // given the state, be a lookup table and return a value for that state-action pair
         /*
@@ -107,15 +136,25 @@ public class RLModel {
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
+
+        boolean greedy = ONLY_GREEDY;
+        if (randomGenerator.nextDouble() <= 0.05) {
+            greedy = false;  // false
+        }
+
         for (Action action: possibleActions) {
             double v = func.apply(state, action);
-            if (v > val) {
-                // value is best compared to all previous encounters.  Reset bestAction ArrayList.
-                val = v;
-                bestActions = new ArrayList<>();
-                bestActions.add(action);
-            } else if (v == val) {
-                // value is equal to other best value.  Add to bestAction ArrayList.
+            if (greedy) {
+                if (v > val) {
+                    // value is best compared to all previous encounters.  Reset bestAction ArrayList.
+                    val = v;
+                    bestActions = new ArrayList<>();
+                    bestActions.add(action);
+                } else if (v == val) {
+                    // value is equal to other best value.  Add to bestAction ArrayList.
+                    bestActions.add(action);
+                }
+            } else {
                 bestActions.add(action);
             }
         }
@@ -137,11 +176,33 @@ public class RLModel {
     private void actuallyUpdateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
         // todo: Change this reference to the stateactiontuples
         int maxTimeStep = stateActionTuples.size();
-        double G = -Math.abs(stateActionTuples.get(maxTimeStep - 1).state.velocity);  // landing velocity
+
+        StateActionTuple lastStateActionTuple = stateActionTuples.get(maxTimeStep - 1);
+        double lowSpeedLandingBonus = 0.0;
+        if (Math.abs(lastStateActionTuple.state.velocity) < 2.0) {
+            lowSpeedLandingBonus = 50;
+            if (Math.abs(lastStateActionTuple.state.velocity) < 1.0)
+                lowSpeedLandingBonus = 100;
+        }
+
+        double altitudeMultiplier = lastStateActionTuple.state.altitude;
+        if (altitudeMultiplier < 1) {
+            altitudeMultiplier = 1;
+        } else {
+            lowSpeedLandingBonus = 0;
+        }
+
+        double landingVelocity = Math.abs(lastStateActionTuple.state.velocity);
+        // this edge case will tell the system it was doing well because the multiplication wasn't penalizing enough
+        if ((landingVelocity < 100) && (altitudeMultiplier != 1)) {
+            landingVelocity = 100;
+        }
+
+        double G = -landingVelocity * altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
         // System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
         double alpha = 0.1;
-        double reward = -0.005;
+        double reward = -0.01;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);
@@ -159,8 +220,12 @@ public class RLModel {
             if (stateActionTuple.state.velocity > 0)
                 positiveVelocityPenalty = stateActionTuple.state.velocity / 10;
             valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
-            G = (discount * G) + reward - thrustTogglePenalty - positiveVelocityPenalty;
+            G = (discount * G) - Math.abs(reward) - Math.abs(thrustTogglePenalty) - Math.abs(positiveVelocityPenalty);
         }
+    }
+
+    public void resetValueFunctionTable() {
+        valueFunctionTable = new HashMap<>();
     }
 
 

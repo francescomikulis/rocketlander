@@ -49,11 +49,16 @@ public class RLEpisodeManager {
 
     public void storeActionValueFunction() {
         System.out.println("CLOSING!!!");
-        mof.storeActionValueFunction(model.getValueFunctionTable());
-        printAll();
+        initializeEpisodeManager();
+        if (model.getValueFunctionTable().size() != 0) {
+            mof.storeActionValueFunction(model.getValueFunctionTable());
+            printAll();
+        }
     }
 
     public void printAll() {
+        initializeEpisodeManager();
+        if (model.getValueFunctionTable() == null) return;
         for (Map.Entry<StateActionTuple, Double> entry: model.getValueFunctionTable().entrySet()) {
             StateActionTuple stateActionTuple = entry.getKey();
             double value = entry.getValue();

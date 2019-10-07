@@ -91,6 +91,8 @@ public abstract class Preferences implements ChangeSource {
 	public static final String LAUNCH_USE_ISA = "LaunchUseISA";
 	public static final String SIMULATION_TIME_STEP = "SimulationTimeStep";
 	public static final String GEODETIC_COMPUTATION = "GeodeticComputationStrategy";
+
+	public static final String LAUNCH_VELOCITY = "LaunchVelocity";
 	
 	
 	private static final AtmosphericModel ISA_ATMOSPHERIC_MODEL = new ExtendedISAModel();
@@ -291,6 +293,18 @@ public abstract class Preferences implements ChangeSource {
 		if (MathUtil.equals(this.getDouble(LAUNCH_ALTITUDE, 0), altitude))
 			return;
 		this.putDouble(LAUNCH_ALTITUDE, altitude);
+		fireChangeEvent();
+	}
+
+	// MODIFIED CODE HERE
+	public double getLaunchVelocity() {
+		return this.getDouble(LAUNCH_VELOCITY, 0);
+	}
+
+	public void setLaunchVelocity(double altitude) {
+		if (MathUtil.equals(this.getDouble(LAUNCH_VELOCITY, 0), altitude))
+			return;
+		this.putDouble(LAUNCH_VELOCITY, altitude);
 		fireChangeEvent();
 	}
 	

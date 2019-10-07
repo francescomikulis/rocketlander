@@ -11,7 +11,7 @@ public class WorldCoordinate {
 	public static final double EROT = 7.2921150e-5;
 	
 
-	private final double lat, lon, alt;
+	private final double lat, lon, alt, vel;
 	
 	/**
 	 * Constructs a new WorldCoordinate
@@ -24,6 +24,15 @@ public class WorldCoordinate {
 		this.lat = MathUtil.clamp(Math.toRadians(lat), -Math.PI / 2, Math.PI / 2);
 		this.lon = MathUtil.reduce180(Math.toRadians(lon));
 		this.alt = alt;
+		this.vel = 0.0;
+	}
+
+	// MODIFIED CODE HERE
+	public WorldCoordinate(double lat, double lon, double alt, double vel) {
+		this.lat = MathUtil.clamp(Math.toRadians(lat), -Math.PI / 2, Math.PI / 2);
+		this.lon = MathUtil.reduce180(Math.toRadians(lon));
+		this.alt = alt;
+		this.vel = vel;
 	}
 	
 	
@@ -32,6 +41,13 @@ public class WorldCoordinate {
 	 */
 	public double getAltitude() {
 		return this.alt;
+	}
+
+	/**
+	 * Returns the altitude.
+	 */
+	public double getVelocity() {
+		return this.vel;
 	}
 	
 	/**
@@ -66,7 +82,7 @@ public class WorldCoordinate {
 
 	@Override
 	public String toString() {
-		return "WorldCoordinate[lat=" + getLatitudeDeg() + ", lon=" + getLongitudeDeg() + ", alt=" + getAltitude() + "]";
+		return "WorldCoordinate[lat=" + getLatitudeDeg() + ", lon=" + getLongitudeDeg() + ", alt=" + getAltitude() + ", vel=" + getVelocity() + "]";
 	}
 	
 	
@@ -77,13 +93,17 @@ public class WorldCoordinate {
 			return false;
 		}
 		WorldCoordinate other = (WorldCoordinate) obj;
-		return (MathUtil.equals(this.lat, other.lat) &&
-				MathUtil.equals(this.lon, other.lon) && MathUtil.equals(this.alt, other.alt));
+		return (
+				MathUtil.equals(this.lat, other.lat) &&
+				MathUtil.equals(this.lon, other.lon) &&
+				MathUtil.equals(this.alt, other.alt) &&
+				MathUtil.equals(this.vel, other.vel)
+		);
 	}
 	
 	@Override
 	public int hashCode() {
-		return ((int) (1000 * (lat + lon + alt)));
+		return ((int) (1000 * (lat + lon + alt + vel)));
 	}
 	
 }
