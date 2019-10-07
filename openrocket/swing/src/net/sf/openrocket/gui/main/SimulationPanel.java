@@ -1,9 +1,7 @@
 package net.sf.openrocket.gui.main;
 
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.FlavorEvent;
@@ -16,25 +14,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.KeyStroke;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.DefaultEditorKit;
 
@@ -96,6 +83,7 @@ public class SimulationPanel extends JPanel {
 
 	private final JButton editButton;
 	private final JButton runButton;
+	private final JButton runMultipleButton;
 	private final JButton deleteButton;
 	private final JButton plotButton;
 	private final JPopupMenu pm;
@@ -179,6 +167,50 @@ public class SimulationPanel extends JPanel {
 			}
 		});
 		this.add(runButton, "gapright para");
+
+		// MODIFIED CODE HERE
+
+		//// Run Multiple simulations
+		runMultipleButton = new JButton(trans.get("simpanel.but.runmultiplesimulations"));
+		//// Re-run the selected simulations
+		runMultipleButton.setToolTipText(trans.get("simpanel.but.ttip.runmultiplesimu"));
+		runMultipleButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] selection = simulationTable.getSelectedRows();
+				if (selection.length == 0) {
+					return;
+				}
+				int multiplier = 1;
+				JPanel panel = new JPanel(new MigLayout());
+				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"With which multipier?", "", panel}, 1);
+				try {
+					if (multiplierFromPanel == null)
+						return;
+					multiplier = Integer.parseInt(multiplierFromPanel);
+				} catch (Exception exc) {
+					return;
+				}
+				Simulation[] sims = new Simulation[selection.length * multiplier];
+				for (int i = 0; i < selection.length; i++) {
+					selection[i] = simulationTable.convertRowIndexToModel(selection[i]);
+					Simulation baseSimulation = document.getSimulation(selection[i]);
+					// first one needs to be kept same object to preserve panel UI update
+					sims[i * multiplier] = baseSimulation;
+					// if multiplier > 1 this duplicates the simulations
+					for (int rep = 1; rep < multiplier; rep++) {
+						sims[i * multiplier + rep] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+					}
+				}
+
+				long t = System.currentTimeMillis();
+				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+						SimulationPanel.this), document, sims).setVisible(true);
+				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+				fireMaintainSelection();
+			}
+		});
+		this.add(runMultipleButton, "gapright para");
 
 		//// Delete simulations button
 		deleteButton = new JButton(trans.get("simpanel.but.deletesimulations"));
