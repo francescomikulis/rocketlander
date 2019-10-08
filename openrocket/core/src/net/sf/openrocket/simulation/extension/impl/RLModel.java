@@ -99,9 +99,9 @@ public class RLModel {
         Action action = stateActionTuple.action;
         if (action.thrust > 0) {
             if (stateActionTuple.state.velocity > 0) {
-                double penalty = THRUST_ON_PENALTY * action.thrust * 100;
+                double penalty = THRUST_ON_PENALTY * action.thrust * 10;
                 if (!valueFunctionTable.containsKey(stateActionTuple))
-                    return THRUST_ON_PENALTY; // penalty
+                    return penalty; // penalty
                 else
                     return valueFunctionTable.get(stateActionTuple) - Math.abs(penalty);
             }
@@ -179,9 +179,9 @@ public class RLModel {
 
         StateActionTuple lastStateActionTuple = stateActionTuples.get(maxTimeStep - 1);
         double lowSpeedLandingBonus = 0.0;
-        if (Math.abs(lastStateActionTuple.state.velocity) < 2.0) {
+        if (Math.abs(lastStateActionTuple.state.velocity) <= 2.0) {
             lowSpeedLandingBonus = 50;
-            if (Math.abs(lastStateActionTuple.state.velocity) < 1.0)
+            if (Math.abs(lastStateActionTuple.state.velocity) <= 1.0)
                 lowSpeedLandingBonus = 100;
         }
 
@@ -197,12 +197,13 @@ public class RLModel {
         if ((landingVelocity < 100) && (altitudeMultiplier != 1)) {
             landingVelocity = 100;
         }
-
-        double G = -landingVelocity * altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
+        //System.out.println(landingVelocity + " " + altitudeMultiplier + " " + lowSpeedLandingBonus);
+        double G = -(landingVelocity * altitudeMultiplier) - altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
+        //System.out.println("G: " + G);
         // System.out.println("Starting with penalty: " + G);
         double discount = 0.999;
-        double alpha = 0.1;
-        double reward = -0.01;
+        double alpha = 0.3;
+        double reward = -0.1;
 
         for (int i = maxTimeStep - 1; i >= 0; i--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(i);
@@ -242,7 +243,7 @@ public class RLModel {
         }
 
         public void setAltitude(double altitude) {
-            this.altitude = round(altitude, 0);
+            this.altitude = round(altitude, 1);
         }
 
         public double getAltitude() {
