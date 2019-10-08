@@ -22,7 +22,7 @@ public class Visualize3DConfigurator extends AbstractSwingSimulationExtensionCon
 	protected JComponent getConfigurationComponent(Visualize3D extension, Simulation simulation, JPanel panel) {
 		panel.add(new JLabel("Real time rate:"));
 		
-		DoubleModel m = new DoubleModel(extension, "TimeRate", UnitGroup.UNITS_DISTANCE, 0);
+		DoubleModel m = new DoubleModel(extension, "TimeRate", UnitGroup.UNITS_TIME_STEP, 0.001, 5);
 		
 		JSpinner spin = new JSpinner(m.getSpinnerModel());
 		spin.setEditor(new SpinnerEditor(spin));

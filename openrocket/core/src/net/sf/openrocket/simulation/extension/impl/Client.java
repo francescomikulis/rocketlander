@@ -10,12 +10,20 @@ public class Client
     private Socket socket            = null;
     private DataInputStream  input   = null;
     private DataOutputStream out     = null;
+    int port;
+    String address;
 
     // constructor to put ip address and port
     public Client(String address, int port) {
+        this.address=address;
+        this.port=port;
+        Connect();
+
+    }
+    public void Connect(){
         // establish a connection
         try {
-            socket = new Socket(address, port);
+            socket = new Socket(this.address, this.port);
             System.out.println("Connected");
 
             // takes input from terminal
@@ -28,6 +36,9 @@ public class Client
         } catch (IOException i) {
             System.out.println(i);
         }
+    }
+    boolean Connected(){
+        return this.socket!=null;
     }
         // string to read message from input
         public String read() {
