@@ -8,10 +8,13 @@ import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 
 import java.io.IOException;
 import java.lang.Double.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Visualize3DListener extends AbstractSimulationListener {
 	Visualize3D visualize3D;
 	Client client;
+	RLEpisodeManager episodeManager;
 	long curTime;
 
 	Visualize3DListener(Visualize3D visualize3D) {
@@ -29,7 +32,12 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		if (!client.Connected()){
 			client.Connect();
 		} else{
-			client.write("test" + status.getSimulationTime());
+			HashMap<String, ArrayList<Double>> data = RLEpisodeManager.initializeEmptyEpisode();
+			RLEpisodeManager.addData(status, data);
+			String single_transmission = data.toString();
+			single_transmission += "*END*";
+			client.write(single_transmission);
+			//client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
 		}
 		waitdt(status);
 		// this required adding the InterruptedException to the AbstractSimulationListener postStep and the SimulationListener postStep. Also in two other firestep places

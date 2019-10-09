@@ -16,6 +16,8 @@ class OurConnection:
         self.BUFFER_SIZE = 1024
         self.initialize_and_bind_server()
         self.conn = None
+        self.end_marker = "*END*"
+        self.total_data = ""
         self.reconnect()
 
     def initialize_and_bind_server(self):
@@ -66,6 +68,25 @@ class OurConnection:
     def __del__(self):
         self.destroy_all()
 
+    def add_data(self, data):
+        self.total_data += data
+
+    def can_process(self):
+        return self.end_marker in self.total_data
+
+    def get_and_clear_buffer(self):
+        # could cause race condition here on the total_data stuff.
+        list_data = list()
+        present = True
+        mark = self.end_marker
+        while present:
+            loc = self.total_data.find(mark)
+            list_data.append(self.total_data[:loc])
+            self.total_data = self.total_data[loc + len(mark):]
+            present = mark in self.total_data
+        return list_data
+
+
 
 OUR_CONNECTION = OurConnection()
 
@@ -76,10 +97,15 @@ class ModalTimerOperator(bpy.types.Operator):
 
     _timer = None
 
-    def updateRocket(self, data):
-        rocket = bpy.data.objects["Rocket"]
-        vec = Vector((0.1, 0.1, 0.1))
-        rocket.location = rocket.location + vec
+    def updateRocket(self):
+        assert OUR_CONNECTION.can_process()
+        data = OUR_CONNECTION.get_and_clear_buffer()
+        print("RECEIVED FULL DATA STREAM(S)")
+        for entry in data:
+            print(entry)
+            rocket = bpy.data.objects["Rocket"]
+            vec = Vector((0.1, 0.1, 0.1))
+            rocket.location = rocket.location + vec
 
     def modal(self, context, event):
         try:
@@ -108,8 +134,9 @@ class ModalTimerOperator(bpy.types.Operator):
                 print("received data:", decoded_data)
 
                 needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(decoded_data)
-                if not needed_to_reconnect:
-                    self.updateRocket(data)
+                OUR_CONNECTION.add_data(decoded_data)
+                if not needed_to_reconnect and OUR_CONNECTION.can_process():
+                    self.updateRocket()
 
             except Exception as e:
                 print("FAILURE EXCEPTION")

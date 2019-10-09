@@ -64,6 +64,14 @@ public class Client {
 
     }
 
+    public void write(byte[] b, int off, int len) {
+        try {
+            out.write(b, off, len);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
     public void killAll() {
         try { out.close(); } catch (Exception e) {}
         //try { socket.shutdownInput(); } catch (Exception e) {}
