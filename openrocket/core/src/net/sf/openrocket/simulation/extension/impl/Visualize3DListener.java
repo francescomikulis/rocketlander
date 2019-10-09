@@ -18,21 +18,28 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		this.visualize3D = visualize3D;
 		this.client = new Client("127.0.0.1",5000);
 	}
+
 	@Override
 	public void startSimulation(SimulationStatus status) throws SimulationException {
-
+		client.Connect();
 	}
+
 	@Override
 	public void postStep(SimulationStatus status) throws SimulationException{
 		if (!client.Connected()){
 			client.Connect();
 		} else{
-			client.write("test");
+			client.write("test" + status.getSimulationTime());
 		}
 		waitdt(status);
 		// this required adding the InterruptedException to the AbstractSimulationListener postStep and the SimulationListener postStep. Also in two other firestep places
 		status.getPreviousTimeStep();
 
+	}
+
+	@Override
+	public void endSimulation(SimulationStatus status, SimulationException exception) {
+		client.killAll();
 	}
 
 	private void waitdt(SimulationStatus status){

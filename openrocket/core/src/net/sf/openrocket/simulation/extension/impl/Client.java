@@ -4,11 +4,9 @@ package net.sf.openrocket.simulation.extension.impl;
 import java.net.*;
 import java.io.*;
 
-public class Client
-{
-    // initialize socket and input output streams
+public class Client {
+    // initialize socket and output streams
     private Socket socket            = null;
-    private DataInputStream  input   = null;
     private DataOutputStream out     = null;
     int port;
     String address;
@@ -26,9 +24,6 @@ public class Client
             socket = new Socket(this.address, this.port);
             System.out.println("Connected");
 
-            // takes input from terminal
-            input = new DataInputStream(System.in);
-
             // sends output to the socket
             out = new DataOutputStream(socket.getOutputStream());
         } catch (UnknownHostException u) {
@@ -37,39 +32,45 @@ public class Client
             System.out.println(i);
         }
     }
-    boolean Connected(){
-        return this.socket!=null;
-    }
-        // string to read message from input
-        public String read() {
-            String line = "";
+    boolean Connected(){ return this.socket != null; }
+    // string to read message from input
+    public String read() {
+        String line = "";
 
-            // keep reading until "Over" is input
-            while (!line.equals("Over")) {
-                try {
-                    line = input.readUTF();
-                    out.writeUTF(line);
-                } catch (IOException i) {
-                    System.out.println(i);
-                }
-            }
-
-            // close the connection
+        // keep reading until "Over" is input
+        while (!line.equals("Over")) {
             try {
-                input.close();
-                out.close();
-                socket.close();
+                out.writeUTF(line);
             } catch (IOException i) {
                 System.out.println(i);
             }
-            return line;
         }
-        public void write(String data) {
-            try {
-                out.writeBytes(data);
-            } catch (IOException e){
-                e.printStackTrace();
-            }
 
+        // close the connection
+        try {
+            out.close();
+            socket.close();
+        } catch (IOException i) {
+            System.out.println(i);
         }
+        return line;
     }
+    public void write(String data) {
+        try {
+            out.writeBytes(data);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void killAll() {
+        try { out.close(); } catch (Exception e) {}
+        //try { socket.shutdownInput(); } catch (Exception e) {}
+        //try { socket.shutdownOutput(); } catch (Exception e) {}
+        try { socket.close(); } catch (Exception e) {}
+        out = null;
+        socket = null;
+    }
+
+}

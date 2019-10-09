@@ -1,14 +1,27 @@
-import socket
 import bpy
+import sys
+import time
+import socket
+from mathutils import Vector
+
+timeout = 1
+
 TCP_IP = '127.0.0.1'
 TCP_PORT = 5000
 BUFFER_SIZE = 1024
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(1)
-s.bind((TCP_IP, TCP_PORT))
-s.listen(1)
-conn, addr = s.accept()
-conn.settimeout(1)
+global_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+global_socket.settimeout(timeout)
+global_socket.bind((TCP_IP, TCP_PORT))
+global_socket.listen()
+global_conn = None
+while True:
+    try:
+        global_conn, addr = global_socket.accept()
+        break
+    except Exception:
+        print("BUSY WAITING FOR CONNECTION INITIALIZATION")
+global_conn.settimeout(timeout)
+time.sleep(0.5)
 
 class ModalTimerOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
@@ -17,21 +30,28 @@ class ModalTimerOperator(bpy.types.Operator):
 
     _timer = None
 
+    def updateRocket(self, data):
+        rocket = bpy.data.objects["Rocket"]
+        vec = Vector((1.0, 0.0, 0.0))
+        rocket.location = rocket.location + vec
+
     def modal(self, context, event):
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
+        if event.type in {'ESC'}:
             self.cancel(context)
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            # change theme color, silly!
-            #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
-            #color.s = 1.0
-            #color.h += 0.01
             try:
-                data = conn.recv(BUFFER_SIZE)
+                data = global_conn.recv(BUFFER_SIZE)
                 print("received data:", data)
-            except Exception:
+                # no data left
+                print(data.decode('utf-8'))
+                if len(data.decode('utf-8')) == 1:
+                    self.cancel(context)
+                self.updateRocket(data)
+            except Exception as e:
                 print("Finish")
+                print(e)
                 self.cancel(context)
                 return {'CANCELLED'}
 
@@ -39,14 +59,17 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, context.window)
+        self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
         wm = context.window_manager
         wm.event_timer_remove(self._timer)
-        conn.close()
+        global_conn.close()
+        global_socket.shutdown(0)
+        global_socket.close()
+
 
 
 def register():
@@ -58,7 +81,10 @@ def unregister():
 
 
 if __name__ == "__main__":
-    register()
-    # test call
-    bpy.ops.wm.modal_timer_operator()
-    s.close()
+    try:
+        register()
+        bpy.ops.wm.modal_timer_operator()
+    except Exception as e:
+        global_conn.close()
+        global_socket.shutdown(0)
+        global_socket.close()
