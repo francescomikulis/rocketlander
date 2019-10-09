@@ -3,6 +3,7 @@ package net.sf.openrocket.simulation.extension.impl;
 // A Java program for a Client
 import java.net.*;
 import java.io.*;
+import java.nio.Buffer;
 
 public class Client {
     // initialize socket and output streams
@@ -23,7 +24,6 @@ public class Client {
         try {
             socket = new Socket(this.address, this.port);
             System.out.println("Connected");
-
             // sends output to the socket
             out = new DataOutputStream(socket.getOutputStream());
         } catch (UnknownHostException u) {
@@ -34,6 +34,7 @@ public class Client {
     }
     boolean Connected(){ return this.socket != null; }
     // string to read message from input
+    /*
     public String read() {
         String line = "";
 
@@ -55,9 +56,20 @@ public class Client {
         }
         return line;
     }
+    */
     public void write(String data) {
         try {
-            out.writeBytes(data);
+            //out.writeBytes(data);
+            //out.writeBytes(data);
+            out.writeChars(data);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+    public void writeDouble(double data) {
+        try {
+            out.writeDouble(data);
         } catch (IOException e){
             e.printStackTrace();
         }

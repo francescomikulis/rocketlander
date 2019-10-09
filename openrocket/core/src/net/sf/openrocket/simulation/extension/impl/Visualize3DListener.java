@@ -8,6 +8,8 @@ import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 
 import java.io.IOException;
 import java.lang.Double.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class Visualize3DListener extends AbstractSimulationListener {
 	Visualize3D visualize3D;
@@ -29,11 +31,29 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		if (!client.Connected()){
 			client.Connect();
 		} else{
-			client.write("test" + status.getSimulationTime());
+			double x = status.getRocketPosition().x;
+			double y = status.getRocketPosition().y;
+			double z = status.getRocketPosition().z;
+			double X = status.getRocketOrientationQuaternion().getX();
+			double Y = status.getRocketOrientationQuaternion().getY();
+			double Z = status.getRocketOrientationQuaternion().getZ();
+			double W = status.getRocketOrientationQuaternion().getW();
+			client.write("x");
+			client.writeDouble(x);
+			client.write("y");
+			client.writeDouble(y);
+			client.write("z");
+			client.writeDouble(z);
+			client.write("X");
+			client.writeDouble(X);
+			client.write("Y");
+			client.writeDouble(Y);
+			client.write("Z");
+			client.writeDouble(Z);
+			client.write("W");
+			client.writeDouble(W);
 		}
 		waitdt(status);
-		// this required adding the InterruptedException to the AbstractSimulationListener postStep and the SimulationListener postStep. Also in two other firestep places
-		status.getPreviousTimeStep();
 
 	}
 

@@ -4,16 +4,14 @@ import time
 import socket
 import traceback
 from mathutils import Vector
+from struct import *
 
-
-# /Applications/Blender.app/Contents/Resources/2.80/python/bin/python3.7m -m pip install ipdb
-# /Applications/Blender.app/Contents/Resources/2.80/python/bin/python3.7m -m pip install ipdb
 
 class OurConnection:
     def __init__(self):
         self.TCP_IP = '127.0.0.1'
         self.TCP_PORT = 5000
-        self.BUFFER_SIZE = 1024
+        self.BUFFER_SIZE =10
         self.initialize_and_bind_server()
         self.conn = None
         self.reconnect()
@@ -77,9 +75,15 @@ class ModalTimerOperator(bpy.types.Operator):
     _timer = None
 
     def updateRocket(self, data):
+        map = {'x':0,'y':1,'z':2,'X':4,'Y':5,'Z':6,'W':0}
+        xyz = unpack('>s',data[1:2])
+        val = unpack('>d',data[2:(2+8)])
         rocket = bpy.data.objects["Rocket"]
-        vec = Vector((0.1, 0.1, 0.1))
-        rocket.location = rocket.location + vec
+        ind = map.get(xyz[0].decode())
+        if (ind<3):
+            rocket.location[ind]=val[0]
+        else:
+            rocket.rotation_quaternion[ind-3]=val[0]
 
     def modal(self, context, event):
         try:
@@ -104,10 +108,9 @@ class ModalTimerOperator(bpy.types.Operator):
 
             try:
                 data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
-                decoded_data = data.decode('utf-8')
-                print("received data:", decoded_data)
-
-                needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(decoded_data)
+                #decoded_data = data.decode('utf-8')
+                #print("received data:", decoded_data)
+                needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(data)
                 if not needed_to_reconnect:
                     self.updateRocket(data)
 
