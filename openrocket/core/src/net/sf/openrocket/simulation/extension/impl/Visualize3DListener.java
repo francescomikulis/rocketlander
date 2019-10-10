@@ -34,9 +34,6 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		} else{
 			HashMap<String, ArrayList<Double>> data = RLEpisodeManager.initializeEmptyEpisode();
 			RLEpisodeManager.addData(status, data);
-			String single_transmission = data.toString();
-			single_transmission += "*END*";
-			// client.write(single_transmission);
 			client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
 		}
 		waitdt(status);

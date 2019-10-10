@@ -19,11 +19,12 @@ class OurConnection:
         self.conn = None
         self.end_marker = b'*'
         self.total_data = bytearray()
+        self.failed_counter = 0
         self.reconnect()
 
     def initialize_and_bind_server(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.settimeout(0.0)
+        self.server.settimeout(0.05)
         self.server.bind((self.TCP_IP, self.TCP_PORT))
         self.server.listen()
 
@@ -47,7 +48,9 @@ class OurConnection:
         try:
             self.conn, addr = self.server.accept()
         except Exception:
-            print("BUSY WAITING FOR CONNECTION INITIALIZATION")
+            self.failed_counter += 1
+            if self.failed_counter % 20 == 0:
+                print("BUSY WAITING FOR CONNECTION INITIALIZATION")
 
     def disconnect(self):
         if not self.is_conn_open():
@@ -81,8 +84,10 @@ class OurConnection:
         present = True
         mark = self.end_marker
         while present:
-            loc = self.total_data.find(mark)
-            list_data.append(self.total_data[:loc])
+            loc = self.total_data.find(mark, 62)
+            trimmed_data = self.total_data[:loc]
+            if len(trimmed_data) == 63:
+                list_data.append(trimmed_data)
             self.total_data = self.total_data[loc + len(mark):]
             present = mark in self.total_data
         return list_data
@@ -118,13 +123,8 @@ class ModalTimerOperator(bpy.types.Operator):
     def updateRocket(self):
         assert OUR_CONNECTION.can_process()
         data = OUR_CONNECTION.get_and_clear_buffer()
-        print("RECEIVED FULL DATA STREAM(S)")
         for entry in data:
-            print(entry)
-            print(OUR_CONNECTION.process_entry(entry))
-            rocket = bpy.data.objects["Rocket"]
-            vec = Vector((0.1, 0.1, 0.1))
-            rocket.location = rocket.location + vec
+            OUR_CONNECTION.process_entry(entry)
 
     def modal(self, context, event):
         try:
@@ -149,11 +149,9 @@ class ModalTimerOperator(bpy.types.Operator):
 
             try:
                 data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
-                decoded_data = data
-                print("received data:", decoded_data)
 
-                needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(decoded_data)
-                OUR_CONNECTION.add_data(decoded_data)
+                needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(data)
+                OUR_CONNECTION.add_data(data)
                 if not needed_to_reconnect and OUR_CONNECTION.can_process():
                     self.updateRocket()
 
@@ -169,7 +167,7 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.05, window=context.window)
+        self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 

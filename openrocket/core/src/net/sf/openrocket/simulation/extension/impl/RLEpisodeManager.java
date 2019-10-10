@@ -241,30 +241,10 @@ public class RLEpisodeManager {
         return 7 * 9 + 1;
     }
 
-    public static byte[] toByteArray(double value) {
-        byte[] bytes = new byte[8];
-        ByteBuffer.wrap(bytes).putDouble(value);
-        return bytes;
-    }
-
-    public static double toDouble(byte[] bytes) {
-        return ByteBuffer.wrap(bytes).getDouble();
-    }
-
     public static byte[] serialize_single_timestep(HashMap<String, ArrayList<Double>> episode) {
-        byte[] bytes = new byte[64];
+        byte[] bytes = new byte[serialize_length()];
         int offset = 0;
         int length = 8;
-
-        new ArrayList<String>() {
-            {
-                //add("thrust");
-                add("position_xyz");
-                //add("velocity_xyz");
-                //add("rotationV_xyz");
-                add("orientation_quat_wxyz");
-            }
-        };
 
         for (Map.Entry<String, ArrayList<Double>> entry: episode.entrySet()) {
             String dataType = entry.getKey();
