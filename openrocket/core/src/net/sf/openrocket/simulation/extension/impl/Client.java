@@ -35,6 +35,10 @@ public class Client {
     public void Connect(){
         // establish a connection
         try {
+            try { socket = new Socket(this.address, this.port); } catch (Exception e) {
+                System.out.println("BAD BAD BAD");
+                System.out.println(e);
+            }
 
             // sends output to the socket
             out = new DataOutputStream(socket.getOutputStream());
@@ -63,7 +67,7 @@ public class Client {
     }
 
     public void close() {
-        //try { out.close(); } catch (Exception e) {}
+        try { out.close(); } catch (Exception e) {}
     }
 
     private void killAll() {
