@@ -50,6 +50,10 @@ public class RLModel {
             possibleThurst.add(prevThrust - CHANGE);
             possibleThurst.add(prevThrust + CHANGE);
         }
+
+        // TODO: remove this
+        //possibleThurst = new ArrayList<>();
+        //possibleThurst.add(0.0);
         return possibleThurst;
     }
 

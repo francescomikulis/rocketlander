@@ -4,11 +4,14 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+import sun.jvm.hotspot.utilities.Bits;
 
 public class RLEpisodeManager {
     private static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;
@@ -92,7 +95,7 @@ public class RLEpisodeManager {
         }
     }
 
-    public HashMap<String, ArrayList<Double>> initializeEmptyEpisode() {
+    public static HashMap<String, ArrayList<Double>> initializeEmptyEpisode() {
         HashMap<String, ArrayList<Double>> episode = new HashMap<>();
         // run through all keys of dataKeys
         for (String key: dataKeys) {
@@ -150,7 +153,7 @@ public class RLEpisodeManager {
 
     /* ADD DATA DYNAMICALLY */
 
-    public void addData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode) {
+    public static void addData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode) {
         for (String key: dataKeys) {
             String type = getKeyField(key);
             ArrayList<String> components = getComponents(key);
@@ -163,13 +166,13 @@ public class RLEpisodeManager {
         }
     }
 
-    private void add1ComponentData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
+    private static void add1ComponentData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
         double data = 0.0;
         if (type.equals("thrust")) data = status.getMotors().iterator().next().getThrust(status.getSimulationTime());
         episode.get(type).add(data);
     }
 
-    private void add3ComponentData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
+    private static void add3ComponentData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
         Coordinate coordinate = new Coordinate(0, 0, 0 );
         if (type.equals("position")) coordinate = status.getRocketPosition();
         if (type.equals("velocity")) coordinate = status.getRocketVelocity();
@@ -179,7 +182,7 @@ public class RLEpisodeManager {
         episode.get(type + "_z").add(coordinate.z);
     }
 
-    public void addQuaternionData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
+    public static void addQuaternionData(SimulationStatus status, HashMap<String, ArrayList<Double>> episode, String type) {
         Quaternion quaternion = new Quaternion(0, 0, 0, 0);
         if (type.equals("orientation_quat")) quaternion = status.getRocketOrientationQuaternion();
         episode.get(type + "_w").add(quaternion.getW());
@@ -188,16 +191,16 @@ public class RLEpisodeManager {
         episode.get(type + "_z").add(quaternion.getZ());
     }
 
-    private boolean isSingleComponent(String key) {
+    private static boolean isSingleComponent(String key) {
         return key.equals(getKeyField(key));
     }
 
-    private String getKeyField(String key) {
+    private static String getKeyField(String key) {
         if (!key.contains("_")) return key;
         return key.substring(0, key.lastIndexOf("_"));
     }
 
-    private ArrayList<String> getComponents(String key) {
+    private static ArrayList<String> getComponents(String key) {
         ArrayList<String> components = new ArrayList<String>();
         if (isSingleComponent(key)) {
             // if no components present (no _); then use the key itself
@@ -226,11 +229,39 @@ public class RLEpisodeManager {
 
     private static final ArrayList<String> dataKeys = new ArrayList<String>() {
         {
-            add("thrust");
-            add( "position_xyz");
-            add("velocity_xyz");
-            add("rotationV_xyz");
+            //add("thrust");
+            add("position_xyz");
+            //add("velocity_xyz");
+            //add("rotationV_xyz");
             add("orientation_quat_wxyz");
         }
     };
+
+    public static int serialize_length() {
+        return 7 * 9 + 1;
+    }
+
+    public static byte[] serialize_single_timestep(HashMap<String, ArrayList<Double>> episode) {
+        byte[] bytes = new byte[serialize_length()];
+        int offset = 0;
+        int length = 8;
+
+        for (Map.Entry<String, ArrayList<Double>> entry: episode.entrySet()) {
+            String dataType = entry.getKey();
+            char encoded_key = dataType.charAt(dataType.length() - 1);
+            if (dataType.contains("orientation")) {
+                encoded_key += (int)('a' - 'A');  // offset
+            }
+
+            bytes[offset] = (byte) encoded_key;
+
+            byte[] doubleByte = new byte[8];
+            ByteBuffer.wrap(doubleByte).putDouble(entry.getValue().get(0));
+            System.arraycopy(doubleByte, 0, bytes, offset + 1, 8);
+
+            offset += 9;
+        }
+        bytes[63] = '*';
+        return bytes;
+    }
 }
