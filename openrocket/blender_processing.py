@@ -3,6 +3,7 @@ import sys
 import time
 import socket
 import traceback
+from struct import unpack
 from mathutils import Vector
 
 
@@ -16,13 +17,13 @@ class OurConnection:
         self.BUFFER_SIZE = 1024
         self.initialize_and_bind_server()
         self.conn = None
-        self.end_marker = "*END*"
-        self.total_data = ""
+        self.end_marker = b'*'
+        self.total_data = bytearray()
         self.reconnect()
 
     def initialize_and_bind_server(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.settimeout(0.05)
+        self.server.settimeout(0.0)
         self.server.bind((self.TCP_IP, self.TCP_PORT))
         self.server.listen()
 
@@ -69,7 +70,7 @@ class OurConnection:
         self.destroy_all()
 
     def add_data(self, data):
-        self.total_data += data
+        self.total_data.extend(data)  # removed add here
 
     def can_process(self):
         return self.end_marker in self.total_data
@@ -85,6 +86,23 @@ class OurConnection:
             self.total_data = self.total_data[loc + len(mark):]
             present = mark in self.total_data
         return list_data
+
+    def process_entry(self, data):
+        map = {'x':0, 'y':1, 'z':2, 'W':3, 'X':4, 'Y':5, 'Z':6}
+        format = ">" + "cd" * 7
+        x, x_val, y, y_val, z, z_val, W, W_val, X, X_val, Y, Y_val, Z, Z_val = unpack(format, data)
+
+        rocket = bpy.data.objects["Rocket"]
+
+        rocket.location[0] = x_val
+        rocket.location[1] = y_val
+        rocket.location[2] = z_val
+
+        rocket.rotation_quaternion[0] = W_val
+        rocket.rotation_quaternion[1] = X_val
+        rocket.rotation_quaternion[2] = Y_val
+        rocket.rotation_quaternion[3] = Z_val
+
 
 
 
@@ -103,6 +121,7 @@ class ModalTimerOperator(bpy.types.Operator):
         print("RECEIVED FULL DATA STREAM(S)")
         for entry in data:
             print(entry)
+            print(OUR_CONNECTION.process_entry(entry))
             rocket = bpy.data.objects["Rocket"]
             vec = Vector((0.1, 0.1, 0.1))
             rocket.location = rocket.location + vec
@@ -130,7 +149,7 @@ class ModalTimerOperator(bpy.types.Operator):
 
             try:
                 data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
-                decoded_data = data.decode('utf-8')
+                decoded_data = data
                 print("received data:", decoded_data)
 
                 needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(decoded_data)
@@ -141,6 +160,8 @@ class ModalTimerOperator(bpy.types.Operator):
             except Exception as e:
                 print("FAILURE EXCEPTION")
                 print(e)
+                import traceback
+                print(traceback.print_exc())
                 return {'PASS_THROUGH'}
 
         return {'PASS_THROUGH'}
@@ -148,7 +169,7 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
+        self._timer = wm.event_timer_add(0.05, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 

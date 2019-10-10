@@ -36,8 +36,8 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			RLEpisodeManager.addData(status, data);
 			String single_transmission = data.toString();
 			single_transmission += "*END*";
-			client.write(single_transmission);
-			//client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
+			// client.write(single_transmission);
+			client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
 		}
 		waitdt(status);
 		// this required adding the InterruptedException to the AbstractSimulationListener postStep and the SimulationListener postStep. Also in two other firestep places

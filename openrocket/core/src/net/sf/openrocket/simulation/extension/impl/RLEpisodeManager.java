@@ -252,22 +252,36 @@ public class RLEpisodeManager {
     }
 
     public static byte[] serialize_single_timestep(HashMap<String, ArrayList<Double>> episode) {
-        int size = 9;  // space
-        int num_entries = 7;
-        byte[] bytes = new byte[num_entries * size + 1];
-        int count = 0;
+        byte[] bytes = new byte[64];
+        int offset = 0;
+        int length = 8;
+
+        new ArrayList<String>() {
+            {
+                //add("thrust");
+                add("position_xyz");
+                //add("velocity_xyz");
+                //add("rotationV_xyz");
+                add("orientation_quat_wxyz");
+            }
+        };
+
         for (Map.Entry<String, ArrayList<Double>> entry: episode.entrySet()) {
-            byte[] bs = toByteArray(entry.getValue().get(0));
-            System.out.println(entry.getKey());
-            System.out.println(entry.getValue());
-            System.out.println(Arrays.toString(bs));
-            System.out.println(bs.length);
-            // NOTE THAT ARRAY COPY IS IN BYTES LENGTH
-            System.arraycopy(bs, 0, bytes, count * size, size - 1);
-            count += 1;
-            bytes[count * size - 1] = ' ';  // spacing
+            String dataType = entry.getKey();
+            char encoded_key = dataType.charAt(dataType.length() - 1);
+            if (dataType.contains("orientation")) {
+                encoded_key += (int)('a' - 'A');  // offset
+            }
+
+            bytes[offset] = (byte) encoded_key;
+
+            byte[] doubleByte = new byte[8];
+            ByteBuffer.wrap(doubleByte).putDouble(entry.getValue().get(0));
+            System.arraycopy(doubleByte, 0, bytes, offset + 1, 8);
+
+            offset += 9;
         }
-        bytes[num_entries * size] = '\0';  // null terminator at the end
+        bytes[63] = '*';
         return bytes;
     }
 }
