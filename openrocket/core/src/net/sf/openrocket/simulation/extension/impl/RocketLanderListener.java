@@ -74,7 +74,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public boolean preStep(SimulationStatus status) throws SimulationException {
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
         return true;
     }
 
