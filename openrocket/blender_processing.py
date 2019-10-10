@@ -3,6 +3,7 @@ import sys
 import time
 import socket
 import traceback
+import selectors
 from struct import unpack
 from mathutils import Vector
 
@@ -14,17 +15,19 @@ class OurConnection:
     def __init__(self):
         self.TCP_IP = '127.0.0.1'
         self.TCP_PORT = 5000
-        self.BUFFER_SIZE = 1024
-        self.initialize_and_bind_server()
+        self.BUFFER_SIZE = 256
         self.conn = None
+        self.failed_counter = 0
+        self.death_penalty = 0
         self.end_marker = b'*'
         self.total_data = bytearray()
-        self.failed_counter = 0
+        self.initialize_and_bind_server()
         self.reconnect()
 
     def initialize_and_bind_server(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.settimeout(0.05)
+        self.server.settimeout(0.0)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((self.TCP_IP, self.TCP_PORT))
         self.server.listen()
 
@@ -37,6 +40,7 @@ class OurConnection:
     def close_server(self):
         if not self.is_server_running():
             print("Closing server ignored.  Bad idea.")
+            return
 
         self.server.close()
 
@@ -47,6 +51,7 @@ class OurConnection:
 
         try:
             self.conn, addr = self.server.accept()
+            self.conn.settimeout(0.0)
         except Exception:
             self.failed_counter += 1
             if self.failed_counter % 20 == 0:
@@ -66,8 +71,8 @@ class OurConnection:
         return False
 
     def destroy_all(self):
-        OUR_CONNECTION.disconnect()
-        OUR_CONNECTION.close_server()
+        self.disconnect()
+        self.close_server()
 
     def __del__(self):
         self.destroy_all()
@@ -84,7 +89,7 @@ class OurConnection:
         present = True
         mark = self.end_marker
         while present:
-            loc = self.total_data.find(mark, 62)
+            loc = self.total_data.find(mark, 63)
             trimmed_data = self.total_data[:loc]
             if len(trimmed_data) == 63:
                 list_data.append(trimmed_data)
@@ -108,6 +113,12 @@ class OurConnection:
         rocket.rotation_quaternion[2] = Y_val
         rocket.rotation_quaternion[3] = Z_val
 
+    def increment_death_penalty(self):
+        self.death_penalty += 1
+
+    def is_destined_to_death(self):
+        return self.death_penalty == 10000
+
 
 
 
@@ -124,16 +135,9 @@ class ModalTimerOperator(bpy.types.Operator):
         assert OUR_CONNECTION.can_process()
         data = OUR_CONNECTION.get_and_clear_buffer()
         for entry in data:
-            OUR_CONNECTION.process_entry(entry)
+           OUR_CONNECTION.process_entry(entry)
 
     def modal(self, context, event):
-        try:
-            return self.real_modal(context, event)
-        except KeyboardInterrupt:
-            self.cancel(context)
-            return {'CANCELLED'}
-
-    def real_modal(self, context, event):
         if event.type in {'ESC'}:
             self.cancel(context)
             return {'CANCELLED'}
@@ -147,27 +151,49 @@ class ModalTimerOperator(bpy.types.Operator):
 
             assert OUR_CONNECTION.is_conn_open() is True
 
-            try:
-                data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
+            num_attempts = 2
+            curr_attempts = 0
+            while (curr_attempts < num_attempts):
+                try:
+                    data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
 
-                needed_to_reconnect = OUR_CONNECTION.disconnect_if_no_data(data)
-                OUR_CONNECTION.add_data(data)
-                if not needed_to_reconnect and OUR_CONNECTION.can_process():
-                    self.updateRocket()
+                    needed_to_kill_because_done = OUR_CONNECTION.disconnect_if_no_data(data)
 
-            except Exception as e:
-                print("FAILURE EXCEPTION")
-                print(e)
-                import traceback
-                print(traceback.print_exc())
-                return {'PASS_THROUGH'}
+                    need_to_recurse = False
+                    if (len(data) == OUR_CONNECTION.BUFFER_SIZE):
+                        data = data[OUR_CONNECTION.BUFFER_SIZE - 64:]
+                        need_to_recurse = True
+
+                    OUR_CONNECTION.add_data(data)
+
+                    if OUR_CONNECTION.can_process():
+                        self.updateRocket()
+
+                    if need_to_recurse:
+                        return self.modal(context, event)
+
+                    if needed_to_kill_because_done:
+                        OUR_CONNECTION.increment_death_penalty()
+
+                    if OUR_CONNECTION.is_destined_to_death():
+                        self.cancel(context)
+                        return {'CANCELLED'}
+
+                    curr_attempts = num_attempts + 1
+
+                except Exception as e:
+                    curr_attempts += 1
+                    #print("FAILURE EXCEPTION")
+                    #print(e)
+                    #print(traceback.print_exc())
+                    pass
 
         return {'PASS_THROUGH'}
 
 
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
+        self._timer = wm.event_timer_add(0.05, window=context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
