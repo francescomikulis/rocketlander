@@ -62,6 +62,13 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	}
 
+	private static int arrayAdd(byte[] bytes, double value, int offset) {
+		byte[] floatBytes = getFloatBytes(value);
+		int length = 4;
+		System.arraycopy(floatBytes, 0, bytes, offset, length);
+		return offset + length;
+	}
+
 	private static byte[] getFloatBytes(double value) {
 		byte[] floatByte = new byte[4];
 		ByteBuffer.wrap(floatByte).putFloat((float) value);
@@ -71,21 +78,13 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	private byte[] serialize_single_timeStep(SimulationStatus status) {
 		byte[] bytes = new byte[28];
 		int offset = 0;
-
-		System.arraycopy(getFloatBytes(status.getRocketPosition().x), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketPosition().y), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketPosition().z), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getW()), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getX()), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getY()), 0, bytes, offset, 4);
-		offset += 4;
-		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getZ()), 0, bytes, offset, 4);
-
+		offset = arrayAdd(bytes, status.getRocketPosition().x, offset);
+		offset = arrayAdd(bytes, status.getRocketPosition().y, offset);
+		offset = arrayAdd(bytes, status.getRocketPosition().z, offset);
+		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getW(), offset);
+		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getX(), offset);
+		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getY(), offset);
+		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getZ(), offset);
 		return bytes;
 	}
 }
