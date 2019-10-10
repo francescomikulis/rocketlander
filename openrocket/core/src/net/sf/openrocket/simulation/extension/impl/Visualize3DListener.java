@@ -62,31 +62,29 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	}
 
-	private static byte[] geDoubleByte(double value) {
-		byte[] doubleByte = new byte[8];
-		ByteBuffer.wrap(doubleByte).putDouble(value);
-		return doubleByte;
+	private static byte[] getFloatBytes(double value) {
+		byte[] floatByte = new byte[4];
+		ByteBuffer.wrap(floatByte).putFloat((float) value);
+		return floatByte;
 	}
 
 	private byte[] serialize_single_timeStep(SimulationStatus status) {
-		byte[] bytes = new byte[58];
+		byte[] bytes = new byte[28];
 		int offset = 0;
 
-		bytes[offset] = (byte) 'p';
-		System.arraycopy(geDoubleByte(status.getRocketPosition().x), 0, bytes, offset + 1, 8);
-		offset += 9;
-		System.arraycopy(geDoubleByte(status.getRocketPosition().y), 0, bytes, offset, 8);
-		offset += 8;
-		System.arraycopy(geDoubleByte(status.getRocketPosition().z), 0, bytes, offset, 8);
-		offset += 8;
-		bytes[offset] = (byte) 'o';
-		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getW()), 0, bytes, offset + 1, 8);
-		offset += 9;
-		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getX()), 0, bytes, offset, 8);
-		offset += 8;
-		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getY()), 0, bytes, offset, 8);
-		offset += 8;
-		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getZ()), 0, bytes, offset, 8);
+		System.arraycopy(getFloatBytes(status.getRocketPosition().x), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketPosition().y), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketPosition().z), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getW()), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getX()), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getY()), 0, bytes, offset, 4);
+		offset += 4;
+		System.arraycopy(getFloatBytes(status.getRocketOrientationQuaternion().getZ()), 0, bytes, offset, 4);
 
 		return bytes;
 	}
