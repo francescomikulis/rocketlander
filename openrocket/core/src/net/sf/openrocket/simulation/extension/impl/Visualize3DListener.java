@@ -8,8 +8,10 @@ import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 
 import java.io.IOException;
 import java.lang.Double.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Visualize3DListener extends AbstractSimulationListener {
 	Visualize3D visualize3D;
@@ -30,9 +32,11 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		if (!client.Connected()){
 			client.Connect();
 		} else{
-			HashMap<String, ArrayList<Double>> data = RLEpisodeManager.initializeEmptyEpisode();
-			RLEpisodeManager.addData(status, data);
-			client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
+			//HashMap<String, ArrayList<Double>> data = RLEpisodeManager.initializeEmptyEpisode();
+			//RLEpisodeManager.addData(status, data);
+			//client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
+			byte[] bytes = serialize_single_timeStep(status);
+			client.write(bytes, 0, bytes.length);
 		}
 		waitdt(status);
 	}
@@ -56,6 +60,35 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			e.printStackTrace();
 		}
 
+	}
+
+	private static byte[] geDoubleByte(double value) {
+		byte[] doubleByte = new byte[8];
+		ByteBuffer.wrap(doubleByte).putDouble(value);
+		return doubleByte;
+	}
+
+	private byte[] serialize_single_timeStep(SimulationStatus status) {
+		byte[] bytes = new byte[58];
+		int offset = 0;
+
+		bytes[offset] = (byte) 'p';
+		System.arraycopy(geDoubleByte(status.getRocketPosition().x), 0, bytes, offset + 1, 8);
+		offset += 9;
+		System.arraycopy(geDoubleByte(status.getRocketPosition().y), 0, bytes, offset, 8);
+		offset += 8;
+		System.arraycopy(geDoubleByte(status.getRocketPosition().z), 0, bytes, offset, 8);
+		offset += 8;
+		bytes[offset] = (byte) 'o';
+		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getW()), 0, bytes, offset + 1, 8);
+		offset += 9;
+		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getX()), 0, bytes, offset, 8);
+		offset += 8;
+		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getY()), 0, bytes, offset, 8);
+		offset += 8;
+		System.arraycopy(geDoubleByte(status.getRocketOrientationQuaternion().getZ()), 0, bytes, offset, 8);
+
+		return bytes;
 	}
 }
 
