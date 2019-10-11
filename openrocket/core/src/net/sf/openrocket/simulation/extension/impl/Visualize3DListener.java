@@ -76,7 +76,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	}
 
 	private byte[] serialize_single_timeStep(SimulationStatus status) {
-		byte[] bytes = new byte[28];
+		byte[] bytes = new byte[40];
 		int offset = 0;
 		offset = arrayAdd(bytes, status.getRocketPosition().x, offset);
 		offset = arrayAdd(bytes, status.getRocketPosition().y, offset);
@@ -85,6 +85,12 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getX(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getY(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getZ(), offset);
+		// thrust may not work
+		double thrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
+		offset = arrayAdd(bytes, thrust, offset);
+		// gimble angles not yet present in the simulationStatus
+		offset = arrayAdd(bytes, 0.0, offset);
+		offset = arrayAdd(bytes, 0.0, offset);
 		return bytes;
 	}
 }

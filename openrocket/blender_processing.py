@@ -18,7 +18,8 @@ class OurConnection:
         self.BUFFER_SIZE = 1024
         self.conn = None
         self.failed_counter = 0
-        self.packet_size = 58
+        self.num_floats = 10
+        self.packet_size = self.num_floats * 4
 
         # replay
         self.last_episode = list()
@@ -103,19 +104,17 @@ class OurConnection:
         return list_data
 
     def process_entry(self, data):
-        format = ">" + "c" + "d" * 3 + "c" + "d" * 4
-        pos, x_val, y_val, z_val, ori, W_val, X_val, Y_val, Z_val = unpack(format, data)
+        format = ">" + "f" * self.num_floats
+        unpacked_data = list(unpack(format, data))
 
         rocket = bpy.data.objects["Rocket"]
+        rocket.location = unpacked_data[0:3]
+        rocket.rotation_quaternion = unpacked_data[3:7]
 
-        rocket.location[0] = x_val
-        rocket.location[1] = y_val
-        rocket.location[2] = z_val
-
-        rocket.rotation_quaternion[0] = W_val
-        rocket.rotation_quaternion[1] = X_val
-        rocket.rotation_quaternion[2] = Y_val
-        rocket.rotation_quaternion[3] = Z_val
+        # TODO: FINISH IMPLEMENTING THESE
+        # thurst = unpacked_data[7]
+        # gimble_x = unpacked_data[8]
+        # gimble_y = unpacked_data[9]
 
 
 
