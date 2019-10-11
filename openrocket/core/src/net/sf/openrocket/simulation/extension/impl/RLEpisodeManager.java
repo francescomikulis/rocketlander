@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
-import sun.jvm.hotspot.utilities.Bits;
 
 public class RLEpisodeManager {
     private static ArrayList<HashMap<String, ArrayList<Double>>> episodesData = null;

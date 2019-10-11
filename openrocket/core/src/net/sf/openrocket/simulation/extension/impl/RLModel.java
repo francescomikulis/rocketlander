@@ -1,12 +1,10 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.SimulationStatus;
+import net.sf.openrocket.util.Quaternion;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -95,9 +93,6 @@ public class RLModel {
         return possibleActions;
     }
 
-    public State generateStateFromStatus(SimulationStatus status) {
-        return new State(status.getRocketPosition().z, status.getRocketVelocity().z);
-    }
 
     private Double valueFunction(StateActionTuple stateActionTuple) {
         Action action = stateActionTuple.action;
@@ -129,7 +124,7 @@ public class RLModel {
         double prevThrust = 0.0;
         if (episodeStateAction.size() != 0)
             prevThrust = episodeStateAction.get(episodeStateAction.size() - 1).action.thrust;
-        State state = generateStateFromStatus(status);
+        State state = new State(status);
         Action action = policy(state, prevThrust, this::valueFunction);
         episodeManager.addStateActionTuple(state, action, episodeStateAction);
         return action;
@@ -240,10 +235,23 @@ public class RLModel {
     public static class State implements Serializable {
         double altitude = 0.0;
         double velocity = 0.0;
+        double angle_x = 0.0;
+        double angle_z = 0.0;
 
-        State(double altitude, double velocity) {
-            setAltitude(altitude);
-            setVelocity(velocity);
+        private State(SimulationStatus status) { 
+            double X = status.getRocketOrientationQuaternion().getX();
+            double Y = status.getRocketOrientationQuaternion().getY();
+            double Z = status.getRocketOrientationQuaternion().getZ();
+            double W = status.getRocketOrientationQuaternion().getW();
+            double xDir =  2 * (X * Z - W * Y);
+            double yDir = 2 * (Y * Z + W * X);
+            double zDir  = 1 - 2 * (X * X + Y * Y);
+            setAltitude(status.getRocketPosition().z);
+            setVelocity(Math.sqrt(Math.pow(status.getRocketRotationVelocity().x,2)
+                    +Math.pow(status.getRocketRotationVelocity().y,2)
+                    +Math.pow(status.getRocketRotationVelocity().z,2)));
+            setAngle_x(Math.acos(xDir)*Math.signum(yDir));
+            setAngle_z(Math.acos(zDir));
         }
 
         public void setAltitude(double altitude) {
@@ -260,6 +268,22 @@ public class RLModel {
 
         public double getVelocity() {
             return altitude;
+        }
+
+        public void setAngle_x(double angle) {
+            this.angle_x = round(angle, 1);
+        }
+
+        public double getAngle_x() {
+            return angle_x;
+        }
+
+        public void setAngle_z(double angle) {
+            this.angle_z = round(angle, 1);
+        }
+
+        public double getAngle_z() {
+            return angle_z;
         }
 
         @Override

@@ -21,12 +21,8 @@ public class Visualize3D extends AbstractSimulationExtension {
 	@Override
 	public String getName() {
 		String name;
-		//if (getRate() != 0.0) {
-		//name = trans.get("SimulationExtension.visualize3d.name.rate");
-		//}
 		name="Visualize3D"+"({rate})";
 		name = L10N.replace(name, "{rate}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getTimeRate()));
-		//name = UnitGroup.UNITS_TIME_STEP.toStringUnit(getRate());
 		return name;
 	}
 
