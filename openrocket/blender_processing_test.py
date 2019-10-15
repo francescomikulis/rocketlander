@@ -1,15 +1,9 @@
-import bpy
 import sys
 import time
 import socket
 import traceback
 import selectors
 from struct import unpack
-from mathutils import Vector
-
-
-# /Applications/Blender.app/Contents/Resources/2.80/python/bin/python3.7m -m pip install ipdb
-# /Applications/Blender.app/Contents/Resources/2.80/python/bin/python3.7m -m pip install ipdb
 
 class OurConnection:
     def __init__(self):
@@ -42,7 +36,7 @@ class OurConnection:
 
     def is_conn_open(self):
         return (self.conn is not None) and (not self.conn._closed)
-
+    
     def close_server(self):
         if not self.is_server_running():
             print("Closing server ignored.  Bad idea.")
@@ -87,7 +81,7 @@ class OurConnection:
 
     def add_data(self, data):
         self.total_data.extend(data)  # removed add here
-
+    
     def can_process(self):
         return len(self.total_data) >= self.packet_size
 
@@ -115,108 +109,18 @@ class OurConnection:
         # thurst = unpacked_data[7]
         # gimble_x = unpacked_data[8]
         # gimble_y = unpacked_data[9]
-
-
-
-
-OUR_CONNECTION = OurConnection()
-
-class ModalTimerOperator(bpy.types.Operator):
-    """Operator which runs its self from a timer"""
-    bl_idname = "wm.modal_timer_operator"
-    bl_label = "Modal Timer Operator"
-
-    _timer = None
-
-    def updateRocket(self):
-        assert OUR_CONNECTION.can_process()
-        data = OUR_CONNECTION.get_and_clear_buffer()
-        for entry in data:
-            OUR_CONNECTION.process_entry(entry)
-
-    def replay_logic(self):
-        if OUR_CONNECTION.is_replaying:
-            receiving_live_data = OUR_CONNECTION.is_server_running() and OUR_CONNECTION.is_conn_open()
-
-            if not receiving_live_data and OUR_CONNECTION.last_episode_progress < len(OUR_CONNECTION.last_episode):
-                OUR_CONNECTION.process_entry(OUR_CONNECTION.last_episode[OUR_CONNECTION.last_episode_progress])
-                OUR_CONNECTION.last_episode_progress += 1
-                return {'PASS_THROUGH'}
-            else:
-                OUR_CONNECTION.is_replaying = False
-        return None
-
-    def get_data_and_process_logic(self):
-        assert OUR_CONNECTION.is_conn_open() is True
-        OUR_CONNECTION.is_replaying = False
-
-        try:
-            data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
-            OUR_CONNECTION.disconnect_if_no_data(data)
-            OUR_CONNECTION.add_data(data)
-
-            if OUR_CONNECTION.can_process():
-                self.updateRocket()
-        except Exception as e:
-            #print("FAILURE EXCEPTION")
-            #print(e)
-            #print(traceback.print_exc())
-            pass
-
-    def modal(self, context, event):
-        if event.type in {'ESC'}:
-            self.cancel(context)
-            return {'CANCELLED'}
-
-        if event.type == 'LEFT_ALT':
-            OUR_CONNECTION.last_episode_progress = 0
-            OUR_CONNECTION.is_replaying = not OUR_CONNECTION.is_replaying
-            print("Modifying replay status")
-            return {'PASS_THROUGH'}
-
-
-        if event.type == 'TIMER':
-            assert OUR_CONNECTION.is_server_running() is True
-
-            if not OUR_CONNECTION.is_conn_open():
-                OUR_CONNECTION.reconnect()
-
-            replaying = self.replay_logic()
-            if replaying is not None:
-                return replaying
-
-            if not OUR_CONNECTION.is_conn_open():
-                return {'PASS_THROUGH'}
-
-            self.get_data_and_process_logic()
-
-        return {'PASS_THROUGH'}
-
-
-    def execute(self, context):
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(0.05, window=context.window)
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def cancel(self, context):
-        OUR_CONNECTION.destroy_all()
-        wm = context.window_manager
-        wm.event_timer_remove(self._timer)
-
-
-
-def register():
-    bpy.utils.register_class(ModalTimerOperator)
-
-
-def unregister():
-    bpy.utils.unregister_class(ModalTimerOperator)
-
-
+    
 if __name__ == "__main__":
-    try:
-        register()
-        bpy.ops.wm.modal_timer_operator()
-    except:
-        OUR_CONNECTION.destroy_all()
+    OUR_CONNECTION = OurConnection()
+    while True:
+        assert OUR_CONNECTION.is_server_running() is True
+        if not OUR_CONNECTION.is_conn_open():
+            OUR_CONNECTION.reconnect()
+        if not OUR_CONNECTION.is_conn_open():
+            time.sleep(0.1)
+            continue
+        data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
+        print(data)
+
+    print("FINISHED!")
+    
