@@ -31,7 +31,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private RocketLander rocketLander;
     private Random random;
     private Boolean forcingFailure = false;
-    private static double variation = 1;
+    private static double variation = 5;
     private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     Action action;
@@ -61,11 +61,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeManager.setupParameters(status);
 
         // set the rocket position at the launch altitude as defined by the extension
-        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
-        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(10, variation)));
+        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
         // set the rocket velocity at the rocket velocity as defined by the extension
-        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-1, variation))));
+        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
         // set the simulation timeStep
         status.getSimulationConditions().setTimeStep(timeStep);
     }
@@ -126,11 +126,37 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         action = model.run_policy(status, episodeStateActions);
 
-        action = new Action(1.0, Math.PI / 4, 0);
+        // TODO: SUPER DUPER BROKEN HERE!!!
+
+        // RLModel.State state = episodeStateActions.get(episodeStateActions.size() - 1).state;
+        double X = status.getRocketOrientationQuaternion().getX();
+        double Y = status.getRocketOrientationQuaternion().getY();
+        double Z = status.getRocketOrientationQuaternion().getZ();
+        double W = status.getRocketOrientationQuaternion().getW();
+        double xDir =  2 * (X * Z - W * Y);
+        double yDir = 2 * (Y * Z + W * X);
+        double zDir  = 1 - 2 * (X * X + Y * Y);
+
+
+        double rocketTheta = RLVectoringFlightConditions.getTheta();
+        double theta = rocketTheta - Math.atan2(yDir, xDir);
+
+        double move_gimbal_to_x = Math.cos(theta) / 3;
+        double move_gimbal_to_y = Math.sin(theta) / 3;
+
+        //Coordinate optimalGimbalCoordinate = new Coordinate(move_gimbal_to_x, move_gimbal_to_y, 0);
+        // optimalGimbalCoordinate = new Rotation2D(-RLVectoringFlightConditions.getTheta()).rotateZ(optimalGimbalCoordinate);
+
+        //optimalGimbalCoordinate = status.getRocketOrientationQuaternion().invRotate(optimalGimbalCoordinate);
+
+
+
+        action = new Action(0.6, move_gimbal_to_x, move_gimbal_to_y);
 
         RLVectoringThrust *= action.thrust;
 
-        return calculateAcceleration(status, action.getGimble_x(), action.getGimble_y());
+        // return calculateAcceleration(status, action.getGimble_x(), action.getGimble_y());
+        return calculateAcceleration(status, move_gimbal_to_x, move_gimbal_to_y);
     }
 
 
@@ -183,7 +209,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
-        Quaternion rotation = status.getRocketOrientationQuaternion();
 
         // Calculate the forces from the aerodynamic coefficients
 
@@ -201,14 +226,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // gimble direction calculations
         double gimbleComponentX = - Math.sin(gimble_x);
         double gimbleComponentY = - Math.sin(gimble_y);
-        double gimbleComponentZ = Math.sqrt(1.0 - Math.pow(gimbleComponentX, 2) + Math.pow(gimbleComponentY, 2));
+        double gimbleComponentZ = - Math.sqrt(1.0 - Math.pow(gimbleComponentX, 2) + Math.pow(gimbleComponentY, 2));
 
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
         double forceX = RLVectoringThrust * gimbleComponentX;
         double forceY = RLVectoringThrust * gimbleComponentY;
-        double forceZ = RLVectoringThrust * gimbleComponentZ;
+        double forceZ = - RLVectoringThrust * gimbleComponentZ;
 
         // final directed force calculations
         double finalForceX = forceX - fN;
@@ -256,8 +281,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
             double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
-            System.out.println(refLength);
-
             double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
             double gimbleMomentX = momentArm * forceX;
             double gimbleMomentY = momentArm * forceY;
@@ -282,10 +305,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
             // Convert to world coordinates
             angularAcceleration = status.getRocketOrientationQuaternion().rotate(angularAcceleration);
 
+            int a = 5;
         }
 
         RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
-        return new AccelerationData(null, null, linearAcceleration, angularAcceleration, rotation);
+        return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
     }
 
 
