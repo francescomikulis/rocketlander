@@ -15,7 +15,7 @@ import net.sf.openrocket.startup.Application;
 import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.util.Coordinate;
 
-import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+import net.sf.openrocket.simulation.extension.impl.RLModel.Action;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 import net.sf.openrocket.util.Rotation2D;
@@ -31,14 +31,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private RocketLander rocketLander;
     private Random random;
     private Boolean forcingFailure = false;
-    private static double variation = 5;
+    private static double variation = 1;
     private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
+    Action action;
 
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
-    private RigidBody RLVectoringStructureMassData = null;
+    private RigidBody RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private double RLVectoringThrust;
 
 
@@ -61,14 +62,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         // set the rocket position at the launch altitude as defined by the extension
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
-        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(10, variation)));
         // set the rocket velocity at the rocket velocity as defined by the extension
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-1, variation))));
         // set the simulation timeStep
         status.getSimulationConditions().setTimeStep(timeStep);
     }
 
+    /*
     @Override
     public double preSimpleThrustCalculation(SimulationStatus status) throws SimulationException {
         // note we would want to also fix the fuel.  This ignores the fuel level of the rocket.
@@ -79,7 +81,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         double MAX_THRUST = 150;
 
-        RLModel.Action action = model.run_policy(status, episodeStateActions);
+        action = model.run_policy(status, episodeStateActions);
         // return Double.NaN;
         //if (status.getSimulationTime() < 0.1) {
         //    return MAX_THRUST;
@@ -87,6 +89,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             return MAX_THRUST * action.thrust;
         //}
     }
+    */
 
 
 
@@ -112,15 +115,22 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public RigidBody postMassCalculation(SimulationStatus status, RigidBody rigidBody) throws SimulationException {
-        RLVectoringStructureMassData = rigidBody;
+        RLVectoringStructureMassData = RLVectoringStructureMassData.add(rigidBody);
         return null;
     }
 
+    // TODO: should be PRE -- BUT then the thrust method will not be called.
     @Override
     public AccelerationData postAccelerationCalculation(SimulationStatus status, AccelerationData acceleration) throws SimulationException {
         if (RLVectoringFlightConditions == null) return null;
 
-        return calculateAcceleration(status);
+        action = model.run_policy(status, episodeStateActions);
+
+        action = new Action(1.0, Math.PI / 4, 0);
+
+        RLVectoringThrust *= action.thrust;
+
+        return calculateAcceleration(status, action.getGimble_x(), action.getGimble_y());
     }
 
 
@@ -169,7 +179,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status) throws SimulationException {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimble_x, Double gimble_y) throws SimulationException {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -188,11 +198,28 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double fN = RLVectoringAerodynamicForces.getCN() * dynP * refArea;
         double fSide = RLVectoringAerodynamicForces.getCside() * dynP * refArea;
 
-        double forceZ = RLVectoringThrust - dragForce;
+        // gimble direction calculations
+        double gimbleComponentX = - Math.sin(gimble_x);
+        double gimbleComponentY = - Math.sin(gimble_y);
+        double gimbleComponentZ = Math.sqrt(1.0 - Math.pow(gimbleComponentX, 2) + Math.pow(gimbleComponentY, 2));
 
-        linearAcceleration = new Coordinate(-fN / RLVectoringStructureMassData.getMass(),
-                -fSide / RLVectoringStructureMassData.getMass(),
-                forceZ / RLVectoringStructureMassData.getMass());
+        assert RLVectoringThrust >= 0;
+
+        // thrust vectoring force
+        double forceX = RLVectoringThrust * gimbleComponentX;
+        double forceY = RLVectoringThrust * gimbleComponentY;
+        double forceZ = RLVectoringThrust * gimbleComponentZ;
+
+        // final directed force calculations
+        double finalForceX = forceX - fN;
+        double finalForceY = forceY - fSide;
+        double finalForceZ = forceZ - dragForce;
+
+
+        linearAcceleration = new Coordinate(finalForceX / RLVectoringStructureMassData.getMass(),
+                finalForceY / RLVectoringStructureMassData.getMass(),
+                finalForceZ / RLVectoringStructureMassData.getMass()
+        );
 
         linearAcceleration = new Rotation2D(RLVectoringFlightConditions.getTheta()).rotateZ(linearAcceleration);
 
@@ -229,9 +256,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
             double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
+            System.out.println(refLength);
+
+            double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
+            double gimbleMomentX = momentArm * forceX;
+            double gimbleMomentY = momentArm * forceY;
+
             // Compute moments
-            double momX = -Cyaw * dynP * refArea * refLength;
-            double momY = Cm * dynP * refArea * refLength;
+            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
+            double momY = Cm * dynP * refArea * refLength + gimbleMomentY;
             double momZ = RLVectoringAerodynamicForces.getCroll() * dynP * refArea * refLength;
 
             // Compute acceleration in rocket coordinates
@@ -251,6 +284,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         }
 
+        RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, rotation);
     }
 
