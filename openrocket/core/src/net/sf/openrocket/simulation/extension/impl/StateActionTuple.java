@@ -31,14 +31,6 @@ public class StateActionTuple implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         StateActionTuple other = (StateActionTuple) obj;
-        if (
-                (this.action.thrust != other.action.thrust) ||
-                (this.action.gimble_x != other.action.gimble_x) ||
-                (this.action.gimble_y != other.action.gimble_y) ||
-                (this.state.altitude != other.state.altitude) ||
-                (this.state.velocity != other.state.velocity)
-        )
-            return false;
-        return true;
+        return this.action.equals(other.action) && this.state.equals(other.state);
     }
 }

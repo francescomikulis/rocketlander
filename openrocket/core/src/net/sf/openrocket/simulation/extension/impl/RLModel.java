@@ -232,6 +232,12 @@ public class RLModel {
 
     // Required data structures.
 
+    private static int group_by_precision (double value, double precision) {
+        return (int) Math.round(value / precision);
+    }
+
+    private static double angle_precision = Math.PI / 16;
+
     public static class State implements Serializable {
         double altitude = 0.0;
         double velocity = 0.0;
@@ -255,7 +261,7 @@ public class RLModel {
         }
 
         public void setAltitude(double altitude) {
-            this.altitude = round(altitude, 1);
+            this.altitude = group_by_precision(altitude, 0.1);
         }
 
         public double getAltitude() {
@@ -263,7 +269,7 @@ public class RLModel {
         }
 
         public void setVelocity(double velocity) {
-            this.velocity = round(velocity, 0);
+            this.velocity = group_by_precision(velocity, 0);
         }
 
         public double getVelocity() {
@@ -271,7 +277,7 @@ public class RLModel {
         }
 
         public void setAngle_x(double angle) {
-            this.angle_x = round(angle, 1);
+            this.angle_x = group_by_precision(angle, angle_precision);
         }
 
         public double getAngle_x() {
@@ -279,7 +285,7 @@ public class RLModel {
         }
 
         public void setAngle_z(double angle) {
-            this.angle_z = round(angle, 1);
+            this.angle_z = group_by_precision(angle, angle_precision);
         }
 
         public double getAngle_z() {
@@ -291,9 +297,34 @@ public class RLModel {
             return "State(" + this.altitude + ", " + this.velocity + ")";
         }
 
+        private int getDoubleHashCode(Double val) {
+            return Double.valueOf(val).hashCode();
+        }
+
         @Override
         public int hashCode() {
-            return Double.valueOf(altitude).hashCode() + Double.valueOf(velocity).hashCode();
+            return getDoubleHashCode(altitude) + getDoubleHashCode(velocity) + getDoubleHashCode(special_area_angle_hashcode());
+        }
+
+        private Double special_area_angle_hashcode() {
+            if (this.angle_z == group_by_precision(Math.PI / 2, angle_precision)) {
+                this.angle_x = 0.0;  // adapt for this special case.  May be needed when comparing equals code.
+                return (double) getDoubleHashCode(this.angle_z);
+            }
+
+            return (double) getDoubleHashCode(this.angle_x) + getDoubleHashCode(this.angle_z);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            State other = (State) obj;
+            return altitude == other.altitude && velocity == other.velocity && angle_x == other.angle_x && angle_z == other.angle_z;
         }
     }
 
@@ -341,11 +372,18 @@ public class RLModel {
         public int hashCode() {
             return Double.valueOf(thrust).hashCode() + Double.valueOf(gimble_x).hashCode() + Double.valueOf(gimble_y).hashCode();
         }
-    }
 
-    private static double round (double value, int precision) {
-        double scale = Math.pow(10, precision);
-        return (double) Math.round(value * scale) / scale;
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Action other = (Action) obj;
+            return thrust == other.thrust && gimble_x == other.gimble_x && gimble_y == other.gimble_y;
+        }
     }
 
     public HashMap<StateActionTuple, Double> getValueFunctionTable() {
@@ -355,6 +393,10 @@ public class RLModel {
     public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
         this.valueFunctionTable = valueFunctionTable;
     }
+
+
+
+
 
     @FunctionalInterface
     interface TriFunction<A,B,C,R> {
