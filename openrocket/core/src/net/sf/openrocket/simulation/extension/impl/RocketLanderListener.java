@@ -60,6 +60,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
 
+        status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
+
         // set the rocket position at the launch altitude as defined by the extension
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
         status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));

@@ -323,7 +323,11 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 	
 	
 	public static int getMaxThreadCount() {
+		/*
+		MODIFIED CODE HERE -- THIS IS OUR VERSION
 		return 2 * Runtime.getRuntime().availableProcessors() + 1;
+		*/
+		return Runtime.getRuntime().availableProcessors();
 	}
 	
 	
