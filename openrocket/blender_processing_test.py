@@ -7,8 +7,8 @@ from struct import unpack
 
 class OurConnection:
     def __init__(self):
-        self.TCP_IP = '127.0.0.1'
-        self.TCP_PORT = 5000
+        self.TCP_IP = '0.0.0.0'
+        self.TCP_PORT = 8080
         self.BUFFER_SIZE = 1024
         self.conn = None
         self.failed_counter = 0
