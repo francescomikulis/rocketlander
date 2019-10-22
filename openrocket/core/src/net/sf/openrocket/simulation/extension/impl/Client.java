@@ -9,7 +9,7 @@ public class Client {
     private Socket socket            = null;
     private DataOutputStream out     = null;
     int port = 8080;  // 5000;
-    String address = "10.22.0.107";  // "127.0.0.1"
+    String address = "10.22.0.101";  // "127.0.0.1"
 
     private static class InstanceHolder {
         private static final Client instance = new Client();

@@ -141,8 +141,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double rocketTheta = RLVectoringFlightConditions.getTheta();
         double theta = rocketTheta - Math.atan2(yDir, xDir);
 
-        double move_gimbal_to_x = Math.cos(theta) / 3;
-        double move_gimbal_to_y = Math.sin(theta) / 3;
+        double move_gimbal_to_x = 0*Math.cos(theta) / 3;
+        double move_gimbal_to_y = 0*Math.sin(theta) / 3;
+        move_gimbal_to_x=Math.PI/8;
 
         //Coordinate optimalGimbalCoordinate = new Coordinate(move_gimbal_to_x, move_gimbal_to_y, 0);
         // optimalGimbalCoordinate = new Rotation2D(-RLVectoringFlightConditions.getTheta()).rotateZ(optimalGimbalCoordinate);
@@ -286,8 +287,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double gimbleMomentY = momentArm * forceY;
 
             // Compute moments
-            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
-            double momY = Cm * dynP * refArea * refLength + gimbleMomentY;
+//            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
+            double r = status.getFlightConfiguration().getReferenceLength()/2;
+            double wx = RLVectoringFlightConditions.getPitchRate();
+            double wy = RLVectoringFlightConditions.getYawRate();
+            double h = status.getConfiguration().getLength();
+            double rho = RLVectoringFlightConditions.getAtmosphericConditions().getDensity();
+            double Tx = - Math.signum(wx)*Math.PI*Math.pow(wx,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCside();
+            double Ty = - Math.signum(wy)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCN();
+            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX+Tx;
+            double momY = Cm * dynP * refArea * refLength + gimbleMomentY+Ty;
             double momZ = RLVectoringAerodynamicForces.getCroll() * dynP * refArea * refLength;
 
             // Compute acceleration in rocket coordinates
