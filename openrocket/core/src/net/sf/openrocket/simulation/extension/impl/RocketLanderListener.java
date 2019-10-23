@@ -291,12 +291,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
             // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
             double r = status.getFlightConfiguration().getReferenceLength()/2;
-            double wx = RLVectoringFlightConditions.getPitchRate();
-            double wy = RLVectoringFlightConditions.getYawRate();
+            double wx = RLVectoringFlightConditions.getRollRate();
+            double wy = RLVectoringFlightConditions.getPitchRate();
             double h = status.getConfiguration().getLength();
             double rho = RLVectoringFlightConditions.getAtmosphericConditions().getDensity();
-            double Tx = - Math.signum(wx)*Math.PI*Math.pow(wx,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCside();
-            double Ty = - Math.signum(wy)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCN();
+            double Tx = - Math.signum(wx)*Math.PI*Math.pow(wx,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCroll();
+            double Ty = - Math.signum(wy)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCaxial();
             double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX+Tx;
             double momY = Cm * dynP * refArea * refLength + gimbleMomentY+Ty;
             double momZ = RLVectoringAerodynamicForces.getCroll() * dynP * refArea * refLength;

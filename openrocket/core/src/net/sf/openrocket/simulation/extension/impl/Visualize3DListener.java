@@ -86,7 +86,10 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getY(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getZ(), offset);
 		// thrust may not work
-		double thrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
+		double thrust = 0.0;
+		try {
+			thrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
+		} catch (Exception e) {}
 		offset = arrayAdd(bytes, thrust, offset);
 		// gimble angles not yet present in the simulationStatus
 		offset = arrayAdd(bytes, 0.0, offset);
