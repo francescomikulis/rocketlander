@@ -8,8 +8,8 @@ public class Client {
     // initialize socket and output streams
     private Socket socket            = null;
     private DataOutputStream out     = null;
-    int port = 8080;  // 5000;
-    String address = "10.22.0.101";  // "127.0.0.1"
+    int port = 5000;  // 8080;
+    String address = "127.0.0.1";  // 10.22.0.101
 
     private static class InstanceHolder {
         private static final Client instance = new Client();

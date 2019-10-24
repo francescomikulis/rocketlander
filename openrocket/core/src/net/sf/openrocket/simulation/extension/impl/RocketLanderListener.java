@@ -138,14 +138,17 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double xDir =  2 * (X * Z - W * Y);
         double yDir = 2 * (Y * Z + W * X);
         double zDir  = 1 - 2 * (X * X + Y * Y);
+        xDir = Math.atan2(2 * Y * W + 2 * X * Z, 1 - 2 * Y * Y - 2 * Z * Z);
+        yDir = Math.atan2(2 * X * W + 2 * Y * Z, 1 - 2 * X * X - 2 * Z * Z);
+        zDir = Math.asin(2 * X * Y + 2 * Z * W);
 
 
         double rocketTheta = RLVectoringFlightConditions.getTheta();
         double theta = rocketTheta - Math.atan2(yDir, xDir);
 
-        double move_gimbal_to_x = 0*Math.cos(theta) / 3;
-        double move_gimbal_to_y = 0*Math.sin(theta) / 3;
-        move_gimbal_to_x=Math.PI/8;
+        double move_gimbal_to_x = Math.cos(xDir) / 20; //Math.cos(theta) / 10;
+        double move_gimbal_to_y = Math.sin(yDir) / 20; // Math.sin(theta) / 10;
+//        move_gimbal_to_x=Math.PI/8;
 
         //Coordinate optimalGimbalCoordinate = new Coordinate(move_gimbal_to_x, move_gimbal_to_y, 0);
         // optimalGimbalCoordinate = new Rotation2D(-RLVectoringFlightConditions.getTheta()).rotateZ(optimalGimbalCoordinate);
@@ -291,14 +294,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
             // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
             double r = status.getFlightConfiguration().getReferenceLength()/2;
-            double wx = RLVectoringFlightConditions.getRollRate();
+            double wx = RLVectoringFlightConditions.getYawRate();
             double wy = RLVectoringFlightConditions.getPitchRate();
+//            double wz = RLVectoringFlightConditions.getYawRate();
             double h = status.getConfiguration().getLength();
             double rho = RLVectoringFlightConditions.getAtmosphericConditions().getDensity();
-            double Tx = - Math.signum(wx)*Math.PI*Math.pow(wx,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCroll();
-            double Ty = - Math.signum(wy)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCaxial();
-            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX+Tx;
-            double momY = Cm * dynP * refArea * refLength + gimbleMomentY+Ty;
+            double Tx = - Math.signum(wx) * Math.PI * Math.pow(wx,2) * Math.pow(r,4) * h * rho * RLVectoringAerodynamicForces.getCyaw();
+            double Ty = - Math.signum(wy) * Math.PI * Math.pow(wy,2) * Math.pow(r,4) * h * rho * RLVectoringAerodynamicForces.getCm();
+//            double Tz = - Math.signum(wz)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCyaw();
+            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX + Tx;
+            double momY = Cm * dynP * refArea * refLength + gimbleMomentY + Ty;
             double momZ = RLVectoringAerodynamicForces.getCroll() * dynP * refArea * refLength;
 
             // Compute acceleration in rocket coordinates
