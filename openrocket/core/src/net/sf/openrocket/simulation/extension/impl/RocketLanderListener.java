@@ -60,14 +60,20 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
 
+        double launchAltitude = rocketLander.getLaunchAltitude();
+        double launchVelocity = rocketLander.getLaunchVelocity();
+
+        launchAltitude = 100;
+        launchVelocity = -40;
+
         // status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
 
         // set the rocket position at the launch altitude as defined by the extension
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
-        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(launchAltitude, variation)));
         // set the rocket velocity at the rocket velocity as defined by the extension
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(launchVelocity, variation))));
         // set the simulation timeStep
         status.getSimulationConditions().setTimeStep(timeStep);
     }
