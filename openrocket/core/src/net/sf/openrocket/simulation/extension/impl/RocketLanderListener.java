@@ -64,7 +64,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double launchVelocity = rocketLander.getLaunchVelocity();
 
         launchAltitude = 100;
-        launchVelocity = -40;
+        launchVelocity = -35;
 
         // status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
 

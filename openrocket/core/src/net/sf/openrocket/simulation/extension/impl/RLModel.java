@@ -253,9 +253,11 @@ public class RLModel {
             double yDir = 2 * (Y * Z + W * X);
             double zDir  = 1 - 2 * (X * X + Y * Y);
             setAltitude(status.getRocketPosition().z);
-            setVelocity(Math.sqrt(Math.pow(status.getRocketRotationVelocity().x,2)
-                    +Math.pow(status.getRocketRotationVelocity().y,2)
-                    +Math.pow(status.getRocketRotationVelocity().z,2)));
+            setVelocity(status.getRocketVelocity().z);
+            double rotationalVelocity = Math.sqrt(Math.pow(status.getRocketRotationVelocity().x,2)
+                    + Math.pow(status.getRocketRotationVelocity().y,2)
+                    + Math.pow(status.getRocketRotationVelocity().z,2)
+            );
             setAngle_x(Math.acos(xDir)*Math.signum(yDir));
             setAngle_z(Math.acos(zDir));
         }
@@ -269,7 +271,7 @@ public class RLModel {
         }
 
         public void setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, 0);
+            this.velocity = group_by_precision(velocity, 1);
         }
 
         public double getVelocity() {
