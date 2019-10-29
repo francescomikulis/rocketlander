@@ -60,7 +60,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
 
-        status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
+        // status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
 
         // set the rocket position at the launch altitude as defined by the extension
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
@@ -72,7 +72,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.getSimulationConditions().setTimeStep(timeStep);
     }
 
-    /*
     @Override
     public double preSimpleThrustCalculation(SimulationStatus status) throws SimulationException {
         // note we would want to also fix the fuel.  This ignores the fuel level of the rocket.
@@ -82,16 +81,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         //return 0.0;
 
         double MAX_THRUST = 150;
-
         action = model.run_policy(status, episodeStateActions);
-        // return Double.NaN;
-        //if (status.getSimulationTime() < 0.1) {
-        //    return MAX_THRUST;
-        //} else {
-            return MAX_THRUST * action.thrust;
-        //}
+        return MAX_THRUST * action.thrust;
     }
-    */
 
 
 
@@ -121,6 +113,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return null;
     }
 
+    /*
     // TODO: should be PRE -- BUT then the thrust method will not be called.
     @Override
     public AccelerationData postAccelerationCalculation(SimulationStatus status, AccelerationData acceleration) throws SimulationException {
@@ -164,6 +157,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // return calculateAcceleration(status, action.getGimble_x(), action.getGimble_y());
         return calculateAcceleration(status, move_gimbal_to_x, move_gimbal_to_y);
     }
+     */
 
 
 
@@ -171,7 +165,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public boolean preStep(SimulationStatus status) throws SimulationException {
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
         return true;
     }
 

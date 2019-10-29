@@ -35,7 +35,7 @@ public class RLEpisodeManager {
     }
 
     public void setupParameters(SimulationStatus status) {
-        Double totalPropellantMass = status.getMotors().iterator().next().getPropellantMass();
+        // Double totalPropellantMass = status.getMotors().iterator().next().getPropellantMass();
 
         // does not actually work.  This only fucks things up.
         // status.getMotors().iterator().next().getConfig().setIgnitionDelay(2);
