@@ -44,6 +44,10 @@ public class ParallelExecutorCache implements ParallelFunctionCache {
 	 * processors available.
 	 */
 	public ParallelExecutorCache() {
+		/*
+		MODIFIED CODE HERE -- THIS IS OUR VERSION
+		return 2 * Runtime.getRuntime().availableProcessors() + 1;
+		*/
 		this(Runtime.getRuntime().availableProcessors());
 	}
 	

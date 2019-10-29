@@ -153,21 +153,20 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				
 				// Add appropriate events
 				if (!currentStatus.isLiftoff()) {
-
 					/*
 					MODIFIED CODE HERE
+					*/
+
+					// Verify air-start | current rocket position not 'very close' to origin
+					boolean usingAirstart = (currentStatus.getRocketPosition().z > 1.0);
+
 					// Avoid sinking into ground before liftoff
-					if (relativePosition.z < 0) {
+					if ((relativePosition.z < 0) && (!usingAirstart)) {
 						currentStatus.setRocketPosition(origin);
 						currentStatus.setRocketVelocity(originVelocity);
 					}
-					// Detect lift-off
-					if (relativePosition.z > 0.02) {
-						addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
-					}
-					*/
+
 					addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
-					
 				} else {
 					
 					// Check ground hit after liftoff
@@ -381,7 +380,6 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				break;
 			}
 
-			/* MODIFIED CODE HERE
 			case BURNOUT: {
 				// If motor burnout occurs without lift-off, abort
 				if (!currentStatus.isLiftoff()) {
@@ -405,7 +403,6 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				currentStatus.getFlightData().addEvent(event);
 				break;
 			}
-			 */
 			
 			case EJECTION_CHARGE: {
 				MotorClusterState motorState = (MotorClusterState) event.getData();

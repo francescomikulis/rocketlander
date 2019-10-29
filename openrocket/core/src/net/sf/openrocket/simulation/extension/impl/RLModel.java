@@ -1,12 +1,10 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.SimulationStatus;
+import net.sf.openrocket.util.Quaternion;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -95,9 +93,6 @@ public class RLModel {
         return possibleActions;
     }
 
-    public State generateStateFromStatus(SimulationStatus status) {
-        return new State(status.getRocketPosition().z, status.getRocketVelocity().z);
-    }
 
     private Double valueFunction(StateActionTuple stateActionTuple) {
         Action action = stateActionTuple.action;
@@ -129,7 +124,7 @@ public class RLModel {
         double prevThrust = 0.0;
         if (episodeStateAction.size() != 0)
             prevThrust = episodeStateAction.get(episodeStateAction.size() - 1).action.thrust;
-        State state = generateStateFromStatus(status);
+        State state = new State(status);
         Action action = policy(state, prevThrust, this::valueFunction);
         episodeManager.addStateActionTuple(state, action, episodeStateAction);
         return action;
@@ -237,17 +232,36 @@ public class RLModel {
 
     // Required data structures.
 
+    private static int group_by_precision (double value, double precision) {
+        return (int) Math.round(value / precision);
+    }
+
+    private static double angle_precision = Math.PI / 16;
+
     public static class State implements Serializable {
         double altitude = 0.0;
         double velocity = 0.0;
+        double angle_x = 0.0;
+        double angle_z = 0.0;
 
-        State(double altitude, double velocity) {
-            setAltitude(altitude);
-            setVelocity(velocity);
+        private State(SimulationStatus status) { 
+            double X = status.getRocketOrientationQuaternion().getX();
+            double Y = status.getRocketOrientationQuaternion().getY();
+            double Z = status.getRocketOrientationQuaternion().getZ();
+            double W = status.getRocketOrientationQuaternion().getW();
+            double xDir =  2 * (X * Z - W * Y);
+            double yDir = 2 * (Y * Z + W * X);
+            double zDir  = 1 - 2 * (X * X + Y * Y);
+            setAltitude(status.getRocketPosition().z);
+            setVelocity(Math.sqrt(Math.pow(status.getRocketRotationVelocity().x,2)
+                    +Math.pow(status.getRocketRotationVelocity().y,2)
+                    +Math.pow(status.getRocketRotationVelocity().z,2)));
+            setAngle_x(Math.acos(xDir)*Math.signum(yDir));
+            setAngle_z(Math.acos(zDir));
         }
 
         public void setAltitude(double altitude) {
-            this.altitude = round(altitude, 1);
+            this.altitude = group_by_precision(altitude, 0.1);
         }
 
         public double getAltitude() {
@@ -255,11 +269,27 @@ public class RLModel {
         }
 
         public void setVelocity(double velocity) {
-            this.velocity = round(velocity, 0);
+            this.velocity = group_by_precision(velocity, 0);
         }
 
         public double getVelocity() {
             return altitude;
+        }
+
+        public void setAngle_x(double angle) {
+            this.angle_x = group_by_precision(angle, angle_precision);
+        }
+
+        public double getAngle_x() {
+            return angle_x;
+        }
+
+        public void setAngle_z(double angle) {
+            this.angle_z = group_by_precision(angle, angle_precision);
+        }
+
+        public double getAngle_z() {
+            return angle_z;
         }
 
         @Override
@@ -267,9 +297,34 @@ public class RLModel {
             return "State(" + this.altitude + ", " + this.velocity + ")";
         }
 
+        private int getDoubleHashCode(Double val) {
+            return Double.valueOf(val).hashCode();
+        }
+
         @Override
         public int hashCode() {
-            return Double.valueOf(altitude).hashCode() + Double.valueOf(velocity).hashCode();
+            return getDoubleHashCode(altitude) + getDoubleHashCode(velocity) + getDoubleHashCode(special_area_angle_hashcode());
+        }
+
+        private Double special_area_angle_hashcode() {
+            if (this.angle_z == group_by_precision(Math.PI / 2, angle_precision)) {
+                this.angle_x = 0.0;  // adapt for this special case.  May be needed when comparing equals code.
+                return (double) getDoubleHashCode(this.angle_z);
+            }
+
+            return (double) getDoubleHashCode(this.angle_x) + getDoubleHashCode(this.angle_z);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            State other = (State) obj;
+            return altitude == other.altitude && velocity == other.velocity && angle_x == other.angle_x && angle_z == other.angle_z;
         }
     }
 
@@ -317,11 +372,18 @@ public class RLModel {
         public int hashCode() {
             return Double.valueOf(thrust).hashCode() + Double.valueOf(gimble_x).hashCode() + Double.valueOf(gimble_y).hashCode();
         }
-    }
 
-    private static double round (double value, int precision) {
-        double scale = Math.pow(10, precision);
-        return (double) Math.round(value * scale) / scale;
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Action other = (Action) obj;
+            return thrust == other.thrust && gimble_x == other.gimble_x && gimble_y == other.gimble_y;
+        }
     }
 
     public HashMap<StateActionTuple, Double> getValueFunctionTable() {
@@ -331,6 +393,10 @@ public class RLModel {
     public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
         this.valueFunctionTable = valueFunctionTable;
     }
+
+
+
+
 
     @FunctionalInterface
     interface TriFunction<A,B,C,R> {

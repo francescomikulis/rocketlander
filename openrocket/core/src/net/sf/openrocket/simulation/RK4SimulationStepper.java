@@ -291,8 +291,13 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		//		}
 		
 		calculateAcceleration(status, dataStore);
-		params.a = dataStore.linearAcceleration;
-		params.ra = dataStore.angularAcceleration;
+		if (dataStore.accelerationData == null) {
+			params.a = dataStore.linearAcceleration;
+			params.ra = dataStore.angularAcceleration;
+		} else {
+			params.a = dataStore.accelerationData.getLinearAccelerationWC();
+			params.ra = dataStore.accelerationData.getRotationalAccelerationWC();
+		}
 		params.v = status.getRocketVelocity();
 		params.rv = status.getRocketRotationVelocity();
 		

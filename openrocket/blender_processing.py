@@ -18,8 +18,8 @@ class OurConnection:
         self.BUFFER_SIZE = 1024
         self.conn = None
         self.failed_counter = 0
-        self.death_penalty = 0
-        self.packet_size = 58
+        self.num_floats = 10
+        self.packet_size = self.num_floats * 4
 
         # replay
         self.last_episode = list()
@@ -97,34 +97,24 @@ class OurConnection:
         present = True
         while present:
             trimmed_data = self.total_data[:self.packet_size]
+            self.last_episode.append(trimmed_data)
             list_data.append(trimmed_data)
             self.total_data = self.total_data[self.packet_size:]
             present = self.can_process()
         return list_data
 
     def process_entry(self, data):
-        self.last_episode.append(data)
-
-        map = {'x':0, 'y':1, 'z':2, 'W':3, 'X':4, 'Y':5, 'Z':6}
-        format = ">" + "c" + "d" * 3 + "c" + "d" * 4
-        pos, x_val, y_val, z_val, ori, W_val, X_val, Y_val, Z_val = unpack(format, data)
+        format = ">" + "f" * self.num_floats
+        unpacked_data = list(unpack(format, data))
 
         rocket = bpy.data.objects["Rocket"]
+        rocket.location = unpacked_data[0:3]
+        rocket.rotation_quaternion = unpacked_data[3:7]
 
-        rocket.location[0] = x_val
-        rocket.location[1] = y_val
-        rocket.location[2] = z_val
-
-        rocket.rotation_quaternion[0] = W_val
-        rocket.rotation_quaternion[1] = X_val
-        rocket.rotation_quaternion[2] = Y_val
-        rocket.rotation_quaternion[3] = Z_val
-
-    def increment_death_penalty(self):
-        self.death_penalty += 1
-
-    def is_destined_to_death(self):
-        return self.death_penalty == 10000
+        # TODO: FINISH IMPLEMENTING THESE
+        # thurst = unpacked_data[7]
+        # gimble_x = unpacked_data[8]
+        # gimble_y = unpacked_data[9]
 
 
 
@@ -134,7 +124,7 @@ OUR_CONNECTION = OurConnection()
 class ModalTimerOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
     bl_idname = "wm.modal_timer_operator"
-    bl_label = "Modal Trrrrrrrrrrrrrrrrrrrrrrimer Operator"
+    bl_label = "Modal Timer Operator"
 
     _timer = None
 
@@ -143,6 +133,35 @@ class ModalTimerOperator(bpy.types.Operator):
         data = OUR_CONNECTION.get_and_clear_buffer()
         for entry in data:
             OUR_CONNECTION.process_entry(entry)
+
+    def replay_logic(self):
+        if OUR_CONNECTION.is_replaying:
+            receiving_live_data = OUR_CONNECTION.is_server_running() and OUR_CONNECTION.is_conn_open()
+
+            if not receiving_live_data and OUR_CONNECTION.last_episode_progress < len(OUR_CONNECTION.last_episode):
+                OUR_CONNECTION.process_entry(OUR_CONNECTION.last_episode[OUR_CONNECTION.last_episode_progress])
+                OUR_CONNECTION.last_episode_progress += 1
+                return {'PASS_THROUGH'}
+            else:
+                OUR_CONNECTION.is_replaying = False
+        return None
+
+    def get_data_and_process_logic(self):
+        assert OUR_CONNECTION.is_conn_open() is True
+        OUR_CONNECTION.is_replaying = False
+
+        try:
+            data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
+            OUR_CONNECTION.disconnect_if_no_data(data)
+            OUR_CONNECTION.add_data(data)
+
+            if OUR_CONNECTION.can_process():
+                self.updateRocket()
+        except Exception as e:
+            #print("FAILURE EXCEPTION")
+            #print(e)
+            #print(traceback.print_exc())
+            pass
 
     def modal(self, context, event):
         if event.type in {'ESC'}:
@@ -162,77 +181,14 @@ class ModalTimerOperator(bpy.types.Operator):
             if not OUR_CONNECTION.is_conn_open():
                 OUR_CONNECTION.reconnect()
 
-            if OUR_CONNECTION.is_replaying:
-                receiving_live_data = OUR_CONNECTION.is_server_running() and OUR_CONNECTION.is_conn_open()
-
-                if not receiving_live_data and OUR_CONNECTION.last_episode_progress < len(OUR_CONNECTION.last_episode):
-                    OUR_CONNECTION.process_entry(OUR_CONNECTION.last_episode[OUR_CONNECTION.last_episode_progress])
-                    OUR_CONNECTION.last_episode_progress += 1
-                    return {'PASS_THROUGH'}
-                else:
-                    OUR_CONNECTION.is_replaying = False
+            replaying = self.replay_logic()
+            if replaying is not None:
+                return replaying
 
             if not OUR_CONNECTION.is_conn_open():
                 return {'PASS_THROUGH'}
 
-            #print("S 2")
-            assert OUR_CONNECTION.is_conn_open() is True
-            #print("E 2")
-
-            OUR_CONNECTION.is_replaying = False
-
-            num_attempts = 1
-            curr_attempts = 0
-            while (curr_attempts < num_attempts):
-                try:
-                    #print("START 1")
-                    data = OUR_CONNECTION.conn.recv(OUR_CONNECTION.BUFFER_SIZE)
-                    #print(len(data))
-                    #print(data)
-                    #print("END 1")
-
-                    #print("START 2")
-                    needed_to_kill_because_done = OUR_CONNECTION.disconnect_if_no_data(data)
-                    #print("END 2")
-
-                    need_to_recurse = False
-                    #if (len(data) == OUR_CONNECTION.BUFFER_SIZE):
-                        #data = data[OUR_CONNECTION.BUFFER_SIZE - 64:]
-                        #need_to_recurse = True
-
-                    #print("START 3")
-                    OUR_CONNECTION.add_data(data)
-                    #print("END 3")
-
-                    #print("START 4")
-                    if OUR_CONNECTION.can_process():
-                        self.updateRocket()
-                    #print("END 4")
-
-                    #print("START 5")
-                    if need_to_recurse:
-                        return self.modal(context, event)
-                    #print("END 5")
-
-                    #print("START 6")
-                    if needed_to_kill_because_done:
-                        OUR_CONNECTION.increment_death_penalty()
-                    #print("END 6")
-
-                    #print("START 7")
-                    if OUR_CONNECTION.is_destined_to_death():
-                        self.cancel(context)
-                        return {'CANCELLED'}
-                    #print("END 7")
-
-                    curr_attempts = num_attempts + 1
-
-                except Exception as e:
-                    curr_attempts += 1
-                    #print("FAILURE EXCEPTION")
-                    #print(e)
-                    #print(traceback.print_exc())
-                    pass
+            self.get_data_and_process_logic()
 
         return {'PASS_THROUGH'}
 
