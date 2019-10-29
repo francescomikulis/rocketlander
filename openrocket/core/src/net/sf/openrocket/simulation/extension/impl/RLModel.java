@@ -328,6 +328,8 @@ public class RLModel {
         }
     }
 
+    private static double gimble_precision = Math.PI / 30;
+
     public static class Action implements Serializable {
         double thrust = 0.0;
         double gimble_x = 0.0;
@@ -335,8 +337,8 @@ public class RLModel {
 
         Action(double thrust, double gimble_x, double gimble_y) {
             this.thrust = thrust;
-            this.gimble_x = gimble_x;
-            this.gimble_y = gimble_y;
+            setGimble_x(gimble_x);
+            setGimble_y(gimble_y);
         }
 
         public void setThrust(double thrust) {
@@ -348,7 +350,7 @@ public class RLModel {
         }
 
         public void setGimble_x(double gimble_x) {
-            this.gimble_x = gimble_x;
+            this.gimble_x = group_by_precision(gimble_x, gimble_precision);
         }
 
         public double getGimble_x() {
@@ -356,7 +358,7 @@ public class RLModel {
         }
 
         public void setGimble_y(double gimble_y) {
-            this.gimble_y = gimble_y;
+            this.gimble_y = group_by_precision(gimble_y, gimble_precision);
         }
 
         public double getGimble_y() {
