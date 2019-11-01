@@ -15,7 +15,8 @@ import net.sf.openrocket.startup.Application;
 import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.util.Coordinate;
 
-import net.sf.openrocket.simulation.extension.impl.RLModel.Action;
+import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 import net.sf.openrocket.util.Rotation2D;
@@ -34,8 +35,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private static double variation = 5;
     private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
-    Action action;
-
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
@@ -53,23 +52,20 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     @Override
-    public void startSimulation(SimulationStatus status) throws SimulationException {
-        //episodeData = episodeManager.initializeEmptyEpisode();
+    public void startSimulation(SimulationStatus status) {
         episodeManager.initializeEpisodeManager();
         model.initializeModel();
         episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
-
-        status.getMotors().iterator().next().getConfig().setIgnitionDelay(5);
+        status.getSimulationConditions().setTimeStep(timeStep);
 
         // set the rocket position at the launch altitude as defined by the extension
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
         status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
+
         // set the rocket velocity at the rocket velocity as defined by the extension
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
-        // set the simulation timeStep
-        status.getSimulationConditions().setTimeStep(timeStep);
     }
 
     /*
@@ -98,35 +94,40 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
     @Override
-    public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) throws SimulationException {
+    public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) {
         this.RLVectoringFlightConditions = flightConditions;
         return null;
     }
 
     @Override
-    public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces) throws SimulationException {
+    public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces) {
         this.RLVectoringAerodynamicForces = forces;
         return null;
     }
 
     @Override
-    public double postSimpleThrustCalculation(SimulationStatus status, double thrust) throws SimulationException {
+    public double postSimpleThrustCalculation(SimulationStatus status, double thrust) {
         RLVectoringThrust = thrust;
         return Double.NaN;
     }
 
     @Override
-    public RigidBody postMassCalculation(SimulationStatus status, RigidBody rigidBody) throws SimulationException {
+    public RigidBody postMassCalculation(SimulationStatus status, RigidBody rigidBody) {
         RLVectoringStructureMassData = RLVectoringStructureMassData.add(rigidBody);
         return null;
     }
 
     // TODO: should be PRE -- BUT then the thrust method will not be called.
     @Override
-    public AccelerationData postAccelerationCalculation(SimulationStatus status, AccelerationData acceleration) throws SimulationException {
+    public AccelerationData postAccelerationCalculation(SimulationStatus status, AccelerationData acceleration) {
         if (RLVectoringFlightConditions == null) return null;
 
-        action = model.run_policy(status, episodeStateActions);
+        Action action = model.generateAction(status, episodeStateActions);
+
+
+
+
+
 
         // TODO: SUPER DUPER BROKEN HERE!!!
 
@@ -157,7 +158,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-        action = new Action(0.6, move_gimbal_to_x, move_gimbal_to_y);
+        // action = new Action(0.6, move_gimbal_to_x, move_gimbal_to_y);
 
         RLVectoringThrust *= action.thrust;
 
@@ -170,29 +171,24 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
     @Override
-    public boolean preStep(SimulationStatus status) throws SimulationException {
+    public boolean preStep(SimulationStatus status) {
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
         return true;
     }
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        Coordinate terminalCoordinate = new Coordinate(0,0,1);
-        Coordinate terminalVelocity = new Coordinate(0,0,-100);
+        Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 
         if ((status.getRocketPosition().z > 200.0) || (status.getSimulationTime() > 15.0)) {
             status.setRocketVelocity(terminalVelocity);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
-
-        // ignore adding the data for now
-        // episodeManager.addData(status, episodeData);
     }
+
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        // episodeManager.addEpisode(episodeData);
         model.updateStateActionValueFuncton(episodeStateActions);
-        //System.out.println("Numbers of iterations: " + episodeStateActions.size() + " " + episodeStateActions.get(episodeStateActions.size()-1).state.velocity);
     }
 
 
@@ -211,7 +207,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimble_x, Double gimble_y) throws SimulationException {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimble_x, Double gimble_y) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
