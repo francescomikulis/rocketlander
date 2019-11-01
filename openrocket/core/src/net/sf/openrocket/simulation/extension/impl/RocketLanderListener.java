@@ -39,6 +39,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
     private RigidBody RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
+    private RigidBody OLD_RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private double RLVectoringThrust;
 
 
@@ -95,8 +96,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) {
-        this.RLVectoringFlightConditions = flightConditions;
-        return null;
+        if (flightConditions != null) {
+            this.RLVectoringFlightConditions = flightConditions;
+        }
+        return flightConditions;
     }
 
     @Override
@@ -119,51 +122,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     // TODO: should be PRE -- BUT then the thrust method will not be called.
     @Override
-    public AccelerationData postAccelerationCalculation(SimulationStatus status, AccelerationData acceleration) {
+    public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null) return null;
 
         Action action = model.generateAction(status, episodeStateActions);
-
-
-
-
-
-
-        // TODO: SUPER DUPER BROKEN HERE!!!
-
-        // RLModel.State state = episodeStateActions.get(episodeStateActions.size() - 1).state;
-        double X = status.getRocketOrientationQuaternion().getX();
-        double Y = status.getRocketOrientationQuaternion().getY();
-        double Z = status.getRocketOrientationQuaternion().getZ();
-        double W = status.getRocketOrientationQuaternion().getW();
-        double xDir =  2 * (X * Z - W * Y);
-        double yDir = 2 * (Y * Z + W * X);
-        double zDir  = 1 - 2 * (X * X + Y * Y);
-        xDir = Math.atan2(2 * Y * W + 2 * X * Z, 1 - 2 * Y * Y - 2 * Z * Z);
-        yDir = Math.atan2(2 * X * W + 2 * Y * Z, 1 - 2 * X * X - 2 * Z * Z);
-        zDir = Math.asin(2 * X * Y + 2 * Z * W);
-
-
-        double rocketTheta = RLVectoringFlightConditions.getTheta();
-        double theta = rocketTheta - Math.atan2(yDir, xDir);
-
-        double move_gimbal_to_x = Math.cos(xDir) / 20; //Math.cos(theta) / 10;
-        double move_gimbal_to_y = Math.sin(yDir) / 20; // Math.sin(theta) / 10;
-//        move_gimbal_to_x=Math.PI/8;
-
-        //Coordinate optimalGimbalCoordinate = new Coordinate(move_gimbal_to_x, move_gimbal_to_y, 0);
-        // optimalGimbalCoordinate = new Rotation2D(-RLVectoringFlightConditions.getTheta()).rotateZ(optimalGimbalCoordinate);
-
-        //optimalGimbalCoordinate = status.getRocketOrientationQuaternion().invRotate(optimalGimbalCoordinate);
-
-
-
-        // action = new Action(0.6, move_gimbal_to_x, move_gimbal_to_y);
-
+        //action = new Action(0.6, move_gimbal_to_y, move_gimbal_to_z);
+        action.thrust = 0.6;
         RLVectoringThrust *= action.thrust;
-
-        // return calculateAcceleration(status, action.getGimble_x(), action.getGimble_y());
-        return calculateAcceleration(status, move_gimbal_to_x, move_gimbal_to_y);
+        return calculateAcceleration(status, action.gimbleY, action.gimbleZ);
     }
 
 
@@ -202,18 +168,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-
-
-
-
-
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimble_x, Double gimble_y) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbleY, Double gimbleZ) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
 
         // Calculate the forces from the aerodynamic coefficients
-
         double dynP = (0.5 * RLVectoringFlightConditions.getAtmosphericConditions().getDensity() *
                 MathUtil.pow2(RLVectoringFlightConditions.getVelocity()));
         double refArea = RLVectoringFlightConditions.getRefArea();
@@ -225,23 +185,37 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double fN = RLVectoringAerodynamicForces.getCN() * dynP * refArea;
         double fSide = RLVectoringAerodynamicForces.getCside() * dynP * refArea;
 
+        // custom action here if wanted  TODO: NEED TO MOVE THE FOLLOWING LINES
+        double x = episodeStateActions.get(episodeStateActions.size() - 1).state.angleX;
+        double z = episodeStateActions.get(episodeStateActions.size() - 1).state.angleZ;
+        double theta = (x - Math.PI) % (2 * Math.PI);
+        double move_gimbal_to_x = Math.sin(z) * Math.cos(theta) / 10;
+        double move_gimbal_to_y = Math.sin(z) * Math.sin(theta) / 10;
+
+
         // gimble direction calculations
-        double gimbleComponentX = - Math.sin(gimble_x);
-        double gimbleComponentY = - Math.sin(gimble_y);
+        double gimbleComponentX = move_gimbal_to_x;
+        double gimbleComponentY = move_gimbal_to_y;
         double gimbleComponentZ = - Math.sqrt(1.0 - Math.pow(gimbleComponentX, 2) + Math.pow(gimbleComponentY, 2));
 
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double forceX = RLVectoringThrust * gimbleComponentX;
-        double forceY = RLVectoringThrust * gimbleComponentY;
-        double forceZ = - RLVectoringThrust * gimbleComponentZ;
+        double forceX = - RLVectoringThrust * gimbleComponentX;
+        double forceY = - RLVectoringThrust * gimbleComponentY;
+        double forceZ = - RLVectoringThrust * gimbleComponentZ;  // note double negative
 
         // final directed force calculations
         double finalForceX = forceX - fN;
         double finalForceY = forceY - fSide;
         double finalForceZ = forceZ - dragForce;
 
+        if (RLVectoringStructureMassData.getMass() == 0) {
+            RLVectoringStructureMassData = OLD_RLVectoringStructureMassData;
+        }
+        if (RLVectoringStructureMassData.getMass() == 0) {
+            new AccelerationData(null, null, new Coordinate(0, 0, 0), new Coordinate(0, 0, 0), status.getRocketOrientationQuaternion());
+        }
 
         linearAcceleration = new Coordinate(finalForceX / RLVectoringStructureMassData.getMass(),
                 finalForceY / RLVectoringStructureMassData.getMass(),
@@ -284,8 +258,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
             double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
-            double gimbleMomentX = momentArm * forceX;
-            double gimbleMomentY = momentArm * forceY;
+            double gimbleMomentX = momentArm * forceY;
+            double gimbleMomentY = - momentArm * forceX;
 
             // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX;
@@ -320,6 +294,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             int a = 5;
         }
 
+        OLD_RLVectoringStructureMassData = RLVectoringStructureMassData;
         RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
     }

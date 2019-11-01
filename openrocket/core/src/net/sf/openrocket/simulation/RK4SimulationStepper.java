@@ -146,6 +146,8 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		dt[0] = MathUtil.max(status.getSimulationConditions().getTimeStep(),MIN_TIME_STEP);
 		dt[1] = maxTimeStep;
 		dt[2] = status.getSimulationConditions().getMaximumAngleStep() / store.lateralPitchRate;
+		/* MODIFIED CODE HERE */
+		if (store.flightConditions == null) calculateFlightConditions(status, store);
 		dt[3] = Math.abs(MAX_ROLL_STEP_ANGLE / store.flightConditions.getRollRate());
 		dt[4] = Math.abs(MAX_ROLL_RATE_CHANGE / store.rollAcceleration);
 		dt[5] = Math.abs(MAX_PITCH_CHANGE / store.lateralPitchAcceleration);
@@ -289,15 +291,13 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		//		if (dataStore == null) {
 		//			dataStore = new DataStore();
 		//		}
+
+		dataStore.coriolisAcceleration = status.getSimulationConditions().getGeodeticComputation()
+				.getCoriolisAcceleration(status.getRocketWorldPosition(), status.getRocketVelocity());
 		
 		calculateAcceleration(status, dataStore);
-		if (dataStore.accelerationData == null) {
-			params.a = dataStore.linearAcceleration;
-			params.ra = dataStore.angularAcceleration;
-		} else {
-			params.a = dataStore.accelerationData.getLinearAccelerationWC();
-			params.ra = dataStore.accelerationData.getRotationalAccelerationWC();
-		}
+		params.a = dataStore.accelerationData.getLinearAccelerationWC();
+		params.ra = dataStore.accelerationData.getRotationalAccelerationWC();
 		params.v = status.getRocketVelocity();
 		params.rv = status.getRocketRotationVelocity();
 		
@@ -407,8 +407,9 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 			store.angularAcceleration = status.getRocketOrientationQuaternion().rotate(store.angularAcceleration);
 			
 		}
-		
+
 		// Call post-listeners
+		store.accelerationData = new AccelerationData(null, null, store.linearAcceleration, store.angularAcceleration, status.getRocketOrientationQuaternion());
 		store.accelerationData = SimulationListenerHelper.firePostAccelerationCalculation(status, store.accelerationData);
 	}
 	

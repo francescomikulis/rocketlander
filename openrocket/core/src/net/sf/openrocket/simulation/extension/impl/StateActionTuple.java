@@ -2,6 +2,8 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+import net.sf.openrocket.util.Coordinate;
+import net.sf.openrocket.util.Quaternion;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -38,8 +40,8 @@ public class StateActionTuple implements Serializable {
 
     // Required data structures.
 
-    private static double angle_precision = Math.PI / 36;
-    private static double gimble_precision = Math.PI / 36;
+    private static double angle_precision = Math.PI / 360;
+    private static double gimble_precision = Math.PI / 360;
 
     public static class State implements Serializable {
         double altitude = 0.0;
@@ -51,17 +53,14 @@ public class StateActionTuple implements Serializable {
         double gimbleZ = 0.0;
 
         public State(SimulationStatus status) {
-            double X = status.getRocketOrientationQuaternion().getX();
-            double Y = status.getRocketOrientationQuaternion().getY();
-            double Z = status.getRocketOrientationQuaternion().getZ();
-            double W = status.getRocketOrientationQuaternion().getW();
-            double xDir =  2 * (X * Z - W * Y);
-            double yDir = 2 * (Y * Z + W * X);
-            double zDir  = 1 - 2 * (X * X + Y * Y);
+            Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
+            double xDir = rocketDirection.x;
+            double yDir = rocketDirection.y;
+            double zDir = rocketDirection.z;
             setAltitude(status.getRocketPosition().z);
             setVelocity(status.getRocketVelocity().z);
-            //setAngleX(Math.acos(xDir) * Math.signum(yDir));
-            //setAngleZ(Math.acos(zDir));
+            setAngleX(Math.acos(xDir) * Math.signum(yDir));
+            setAngleZ(Math.acos(zDir));
 
             /*
             setAngularVelocity(Math.sqrt(
@@ -178,6 +177,19 @@ public class StateActionTuple implements Serializable {
 
     private static int group_by_precision (double value, double precision) {
         return (int) Math.round(value / precision);
+    }
+
+    public static Quaternion getConjugateQuaternion(Quaternion quaternion) {
+        return new Quaternion(quaternion.getW(), -quaternion.getX(), -quaternion.getY(), -quaternion.getZ());
+    }
+
+    private static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {
+        Quaternion q = status.getRocketOrientationQuaternion();
+        Quaternion p = new Quaternion(0, 0, 0, 1);  // z direction - un-rotated
+        Quaternion q_conjugate = getConjugateQuaternion(q);
+        Quaternion p_result = q.multiplyRight(p).multiplyRight(q_conjugate);
+        // NOTE: This code has been verified extensively.
+        return new Coordinate(p_result.getX(), p_result.getY(), p_result.getZ());
     }
 
 
