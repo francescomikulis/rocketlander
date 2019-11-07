@@ -24,6 +24,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	@Override
 	public void startSimulation(SimulationStatus status) throws SimulationException {
+		client.setConnectionString(visualize3D.getConnectionString());
 		client.Connect();
 	}
 

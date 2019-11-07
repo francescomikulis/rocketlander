@@ -12,7 +12,6 @@ import net.sf.openrocket.util.Quaternion;
 import net.sf.openrocket.simulation.SimulationOptions.*;
 
 public class Visualize3D extends AbstractSimulationExtension {
-	
 	@Override
 	public void initialize(SimulationConditions conditions) throws SimulationException {
 		conditions.getSimulationListenerList().add(new Visualize3DListener(this));
@@ -27,11 +26,19 @@ public class Visualize3D extends AbstractSimulationExtension {
 	}
 
 	public double getTimeRate() {
-		return config.getDouble("rate", 0.0);
+		return config.getDouble("rate", 1.0);
+	}
+
+	public String getConnectionString() {
+		return config.getString("connectionString", "127.0.0.0:5000");
 	}
 
 	public void setTimeRate(double rate) {
 		config.put("rate", rate);
+		fireChangeEvent();
+	}
+	public void setConnectionString(String connectionString) {
+		config.put("connectionString", connectionString);
 		fireChangeEvent();
 	}
 }
