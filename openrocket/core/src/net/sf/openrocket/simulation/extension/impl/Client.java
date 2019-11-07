@@ -8,30 +8,34 @@ public class Client {
     // initialize socket and output streams
     private Socket socket            = null;
     private DataOutputStream out     = null;
-    int port = 8080;  // 5000;
-    String address = "10.22.0.180";// 127.0.0.1  // 10.22.0.252
+    private String connectionString = "127.0.0.1:5000"; // 10.22.0.180:8080
+    private int port;
+    private String address;
 
     private static class InstanceHolder {
+        public String s;
+        private InstanceHolder(String str){
+            s=str;
+        }
         private static final Client instance = new Client();
     }
 
-    public static Client getInstance() {
+    public static Client getInstance(){
         return InstanceHolder.instance;
+
     }
 
     private Client(){
-        try { socket = new Socket(this.address, this.port); } catch (Exception e) {}
-        System.out.println("Connected");
+        setConnectionString(this.connectionString);
     }
 
-    // constructor to put ip address and port
-    private Client(String address, int port) {
-        this.address=address;
-        this.port=port;
-        try { socket = new Socket(this.address, this.port); } catch (Exception e) {}
-        System.out.println("Connected");
-
+    public void setConnectionString(String connectionString) {
+        this.connectionString = connectionString;
+        String[] parts = connectionString.split(":");
+        this.address = parts[0];
+        this.port = Integer.parseInt(parts[1]);
     }
+
     public void Connect(){
         // establish a connection
         try {
