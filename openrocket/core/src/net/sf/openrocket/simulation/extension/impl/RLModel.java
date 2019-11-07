@@ -9,13 +9,21 @@ import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
     private HashMap<StateActionTuple, Double> valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
-    private static double MOTOR_INCREMENT_PER_TIMESTEP = 0.25;
+
+    private static double MIN_MOTOR_INCREMENT_PER_TIMESTEP = 0.05;
+    private static double MAX_MOTOR_INCREMENT_PER_TIMESTEP = 0.25;
+
+    private static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
+    private static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 18;
+    private static double MAX_ANGLE = MAX_ANGLE_INCREMENT_PER_TIMESTEP * 4;
+
     private static double THRUST_TOGGLE_PENALTY = 0.1;
     private static double THRUST_ON_PENALTY = -5;
 
@@ -36,23 +44,19 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
-    private ArrayList<Double> generatePossibleThrust(double prevThrust) {
-        ArrayList<Double> possibleThurst = new ArrayList<>();
-        double CHANGE = MOTOR_INCREMENT_PER_TIMESTEP;
-        possibleThurst.add(prevThrust);
-        if (prevThrust <= CHANGE) {
-            possibleThurst.add(CHANGE);
-        } else if (prevThrust >= 1.0 - CHANGE) {
-            possibleThurst.add(1.0 - CHANGE);
-        } else {
-            possibleThurst.add(prevThrust - CHANGE);
-            possibleThurst.add(prevThrust + CHANGE);
+    private ArrayList<Double> generatePossibleActionValues(double value, double[] actionIncrements, double MIN_VAL, double MAX_VAL) {
+        ArrayList<Double> possibleActionValues = new ArrayList<>();
+
+        int number_of_loops = (int) (2 * actionIncrements[1] / actionIncrements[0]) + 1;
+        double smallest_increment = actionIncrements[0];
+        double starting_low_value =  value - actionIncrements[1];
+        for (int i = 0; i < number_of_loops; i++) {
+            double possibleValue = starting_low_value + i * smallest_increment;
+            if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL))
+                possibleActionValues.add(possibleValue);
         }
 
-        // TODO: remove this
-        //possibleThurst = new ArrayList<>();
-        //possibleThurst.add(0.0);
-        return possibleThurst;
+        return possibleActionValues;
     }
 
     /***
@@ -61,33 +65,22 @@ public class RLModel {
     public ArrayList<Action> generatePossibleActions(State state, double prevThurst) {
         ArrayList<Action> possibleActions = new ArrayList<>();
 
-        /*
-        ArrayList<Double> possibleThrustValues = generatePossibleThrust(prevThurst);
-        for (Double possibleThrust: possibleThrustValues)
-            possibleActions.add(new Action(possibleThrust, 0, 0));
-        */
+        double [] thrustChanges = new double[] {
+                MIN_MOTOR_INCREMENT_PER_TIMESTEP, MAX_MOTOR_INCREMENT_PER_TIMESTEP
+        };
+        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(prevThurst, thrustChanges, 0.0, 1.0);
 
-        if (state.altitude > 1.0) {
-            possibleActions.add(new Action(prevThurst, 0, 0));
-            if (prevThurst == 0.0) {
-                possibleActions.add(new Action(0.25, 0, 0));
-            } else if (prevThurst == 0.25) {
-                possibleActions.add(new Action(0.0, 0, 0));
-                possibleActions.add(new Action(0.5, 0, 0));
-            } else if (prevThurst == 0.5) {
-                possibleActions.add(new Action(0.25, 0, 0));
-                possibleActions.add(new Action(0.75, 0, 0));
-            } else if (prevThurst == 0.75) {
-                possibleActions.add(new Action(0.5, 0, 0));
-                possibleActions.add(new Action(1.0, 0, 0));
-            } else if (prevThurst == 1.00) {
-                possibleActions.add(new Action(0.75, 0, 0));
+        double [] gimbleChanges = new double[] {
+                MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP
+        };
+        ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleY), gimbleChanges, - MAX_ANGLE, MAX_ANGLE);
+        ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleZ), gimbleChanges, - MAX_ANGLE, MAX_ANGLE);
+        for (Double possibleThrust: possibleThrustValues) {
+            for (Double possibleGimbleY: possibleGimbleYValues) {
+                for (Double possibleGimbleZ: possibleGimbleZValues) {
+                    possibleActions.add(new Action(possibleThrust, possibleGimbleY, possibleGimbleZ));
+                }
             }
-        } else {
-            possibleActions.add(new Action(0.0, 0, 0));
-            possibleActions.add(new Action(0.25, 0, 0));
-            possibleActions.add(new Action(0.5, 0, 0));
-            possibleActions.add(new Action(0.75, 0, 0));
         }
 
         return possibleActions;
@@ -120,13 +113,23 @@ public class RLModel {
         return valueFunction(stateActionTuple);
     }
 
-    public Action run_policy(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
-        double prevThrust = 0.0;
-        if (episodeStateAction.size() != 0)
-            prevThrust = episodeStateAction.get(episodeStateAction.size() - 1).action.thrust;
-        State state = new State(status);
+
+    private Action run_policy(State state, double prevThrust) {
         Action action = policy(state, prevThrust, this::valueFunction);
-        episodeManager.addStateActionTuple(state, action, episodeStateAction);
+        return action;
+    }
+
+    public Action generateAction(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
+        State state = new State(status);
+        double prevThrust = 0.0;
+        if (episodeStateAction.size() > 0) {
+            StateActionTuple lastStateAction = episodeStateAction.get(episodeStateAction.size() - 1);
+            state.setGimbleYWithoutRounding(lastStateAction.action.gimbleY);
+            state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
+            prevThrust = lastStateAction.action.thrust;
+        }
+        Action action = run_policy(state, prevThrust);
+        episodeStateAction.add(new StateActionTuple(state, action));
         return action;
     }
 
@@ -172,222 +175,58 @@ public class RLModel {
         }
     }
 
-    private void actuallyUpdateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
-        // todo: Change this reference to the stateactiontuples
-        int maxTimeStep = stateActionTuples.size();
+    private double terminalReward(State lastState) {
 
-        StateActionTuple lastStateActionTuple = stateActionTuples.get(maxTimeStep - 1);
+
+
         double lowSpeedLandingBonus = 0.0;
-        if (Math.abs(lastStateActionTuple.state.velocity) <= 2.0) {
+        if (Math.abs(lastState.velocity) <= 2.0) {
             lowSpeedLandingBonus = 50;
-            if (Math.abs(lastStateActionTuple.state.velocity) <= 1.0)
+            if (Math.abs(lastState.velocity) <= 1.0)
                 lowSpeedLandingBonus = 100;
         }
 
-        double altitudeMultiplier = lastStateActionTuple.state.altitude;
+        double altitudeMultiplier = lastState.altitude;
         if (altitudeMultiplier < 1) {
             altitudeMultiplier = 1;
         } else {
             lowSpeedLandingBonus = 0;
         }
 
-        double landingVelocity = Math.abs(lastStateActionTuple.state.velocity);
+        double landingVelocity = Math.abs(lastState.velocity);
         // this edge case will tell the system it was doing well because the multiplication wasn't penalizing enough
         if ((landingVelocity < 100) && (altitudeMultiplier != 1)) {
             landingVelocity = 100;
         }
-        //System.out.println(landingVelocity + " " + altitudeMultiplier + " " + lowSpeedLandingBonus);
-        double G = -(landingVelocity * altitudeMultiplier) - altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
-        //System.out.println("G: " + G);
-        // System.out.println("Starting with penalty: " + G);
+
+        return -(landingVelocity * altitudeMultiplier) - altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
+    }
+
+    private double reward(StateActionTuple stateActionTuple) {
+        double reward = 0.0;
+
+        reward = - Math.abs(stateActionTuple.state.velocity) / 10;
+        return reward;
+    }
+
+    private void actuallyUpdateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
+        int lastTimeStep = stateActionTuples.size() - 1;
+        StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
+
+        double G = terminalReward(lastStateActionTuple.state);
         double discount = 0.999;
         double alpha = 0.3;
-        double reward = -0.1;
 
-        for (int i = maxTimeStep - 1; i >= 0; i--) {
-            StateActionTuple stateActionTuple = stateActionTuples.get(i);
-            double stateActionValue = valueFunction(stateActionTuple);
-            double positiveVelocityPenalty = 0;
-            double thrustTogglePenalty = 0;
-
-            if (i + 1 <= maxTimeStep - 1) {
-                // penalize thrust changes by the variation
-                double currentThrust = Math.abs(stateActionTuple.action.thrust);
-                double nextThrust = Math.abs(stateActionTuples.get(i + 1).action.thrust);
-                double absDelta = Math.abs(currentThrust - nextThrust);
-                thrustTogglePenalty = THRUST_TOGGLE_PENALTY * absDelta;
-            }
-            if (stateActionTuple.state.velocity > 0)
-                positiveVelocityPenalty = stateActionTuple.state.velocity / 10;
-            valueFunctionTable.put(stateActionTuple, stateActionValue + alpha * (G - stateActionValue));
-            G = (discount * G) - Math.abs(reward) - Math.abs(thrustTogglePenalty) - Math.abs(positiveVelocityPenalty);
+        for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
+            StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
+            double originalValue = valueFunction(stateActionTuple);
+            valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
+            G = (discount * G) - reward(stateActionTuple);
         }
     }
 
     public void resetValueFunctionTable() {
         valueFunctionTable = new HashMap<>();
-    }
-
-
-
-    // Required data structures.
-
-    private static int group_by_precision (double value, double precision) {
-        return (int) Math.round(value / precision);
-    }
-
-    private static double angle_precision = Math.PI / 16;
-
-    public static class State implements Serializable {
-        double altitude = 0.0;
-        double velocity = 0.0;
-        double angle_x = 0.0;
-        double angle_z = 0.0;
-
-        private State(SimulationStatus status) { 
-            double X = status.getRocketOrientationQuaternion().getX();
-            double Y = status.getRocketOrientationQuaternion().getY();
-            double Z = status.getRocketOrientationQuaternion().getZ();
-            double W = status.getRocketOrientationQuaternion().getW();
-            double xDir =  2 * (X * Z - W * Y);
-            double yDir = 2 * (Y * Z + W * X);
-            double zDir  = 1 - 2 * (X * X + Y * Y);
-            setAltitude(status.getRocketPosition().z);
-            setVelocity(status.getRocketVelocity().z);
-            double rotationalVelocity = Math.sqrt(Math.pow(status.getRocketRotationVelocity().x,2)
-                    + Math.pow(status.getRocketRotationVelocity().y,2)
-                    + Math.pow(status.getRocketRotationVelocity().z,2)
-            );
-            setAngle_x(Math.acos(xDir)*Math.signum(yDir));
-            setAngle_z(Math.acos(zDir));
-        }
-
-        public void setAltitude(double altitude) {
-            this.altitude = group_by_precision(altitude, 0.1);
-        }
-
-        public double getAltitude() {
-            return altitude;
-        }
-
-        public void setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, 1);
-        }
-
-        public double getVelocity() {
-            return altitude;
-        }
-
-        public void setAngle_x(double angle) {
-            this.angle_x = group_by_precision(angle, angle_precision);
-        }
-
-        public double getAngle_x() {
-            return angle_x;
-        }
-
-        public void setAngle_z(double angle) {
-            this.angle_z = group_by_precision(angle, angle_precision);
-        }
-
-        public double getAngle_z() {
-            return angle_z;
-        }
-
-        @Override
-        public String toString() {
-            return "State(" + this.altitude + ", " + this.velocity + ")";
-        }
-
-        private int getDoubleHashCode(Double val) {
-            return Double.valueOf(val).hashCode();
-        }
-
-        @Override
-        public int hashCode() {
-            return getDoubleHashCode(altitude) + getDoubleHashCode(velocity) + getDoubleHashCode(special_area_angle_hashcode());
-        }
-
-        private Double special_area_angle_hashcode() {
-            if (this.angle_z == group_by_precision(Math.PI / 2, angle_precision)) {
-                this.angle_x = 0.0;  // adapt for this special case.  May be needed when comparing equals code.
-                return (double) getDoubleHashCode(this.angle_z);
-            }
-
-            return (double) getDoubleHashCode(this.angle_x) + getDoubleHashCode(this.angle_z);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            State other = (State) obj;
-            return altitude == other.altitude && velocity == other.velocity && angle_x == other.angle_x && angle_z == other.angle_z;
-        }
-    }
-
-    private static double gimble_precision = Math.PI / 30;
-
-    public static class Action implements Serializable {
-        double thrust = 0.0;
-        double gimble_x = 0.0;
-        double gimble_y = 0.0;
-
-        Action(double thrust, double gimble_x, double gimble_y) {
-            this.thrust = thrust;
-            setGimble_x(gimble_x);
-            setGimble_y(gimble_y);
-        }
-
-        public void setThrust(double thrust) {
-            this.thrust = thrust;
-        }
-
-        public double getThrust() {
-            return thrust;
-        }
-
-        public void setGimble_x(double gimble_x) {
-            this.gimble_x = group_by_precision(gimble_x, gimble_precision);
-        }
-
-        public double getGimble_x() {
-            return gimble_x;
-        }
-
-        public void setGimble_y(double gimble_y) {
-            this.gimble_y = group_by_precision(gimble_y, gimble_precision);
-        }
-
-        public double getGimble_y() {
-            return gimble_y;
-        }
-
-        @Override
-        public String toString() {
-            return "Action(" + this.thrust + ", " + this.gimble_x + ", " + this.gimble_y + ")";
-        }
-
-        @Override
-        public int hashCode() {
-            return Double.valueOf(thrust).hashCode() + Double.valueOf(gimble_x).hashCode() + Double.valueOf(gimble_y).hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Action other = (Action) obj;
-            return thrust == other.thrust && gimble_x == other.gimble_x && gimble_y == other.gimble_y;
-        }
     }
 
     public HashMap<StateActionTuple, Double> getValueFunctionTable() {
