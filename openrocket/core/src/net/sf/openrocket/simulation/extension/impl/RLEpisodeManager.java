@@ -45,10 +45,6 @@ public class RLEpisodeManager {
         return new ArrayList<>();
     }
 
-    public void addStateActionTuple(State state, Action action, ArrayList<StateActionTuple> episodeStateAction) {
-        episodeStateAction.add(new StateActionTuple(state, action));
-    }
-
     public void storeActionValueFunction() {
         System.out.println("CLOSING!!!");
         initializeEpisodeManager();
