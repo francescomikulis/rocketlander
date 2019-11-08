@@ -27,6 +27,7 @@ import java.util.Random;
 public class RocketLanderListener extends AbstractSimulationListener {
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
+    private RLMethod method = model.getCurrentMethod();
     private ArrayList<StateActionTuple> episodeStateActions;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
@@ -150,11 +151,17 @@ public class RocketLanderListener extends AbstractSimulationListener {
             status.setRocketVelocity(terminalVelocity);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
+
+        // TD(0) update after each step
+        if(method == RLMethod.TD0 && episodeStateActions.size() > 2) {
+            model.updateTD0ValueFunction(episodeStateActions);
+        }
     }
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        model.updateStateActionValueFuncton(episodeStateActions);
+        if(model.getCurrentMethod() == RLMethod.MONTE)
+            model.updateStateActionValueFunction(episodeStateActions);
     }
 
 
@@ -290,15 +297,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
             // Convert to world coordinates
             angularAcceleration = status.getRocketOrientationQuaternion().rotate(angularAcceleration);
-
-            int a = 5;
         }
 
         OLD_RLVectoringStructureMassData = RLVectoringStructureMassData;
         RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
     }
-
-
-
 }
