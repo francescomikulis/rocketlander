@@ -29,6 +29,12 @@ public class RLModel {
 
     private Semaphore mutex = new Semaphore(1);
 
+    private RLMethod currentMethod = RLMethod.MONTE;
+
+    enum RLMethod {
+        MONTE, TD0, SARSA
+    }
+
     private static class InstanceHolder {
         private static final RLModel instance = new RLModel();
     }
@@ -98,11 +104,7 @@ public class RLModel {
                     return valueFunctionTable.get(stateActionTuple) - Math.abs(penalty);
             }
         }
-        // given the state, be a lookup table and return a value for that state-action pair
-        /*
-        if (!valueFunctionTable.containsKey(stateActionTuple))
-            return 0.0;
-         */
+
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0;
         return valueFunctionTable.get(stateActionTuple);
@@ -164,7 +166,7 @@ public class RLModel {
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
         try {
             mutex.acquire();
             actuallyUpdateStateActionValueFuncton(stateActionTuples);
@@ -176,9 +178,6 @@ public class RLModel {
     }
 
     private double terminalReward(State lastState) {
-
-
-
         double lowSpeedLandingBonus = 0.0;
         if (Math.abs(lastState.velocity) <= 2.0) {
             lowSpeedLandingBonus = 50;
@@ -225,6 +224,26 @@ public class RLModel {
         }
     }
 
+    public void updateTD0ValueFunction(ArrayList<StateActionTuple> episodeStateActions) {
+        try {
+            mutex.acquire();
+            actuallyUpdateTD0ValueFunction(episodeStateActions);
+        } catch (InterruptedException e) {
+            // exception handling code
+        } finally {
+            mutex.release();
+        }
+    }
+
+    private void actuallyUpdateTD0ValueFunction(ArrayList<StateActionTuple> episodeStateActions) {
+        StateActionTuple old = episodeStateActions.get(episodeStateActions.size() - 2);
+        StateActionTuple current = episodeStateActions.get(episodeStateActions.size() - 1);
+        double alpha = .05, gamma = .95;
+
+        valueFunctionTable.put(old, valueFunctionTable.get(old) +
+                alpha * (reward(current) + gamma * valueFunctionTable.get(current) - valueFunctionTable.get(old)));
+    }
+
     public void resetValueFunctionTable() {
         valueFunctionTable = new HashMap<>();
     }
@@ -237,9 +256,13 @@ public class RLModel {
         this.valueFunctionTable = valueFunctionTable;
     }
 
+    public RLMethod getCurrentMethod() {
+        return currentMethod;
+    }
 
-
-
+    public void setCurrentMethod(RLMethod method) {
+        currentMethod = method;
+    }
 
     @FunctionalInterface
     interface TriFunction<A,B,C,R> {
