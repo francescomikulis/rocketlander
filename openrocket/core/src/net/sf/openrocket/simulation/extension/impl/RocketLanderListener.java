@@ -32,6 +32,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
     private Random random;
+    private State state;
+    private Action action;
     private Boolean forcingFailure = false;
     private static double variation = 5;
     private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
@@ -53,6 +55,21 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return startNumber - variation / 2 + variation * random.nextDouble();
     }
 
+    private void setupStateActionAndStore(SimulationStatus status) {
+        state = new State(status);
+        if (episodeStateActions.size() != 0) {
+            StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
+            //state.setGimbleYWithoutRounding(lastStateAction.action.gimbleY);
+            //state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
+            state.setThrust(lastStateAction.action.thrust);
+        } else {
+            state.thrust = 100.0;
+        }
+        action = model.generateAction(state);
+
+        episodeStateActions.add(new StateActionTuple(state, action));
+    }
+
     @Override
     public void startSimulation(SimulationStatus status) {
         episodeManager.initializeEpisodeManager();
@@ -68,6 +85,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // set the rocket velocity at the rocket velocity as defined by the extension
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
+
+        // initialize the state and the action
+        setupStateActionAndStore(status);
     }
 
     /*
@@ -91,7 +111,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
     */
 
-
+    @Override
+    public boolean preStep(SimulationStatus status) {
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        return true;
+    }
 
 
 
@@ -126,21 +150,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null) return null;
 
-        Action action = model.generateAction(episodeStateActions, status);
         //action = new Action(0.6, move_gimbal_to_y, move_gimbal_to_z);
-        action.thrust = 0.6;
-        RLVectoringThrust *= action.thrust;
+        RLVectoringThrust *= action.thrust / 100.0;
         return calculateAcceleration(status, action.gimbleY, action.gimbleZ);
-    }
-
-
-
-
-
-    @Override
-    public boolean preStep(SimulationStatus status) {
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
-        return true;
     }
 
     @Override
@@ -152,21 +164,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
-        // TD(0) update after each step
-        if(method == RLMethod.TD0 && episodeStateActions.size() > 2) {
-            model.updateTD0ValueFunction(episodeStateActions);
-        }
+        setupStateActionAndStore(status);
+
+        model.updateStepStateActionValueFunction(episodeStateActions);
     }
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        if(model.getCurrentMethod() == RLMethod.MONTE)
-            model.updateStateActionValueFunction(episodeStateActions);
+        model.updateTerminalStateActionValueFunction(episodeStateActions);
     }
-
-
-
-
 
 
 

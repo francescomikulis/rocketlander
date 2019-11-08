@@ -51,6 +51,7 @@ public class StateActionTuple implements Serializable {
         //double angularVelocity = 0.0;
         double gimbleY = 0.0;
         double gimbleZ = 0.0;
+        double thrust = 0.0;
 
         public State(SimulationStatus status) {
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
@@ -61,6 +62,8 @@ public class StateActionTuple implements Serializable {
             setVelocity(status.getRocketVelocity().z);
             setAngleX(Math.acos(xDir) * Math.signum(yDir));
             setAngleZ(Math.acos(zDir));
+            setAngleX(0);
+            setAngleZ(0);
 
             /*
             setAngularVelocity(Math.sqrt(
@@ -72,11 +75,11 @@ public class StateActionTuple implements Serializable {
         }
 
         private void setAltitude(double altitude) {
-            this.altitude = group_by_precision(altitude, 0.1);
+            this.altitude = group_by_precision(altitude, 1);
         }
 
         private void setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, 0.1);
+            this.velocity = group_by_precision(velocity, 1);
         }
 
         private void setAngleX(double angle) {
@@ -92,6 +95,8 @@ public class StateActionTuple implements Serializable {
         public void setGimbleZWithoutRounding(double roundedGimbleZ) { this.gimbleZ = roundedGimbleZ; }
 
         public double getGimbleInRadians(double angle) { return angle * gimble_precision; }
+
+        public void setThrust(double thurst) { this.thrust = thurst; }
 
         // private void setAngularVelocity(double angularVelocity) { this.angularVelocity = group_by_precision(angularVelocity, 0.1); }
 
@@ -142,6 +147,8 @@ public class StateActionTuple implements Serializable {
             setThrust(thrust);
             setGimbleY(gimbleY);
             setGimbleZ(gimbleZ);
+            setGimbleY(0.0);
+            setGimbleZ(0.0);
         }
 
         private void setThrust(double thrust) {

@@ -17,8 +17,8 @@ public class RLModel {
     private HashMap<StateActionTuple, Double> valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
 
-    private static double MIN_MOTOR_INCREMENT_PER_TIMESTEP = 0.05;
-    private static double MAX_MOTOR_INCREMENT_PER_TIMESTEP = 0.25;
+    private static double MIN_MOTOR_INCREMENT_PER_TIMESTEP = 25;
+    private static double MAX_MOTOR_INCREMENT_PER_TIMESTEP = 100;
 
     private static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
     private static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 18;
@@ -29,10 +29,10 @@ public class RLModel {
 
     private Semaphore mutex = new Semaphore(1);
 
-    private RLMethod currentMethod = RLMethod.MONTE;
+    private RLMethod currentMethod = RLMethod.TD0;
 
     enum RLMethod {
-        MONTE, TD0, SARSA
+        MONTE, TD0, SEMI_SARSA
     }
 
     private static class InstanceHolder {
@@ -68,16 +68,14 @@ public class RLModel {
     /***
     In the future need to also consider the state and the velocity we are currently at.
      ***/
-    public ArrayList<Action> generatePossibleActions(ArrayList<StateActionTuple> episodeStateActions, State state) {
-        double prevThurst = 0.0;
-        if (episodeStateActions.size() > 0)
-            prevThurst = episodeStateActions.get(episodeStateActions.size() - 1).action.thrust;
+    public ArrayList<Action> generatePossibleActions(State state) {
+        double currentThrust = state.thrust;
         ArrayList<Action> possibleActions = new ArrayList<>();
 
         double [] thrustChanges = new double[] {
                 MIN_MOTOR_INCREMENT_PER_TIMESTEP, MAX_MOTOR_INCREMENT_PER_TIMESTEP
         };
-        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(prevThurst, thrustChanges, 0.0, 1.0);
+        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(currentThrust, thrustChanges, 0.0, 100);
 
         double [] gimbleChanges = new double[] {
                 MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP
@@ -95,19 +93,21 @@ public class RLModel {
         return possibleActions;
     }
 
-    private Double approximatedValueFunction(ArrayList<StateActionTuple> episodeStateActions, StateActionTuple stateActionTuple) {
+    private Double actuallySemiSarsaUpdateStateActionValueFunction(ArrayList<StateActionTuple> episodeStateActions) {
         double[] weight = new double[]{1.0,1.0};
         double discount = 0.999;
         double alpha = 0.3;
 
-        double rew = reward(stateActionTuple);
+        int lastTimeStep = episodeStateActions.size() - 1;
+        StateActionTuple currentStateAction = episodeStateActions.get(lastTimeStep);
+        double rew = reward(currentStateAction.state);
 
         double[] evaluation = new double[]{0.0,0.0};
-        evaluation[0] = discount * (weight[0] * stateActionTuple.action.thrust);
-        evaluation[1] = discount * (weight[1] * stateActionTuple.state.velocity);
+        evaluation[0] = discount * (weight[0] * currentStateAction.action.thrust);
+        evaluation[1] = discount * (weight[1] * currentStateAction.state.velocity);
 
-        int lastTimeStep = episodeStateActions.size() - 1;
-        StateActionTuple lastStateActionTuple = episodeStateActions.get(lastTimeStep);
+
+        StateActionTuple lastStateActionTuple = episodeStateActions.get(lastTimeStep - 1);
 
         double[] previous = new double[]{0.0,0.0};
         previous[0] = weight[0] * lastStateActionTuple.action.thrust;
@@ -121,15 +121,11 @@ public class RLModel {
         weight[1] = weight[1] + alpha * (rew + evaluation[1] - previous[1]) * gradient[1];
 
 
-        return valueFunction(episodeStateActions, stateActionTuple);
+        //return valueFunction(episodeStateActions, stateActionTuple);
+        return 0.0;
     }
 
-    private Double approximatedValueFunction(ArrayList<StateActionTuple> episodeStateActions, State state, Action action) {
-        StateActionTuple stateActionTuple = new StateActionTuple(state, action);
-        return valueFunction(episodeStateActions, stateActionTuple);
-    }
-
-    private Double valueFunction(ArrayList<StateActionTuple> episodeStateActions, StateActionTuple stateActionTuple) {
+    private Double valueFunction(StateActionTuple stateActionTuple) {
         Action action = stateActionTuple.action;
         if (action.thrust > 0) {
             if (stateActionTuple.state.velocity > 0) {
@@ -146,33 +142,23 @@ public class RLModel {
         return valueFunctionTable.get(stateActionTuple);
     }
 
-    private Double valueFunction(ArrayList<StateActionTuple> episodeStateAction, State state, Action action) {
+    private Double valueFunction(State state, Action action) {
         StateActionTuple stateActionTuple = new StateActionTuple(state, action);
-        return valueFunction(episodeStateAction, stateActionTuple);
+        return valueFunction(stateActionTuple);
     }
 
 
-    private Action run_policy(ArrayList<StateActionTuple> episodeStateAction, State state) {
-        Action action = policy(episodeStateAction, state, this::valueFunction);
+    private Action run_policy(State state) {
+        Action action = policy(state, this::valueFunction);
         return action;
     }
 
-    public Action generateAction(ArrayList<StateActionTuple> episodeStateActions, SimulationStatus status) {
-        State state = new State(status);
-        double prevThrust = 0.0;
-        if (episodeStateActions.size() > 0) {
-            StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
-            state.setGimbleYWithoutRounding(lastStateAction.action.gimbleY);
-            state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
-            prevThrust = lastStateAction.action.thrust;
-        }
-        Action action = run_policy(episodeStateActions, state);
-        episodeStateActions.add(new StateActionTuple(state, action));
-        return action;
+    public Action generateAction(State state) {
+        return run_policy(state);
     }
 
-    private Action policy(ArrayList<StateActionTuple> episodeStateActions, State state, TriFunction<ArrayList<StateActionTuple>, State, Action, Double> func) {
-        ArrayList<Action> possibleActions = generatePossibleActions(episodeStateActions, state);
+    private Action policy(State state, BiFunction<State, Action, Double> func) {
+        ArrayList<Action> possibleActions = generatePossibleActions(state);
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
@@ -183,7 +169,7 @@ public class RLModel {
         }
 
         for (Action action: possibleActions) {
-            double v = func.apply(episodeStateActions, state, action);
+            double v = func.apply(state, action);
             if (greedy) {
                 if (v > val) {
                     // value is best compared to all previous encounters.  Reset bestAction ArrayList.
@@ -202,10 +188,34 @@ public class RLModel {
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
         try {
             mutex.acquire();
-            actuallyUpdateStateActionValueFuncton(stateActionTuples);
+
+            if(currentMethod == RLMethod.SEMI_SARSA)
+                actuallySemiSarsaUpdateStateActionValueFunction(stateActionTuples);
+            else if(currentMethod == RLMethod.TD0)
+                actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::reward);
+
+            // actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);
+
+
+        } catch (InterruptedException e) {
+            // exception handling code
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
+        try {
+            mutex.acquire();
+
+            if(currentMethod == RLMethod.MONTE)
+                actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);
+            else if(currentMethod == RLMethod.TD0)
+                actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::terminalReward);
+
         } catch (InterruptedException e) {
             // exception handling code
         } finally {
@@ -237,14 +247,14 @@ public class RLModel {
         return -(landingVelocity * altitudeMultiplier) - altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
     }
 
-    private double reward(StateActionTuple stateActionTuple) {
+    private double reward(State state) {
         double reward = 0.0;
 
-        reward = - Math.abs(stateActionTuple.state.velocity) / 10;
+        reward = - Math.abs(state.velocity) / 10;
         return reward;
     }
 
-    private void actuallyUpdateStateActionValueFuncton(ArrayList<StateActionTuple> stateActionTuples) {
+    private void actuallyMonteCarloUpdateStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
 
@@ -254,30 +264,24 @@ public class RLModel {
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
-            double originalValue = valueFunction(stateActionTuples, stateActionTuple);
+            double originalValue = valueFunction(stateActionTuple);
             valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
-            G = (discount * G) - reward(stateActionTuple);
+            G = (discount * G) - reward(stateActionTuple.state);
         }
     }
 
-    public void updateTD0ValueFunction(ArrayList<StateActionTuple> episodeStateActions) {
-        try {
-            mutex.acquire();
-            actuallyUpdateTD0ValueFunction(episodeStateActions);
-        } catch (InterruptedException e) {
-            // exception handling code
-        } finally {
-            mutex.release();
-        }
-    }
+    private void actuallyTD0UpdateStateActionValueFunction(ArrayList<StateActionTuple> episodeStateActions, Function<State, Double> rewardFunction) {
+        if(episodeStateActions.size() <= 2) { return; }
 
-    private void actuallyUpdateTD0ValueFunction(ArrayList<StateActionTuple> episodeStateActions) {
         StateActionTuple old = episodeStateActions.get(episodeStateActions.size() - 2);
         StateActionTuple current = episodeStateActions.get(episodeStateActions.size() - 1);
-        double alpha = .05, gamma = .95;
+        double alpha = .3, gamma = .999;
+
+        if (!valueFunctionTable.containsKey(old)) valueFunctionTable.put(old, 0.0);
+        if (!valueFunctionTable.containsKey(current)) valueFunctionTable.put(current, 0.0);
 
         valueFunctionTable.put(old, valueFunctionTable.get(old) +
-                alpha * (reward(current) + gamma * valueFunctionTable.get(current) - valueFunctionTable.get(old)));
+                alpha * (rewardFunction.apply(current.state) + gamma * valueFunctionTable.get(current) - valueFunctionTable.get(old)));
     }
 
     public void resetValueFunctionTable() {
