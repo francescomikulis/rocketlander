@@ -125,7 +125,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null) return null;
 
-        Action action = model.generateAction(status, episodeStateActions);
+        Action action = model.generateAction(episodeStateActions, status);
         //action = new Action(0.6, move_gimbal_to_y, move_gimbal_to_z);
         action.thrust = 0.6;
         RLVectoringThrust *= action.thrust;

@@ -62,7 +62,10 @@ public class RLModel {
     /***
     In the future need to also consider the state and the velocity we are currently at.
      ***/
-    public ArrayList<Action> generatePossibleActions(State state, double prevThurst) {
+    public ArrayList<Action> generatePossibleActions(ArrayList<StateActionTuple> episodeStateActions, State state) {
+        double prevThurst = 0.0;
+        if (episodeStateActions.size() > 0)
+            prevThurst = episodeStateActions.get(episodeStateActions.size() - 1).action.thrust;
         ArrayList<Action> possibleActions = new ArrayList<>();
 
         double [] thrustChanges = new double[] {
@@ -86,8 +89,41 @@ public class RLModel {
         return possibleActions;
     }
 
+    private Double approximatedValueFunction(ArrayList<StateActionTuple> episodeStateActions, StateActionTuple stateActionTuple) {
+        double[] weight = new double[]{1.0,1.0};
+        double discount = 0.999;
+        double alpha = 0.3;
 
-    private Double valueFunction(StateActionTuple stateActionTuple) {
+        double rew = reward(stateActionTuple);
+
+        double[] evaluation = new double[]{0.0,0.0};
+        evaluation[0] = discount * (weight[0] * stateActionTuple.action.thrust);
+        evaluation[1] = discount * (weight[1] * stateActionTuple.state.velocity);
+
+        int lastTimeStep = episodeStateActions.size() - 1;
+        StateActionTuple lastStateActionTuple = episodeStateActions.get(lastTimeStep);
+
+        double[] previous = new double[]{0.0,0.0};
+        previous[0] = weight[0] * lastStateActionTuple.action.thrust;
+        previous[1] = weight[1] * lastStateActionTuple.state.velocity;
+
+        double[] gradient = new double[]{1.0,1.0};
+        gradient[0] = lastStateActionTuple.action.thrust;
+        gradient[1] = lastStateActionTuple.state.velocity;
+
+        weight[0] = weight[0] + alpha * (rew + evaluation[0] - previous[0]) * gradient[0];
+        weight[1] = weight[1] + alpha * (rew + evaluation[1] - previous[1]) * gradient[1];
+
+
+        return valueFunction(episodeStateActions, stateActionTuple);
+    }
+
+    private Double approximatedValueFunction(ArrayList<StateActionTuple> episodeStateActions, State state, Action action) {
+        StateActionTuple stateActionTuple = new StateActionTuple(state, action);
+        return valueFunction(episodeStateActions, stateActionTuple);
+    }
+
+    private Double valueFunction(ArrayList<StateActionTuple> episodeStateActions, StateActionTuple stateActionTuple) {
         Action action = stateActionTuple.action;
         if (action.thrust > 0) {
             if (stateActionTuple.state.velocity > 0) {
@@ -108,33 +144,33 @@ public class RLModel {
         return valueFunctionTable.get(stateActionTuple);
     }
 
-    private Double valueFunction(State state, Action action) {
+    private Double valueFunction(ArrayList<StateActionTuple> episodeStateAction, State state, Action action) {
         StateActionTuple stateActionTuple = new StateActionTuple(state, action);
-        return valueFunction(stateActionTuple);
+        return valueFunction(episodeStateAction, stateActionTuple);
     }
 
 
-    private Action run_policy(State state, double prevThrust) {
-        Action action = policy(state, prevThrust, this::valueFunction);
+    private Action run_policy(ArrayList<StateActionTuple> episodeStateAction, State state) {
+        Action action = policy(episodeStateAction, state, this::valueFunction);
         return action;
     }
 
-    public Action generateAction(SimulationStatus status, ArrayList<StateActionTuple> episodeStateAction) {
+    public Action generateAction(ArrayList<StateActionTuple> episodeStateActions, SimulationStatus status) {
         State state = new State(status);
         double prevThrust = 0.0;
-        if (episodeStateAction.size() > 0) {
-            StateActionTuple lastStateAction = episodeStateAction.get(episodeStateAction.size() - 1);
+        if (episodeStateActions.size() > 0) {
+            StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
             state.setGimbleYWithoutRounding(lastStateAction.action.gimbleY);
             state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
             prevThrust = lastStateAction.action.thrust;
         }
-        Action action = run_policy(state, prevThrust);
-        episodeStateAction.add(new StateActionTuple(state, action));
+        Action action = run_policy(episodeStateActions, state);
+        episodeStateActions.add(new StateActionTuple(state, action));
         return action;
     }
 
-    private Action policy(State state, double prevThurst, BiFunction<State, Action, Double> func) {
-        ArrayList<Action> possibleActions = generatePossibleActions(state, prevThurst);
+    private Action policy(ArrayList<StateActionTuple> episodeStateActions, State state, TriFunction<ArrayList<StateActionTuple>, State, Action, Double> func) {
+        ArrayList<Action> possibleActions = generatePossibleActions(episodeStateActions, state);
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
@@ -145,7 +181,7 @@ public class RLModel {
         }
 
         for (Action action: possibleActions) {
-            double v = func.apply(state, action);
+            double v = func.apply(episodeStateActions, state, action);
             if (greedy) {
                 if (v > val) {
                     // value is best compared to all previous encounters.  Reset bestAction ArrayList.
@@ -219,7 +255,7 @@ public class RLModel {
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
-            double originalValue = valueFunction(stateActionTuple);
+            double originalValue = valueFunction(stateActionTuples, stateActionTuple);
             valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (discount * G) - reward(stateActionTuple);
         }
