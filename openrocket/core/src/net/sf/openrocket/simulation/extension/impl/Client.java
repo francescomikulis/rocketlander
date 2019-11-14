@@ -12,22 +12,23 @@ public class Client {
     private int port;
     private String address;
 
-    private static class InstanceHolder {
-        public String s;
-        private InstanceHolder(String str){
-            s = str;
-        }
-        private static final Client instance = new Client();
-    }
-
-    public static Client getInstance(){
-        return InstanceHolder.instance;
-
-    }
+    private static volatile Client instance;
 
     private Client(){
         setConnectionString(this.connectionString);
     }
+
+    public static Client getInstance() {
+        if (instance == null) { // first time lock
+            synchronized (Client.class) {
+                if (instance == null) {  // second time lock
+                    instance = new Client();
+                }
+            }
+        }
+        return instance;
+    }
+
 
     public void setConnectionString(String connectionString) {
         this.connectionString = connectionString;

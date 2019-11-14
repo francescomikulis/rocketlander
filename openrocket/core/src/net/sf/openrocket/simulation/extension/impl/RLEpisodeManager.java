@@ -19,15 +19,20 @@ public class RLEpisodeManager {
     private RLModel model = null;
     private RLObjectFileStore mof = null;
 
-    private static class InstanceHolder {
-        private static final RLEpisodeManager instance = new RLEpisodeManager();
-    }
-
-    public static RLEpisodeManager getInstance() {
-        return InstanceHolder.instance;
-    }
+    private static volatile RLEpisodeManager instance;
 
     private RLEpisodeManager() {}
+
+    public static RLEpisodeManager getInstance() {
+        if (instance == null) { // first time lock
+            synchronized (RLEpisodeManager.class) {
+                if (instance == null) {  // second time lock
+                    instance = new RLEpisodeManager();
+                }
+            }
+        }
+        return instance;
+    }
 
     public void initializeEpisodeManager() {
         model = RLModel.getInstance();

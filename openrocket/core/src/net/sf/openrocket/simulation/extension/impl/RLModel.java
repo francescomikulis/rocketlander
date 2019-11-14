@@ -35,15 +35,21 @@ public class RLModel {
         MONTE, TD0, SEMI_SARSA
     }
 
-    private static class InstanceHolder {
-        private static final RLModel instance = new RLModel();
-    }
-
-    public static RLModel getInstance() {
-        return InstanceHolder.instance;
-    }
+    private static volatile RLModel instance;
 
     private RLModel(){}
+
+    public static RLModel getInstance() {
+        if (instance == null) { // first time lock
+            synchronized (RLModel.class) {
+                if (instance == null) {  // second time lock
+                    instance = new RLModel();
+                }
+            }
+        }
+        return instance;
+    }
+
 
     public void initializeModel() {
         episodeManager = RLEpisodeManager.getInstance();
