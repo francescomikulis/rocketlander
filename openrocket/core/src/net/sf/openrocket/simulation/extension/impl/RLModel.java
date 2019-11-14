@@ -5,6 +5,7 @@ import net.sf.openrocket.util.Quaternion;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -14,7 +15,7 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
-    private HashMap<StateActionTuple, Double> valueFunctionTable = null;
+    private ConcurrentHashMap<StateActionTuple, Double> valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
 
     private static double MIN_MOTOR_INCREMENT_PER_TIMESTEP = 25;
@@ -214,19 +215,19 @@ public class RLModel {
     }
 
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        try {
-            mutex.acquire();
+       //try {
+       //     mutex.acquire();
 
             if(currentMethod == RLMethod.MONTE)
                 actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);
             else if(currentMethod == RLMethod.TD0)
                 actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::terminalReward);
 
-        } catch (InterruptedException e) {
+        //} catch (InterruptedException e) {
             // exception handling code
-        } finally {
-            mutex.release();
-        }
+        //} finally {
+        //    mutex.release();
+        //}
     }
 
     private double terminalReward(State lastState) {
@@ -291,14 +292,14 @@ public class RLModel {
     }
 
     public void resetValueFunctionTable() {
-        valueFunctionTable = new HashMap<>();
+        valueFunctionTable = new ConcurrentHashMap<>();
     }
 
-    public HashMap<StateActionTuple, Double> getValueFunctionTable() {
+    public ConcurrentHashMap<StateActionTuple, Double> getValueFunctionTable() {
         return valueFunctionTable;
     }
 
-    public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
+    public void setValueFunctionTable(ConcurrentHashMap<StateActionTuple, Double> valueFunctionTable) {
         this.valueFunctionTable = valueFunctionTable;
     }
 

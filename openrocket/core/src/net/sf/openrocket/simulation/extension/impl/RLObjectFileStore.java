@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
 https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
@@ -38,11 +39,11 @@ public class RLObjectFileStore {
         storeObject(episodeDataFileName, episodesData);
     }
 
-    public HashMap readActionValueFunction(){
-        return (HashMap) readObjects(actionValueFunctionFileName);
+    public ConcurrentHashMap readActionValueFunction(){
+        return (ConcurrentHashMap) readObjects(actionValueFunctionFileName);
     }
 
-    public void storeActionValueFunction(HashMap actionValueFunction){
+    public void storeActionValueFunction(ConcurrentHashMap actionValueFunction){
         storeObject(actionValueFunctionFileName, actionValueFunction);
     }
 

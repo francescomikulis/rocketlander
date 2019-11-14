@@ -80,7 +80,7 @@ public class RLEpisodeManager {
             try {
                 model.setValueFunctionTable(mof.readActionValueFunction());
             } catch (Exception e) {
-                model.setValueFunctionTable(new HashMap<>());
+                model.resetValueFunctionTable();
             }
         }
     }

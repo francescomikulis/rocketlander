@@ -77,7 +77,7 @@ public class TestFunctionOptimizer {
 	
 	public static void main(String[] args) throws InterruptedException, OptimizationException {
 		
-		System.err.println("Number of processors: " + Runtime.getRuntime().availableProcessors());
+		System.err.println("Number of processors: " + Runtime.getRuntime().availableProcessors() / 2);
 		
 		for (int i = 0; i < 20; i++) {
 			long t0 = System.currentTimeMillis();

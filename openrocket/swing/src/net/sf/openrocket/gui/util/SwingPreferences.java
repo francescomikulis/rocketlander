@@ -327,7 +327,7 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 		MODIFIED CODE HERE -- THIS IS OUR VERSION
 		return 2 * Runtime.getRuntime().availableProcessors() + 1;
 		*/
-		return Runtime.getRuntime().availableProcessors();
+		return Runtime.getRuntime().availableProcessors() / 2;
 	}
 	
 	
