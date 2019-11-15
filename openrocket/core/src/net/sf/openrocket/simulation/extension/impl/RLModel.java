@@ -12,25 +12,18 @@ import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
     private ConcurrentHashMap<StateActionTuple, Double> valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
-
-    private static double MIN_MOTOR_INCREMENT_PER_TIMESTEP = 25;
-    private static double MAX_MOTOR_INCREMENT_PER_TIMESTEP = 100;
-
-    private static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    private static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 18;
-    private static double MAX_ANGLE = MAX_ANGLE_INCREMENT_PER_TIMESTEP * 4;
-
-    private static double THRUST_TOGGLE_PENALTY = 0.1;
-    private static double THRUST_ON_PENALTY = -5;
-
     private Semaphore mutex = new Semaphore(1);
 
-    private RLMethod currentMethod = RLMethod.TD0;
+    private static double THRUST_ON_PENALTY = -5;
+
+    private RLMethod currentMethod = RLMethod.MONTE;
 
     enum RLMethod {
         MONTE, TD0, SEMI_SARSA
@@ -57,16 +50,16 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
-    private ArrayList<Double> generatePossibleActionValues(double value, double[] actionIncrements, double MIN_VAL, double MAX_VAL) {
+    private ArrayList<Double> generatePossibleActionValues(double value, double smallest_increment, double max_increment, double MIN_VAL, double MAX_VAL) {
         ArrayList<Double> possibleActionValues = new ArrayList<>();
 
-        int number_of_loops = (int) (2 * actionIncrements[1] / actionIncrements[0]) + 1;
-        double smallest_increment = actionIncrements[0];
-        double starting_low_value =  value - actionIncrements[1];
+        int number_of_loops = (int) (2.0 * max_increment / smallest_increment) + 1;
+        double starting_low_value =  value - max_increment;
         for (int i = 0; i < number_of_loops; i++) {
             double possibleValue = starting_low_value + i * smallest_increment;
-            if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL))
+            if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL)) {
                 possibleActionValues.add(possibleValue);
+            }
         }
 
         return possibleActionValues;
@@ -76,19 +69,19 @@ public class RLModel {
     In the future need to also consider the state and the velocity we are currently at.
      ***/
     public ArrayList<Action> generatePossibleActions(State state) {
-        double currentThrust = state.thrust;
+        double currentThrust = state.getThrustDouble();
         ArrayList<Action> possibleActions = new ArrayList<>();
 
-        double [] thrustChanges = new double[] {
-                MIN_MOTOR_INCREMENT_PER_TIMESTEP, MAX_MOTOR_INCREMENT_PER_TIMESTEP
-        };
-        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(currentThrust, thrustChanges, 0, 100);
-
-        double [] gimbleChanges = new double[] {
-                MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP
-        };
-        ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleY), gimbleChanges, -Double.MAX_VALUE, Double.MAX_VALUE);
-        ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleZ), gimbleChanges, 0, Math.PI / 180 * 20);
+        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(
+                currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
+        ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(
+                state.getGimbleYDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
+                -Double.MAX_VALUE, Double.MAX_VALUE
+        );
+        ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(
+                state.getGimbleZDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
+                0, Math.PI / 180.0 * 20.0
+        );
         for (Double possibleThrust: possibleThrustValues) {
             for (Double possibleGimbleY: possibleGimbleYValues) {
                 for (Double possibleGimbleZ: possibleGimbleZValues) {

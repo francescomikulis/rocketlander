@@ -59,11 +59,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         state = new State(status);
         if (episodeStateActions.size() != 0) {
             StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
-            //state.setGimbleYWithoutRounding(lastStateAction.action.gimbleY);
-            //state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
-            state.setThrust(lastStateAction.action.thrust);
+            state.gimbleY = lastStateAction.action.gimbleY;
+            state.gimbleZ = lastStateAction.action.gimbleZ;
+            state.thrust = lastStateAction.action.thrust;
         } else {
-            state.setThrust(100);
+            state.setThrust(1.0);
         }
         action = model.generateAction(state);
 
@@ -113,7 +113,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public boolean preStep(SimulationStatus status) {
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
         return true;
     }
 
@@ -150,14 +150,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null) return null;
 
-        //action = new Action(0.6, move_gimbal_to_y, move_gimbal_to_z);
+        //action = new Action(60.0, move_gimbal_to_y, move_gimbal_to_z);
         RLVectoringThrust *= (action.getThrustDouble());
-        return calculateAcceleration(status, action.getGimbleYInRadians(), action.getGimbleZInRadians());
+        return calculateAcceleration(status, action.getGimbleYDouble(), action.getGimbleZDouble());
     }
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 

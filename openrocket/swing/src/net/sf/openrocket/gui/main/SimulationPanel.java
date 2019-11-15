@@ -60,6 +60,8 @@ import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.AlphanumComparator;
 
+import static net.sf.openrocket.gui.util.SwingPreferences.getMaxThreadCount;
+
 @SuppressWarnings("serial")
 public class SimulationPanel extends JPanel {
 
@@ -194,40 +196,42 @@ public class SimulationPanel extends JPanel {
 					return;
 				}
 
-				Simulation[][] multiSims = new Simulation[multiplier][];
-				for (int mult = 0; mult < multiplier; mult++) {
-					multiSims[mult] = new Simulation[selection.length];
-				}
+				Simulation[] baseSims = new Simulation[selection.length];
+				Simulation[] multiSims = new Simulation[selection.length * multiplier];
 
 				for (int i = 0; i < selection.length; i++) {
 					selection[i] = simulationTable.convertRowIndexToModel(selection[i]);
 					Simulation baseSimulation = document.getSimulation(selection[i]);
 					// first one needs to be kept same object to preserve panel UI update
-					multiSims[0][i] = baseSimulation;
-					// if multiplier > 1 this duplicates the simulations
-					for (int mult = 1; mult < multiplier; mult++) {
-						multiSims[mult][i] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+					baseSims[i] = baseSimulation;
+					for (int mult = 0; mult < multiplier; mult++) {
+						multiSims[mult * i] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
 
 				long t = System.currentTimeMillis();
-				for (int mult = 1; mult < multiplier; mult++) {
-					// System.out.println("STARTING");
-					// NEED new thread
-					int finalMult = mult;
+				int numThreads = getMaxThreadCount();
+
+				int increment = 1;
+				if (multiplier > numThreads) {
+					increment = multiplier / numThreads;
+				}
+
+				for (int mult = 0; mult < multiplier; mult += increment) {
+					int realJobAssignments = Math.min(increment, multiplier - mult);
+					Simulation[] realSims = new Simulation[realJobAssignments];
+					System.arraycopy(multiSims, mult * increment, realSims, 0, realJobAssignments);
 					Runnable runnable =
 							() -> { new SimulationRunDialog(SwingUtilities.getWindowAncestor(
-									SimulationPanel.this), document, multiSims[finalMult]);
+									SimulationPanel.this), document, realSims);
 					};
 					Thread thread = new Thread(runnable);
-					thread.setDaemon(true);
+					thread.setPriority(Thread.MAX_PRIORITY);
 					thread.start();
-					// System.out.println("SUCCESSFULLY SUBMITTED START REQUEST");
 				}
-				System.out.println("GOGOGO");
 
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
-						SimulationPanel.this), document, multiSims[0]).setVisible(true);
+						SimulationPanel.this), document, baseSims).setVisible(true);
 				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
