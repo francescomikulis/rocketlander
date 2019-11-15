@@ -205,22 +205,24 @@ public class SimulationPanel extends JPanel {
 					// first one needs to be kept same object to preserve panel UI update
 					baseSims[i] = baseSimulation;
 					for (int mult = 0; mult < multiplier; mult++) {
-						multiSims[mult * i] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+						multiSims[i * multiplier + mult] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
 
 				long t = System.currentTimeMillis();
 				int numThreads = getMaxThreadCount();
 
-				int increment = 1;
+				int increment = selection.length;
 				if (multiplier > numThreads) {
-					increment = multiplier / numThreads;
+					increment = selection.length * multiplier / numThreads;
 				}
 
 				for (int mult = 0; mult < multiplier; mult += increment) {
 					int realJobAssignments = Math.min(increment, multiplier - mult);
 					Simulation[] realSims = new Simulation[realJobAssignments];
-					System.arraycopy(multiSims, mult * increment, realSims, 0, realJobAssignments);
+					for (int i = 0; i < realJobAssignments; i++) {
+						realSims[i] = multiSims[mult + i];
+					}
 					Runnable runnable =
 							() -> { new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 									SimulationPanel.this), document, realSims);
