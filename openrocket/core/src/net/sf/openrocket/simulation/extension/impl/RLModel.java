@@ -17,7 +17,7 @@ import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
-    private ConcurrentHashMap<StateActionTuple, Double> valueFunctionTable = null;
+    private HashMap<StateActionTuple, Double> valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
     private Semaphore mutex = new Semaphore(1);
 
@@ -285,14 +285,14 @@ public class RLModel {
     }
 
     public void resetValueFunctionTable() {
-        valueFunctionTable = new ConcurrentHashMap<>();
+        valueFunctionTable = new HashMap<>();
     }
 
-    public ConcurrentHashMap<StateActionTuple, Double> getValueFunctionTable() {
+    public HashMap<StateActionTuple, Double> getValueFunctionTable() {
         return valueFunctionTable;
     }
 
-    public void setValueFunctionTable(ConcurrentHashMap<StateActionTuple, Double> valueFunctionTable) {
+    public void setValueFunctionTable(HashMap<StateActionTuple, Double> valueFunctionTable) {
         this.valueFunctionTable = valueFunctionTable;
     }
 

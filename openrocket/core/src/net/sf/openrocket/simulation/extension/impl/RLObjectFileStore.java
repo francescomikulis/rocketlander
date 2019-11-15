@@ -39,11 +39,11 @@ public class RLObjectFileStore {
         storeObject(episodeDataFileName, episodesData);
     }
 
-    public ConcurrentHashMap readActionValueFunction(){
-        return (ConcurrentHashMap) readObjects(actionValueFunctionFileName);
+    public HashMap readActionValueFunction(){
+        return (HashMap) readObjects(actionValueFunctionFileName);
     }
 
-    public void storeActionValueFunction(ConcurrentHashMap actionValueFunction){
+    public void storeActionValueFunction(HashMap actionValueFunction){
         storeObject(actionValueFunctionFileName, actionValueFunction);
     }
 

@@ -121,7 +121,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return velocity + altitude * (thrust + 1);
+            return velocity * 100000 + altitude * 10000 + thrust * 100 + angleX * 10 + angleZ;
         }
 
         private int special_area_angle_hashcode() {
@@ -161,7 +161,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return thrust + gimbleY + gimbleZ;
+            return thrust * 100 + gimbleY * 10 + gimbleZ;
         }
 
         @Override
