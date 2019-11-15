@@ -15,7 +15,7 @@ public class StateActionTuple implements Serializable {
     public static double MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25;
     public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0;
     public static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    public static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 18;
+    public static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 2;
 
     public State state;
     public Action action;
