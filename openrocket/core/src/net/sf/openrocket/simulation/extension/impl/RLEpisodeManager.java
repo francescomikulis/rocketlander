@@ -55,7 +55,7 @@ public class RLEpisodeManager {
         initializeEpisodeManager();
         if (model.getValueFunctionTable().size() != 0) {
             mof.storeActionValueFunction(model.getValueFunctionTable());
-            printAll();
+            // printAll();
         }
     }
 

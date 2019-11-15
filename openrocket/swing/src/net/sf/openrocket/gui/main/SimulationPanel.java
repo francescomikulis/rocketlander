@@ -212,7 +212,7 @@ public class SimulationPanel extends JPanel {
 
 				long t = System.currentTimeMillis();
 				for (int mult = 1; mult < multiplier; mult++) {
-					System.out.println("STARTING");
+					// System.out.println("STARTING");
 					// NEED new thread
 					int finalMult = mult;
 					Runnable runnable =
@@ -220,8 +220,9 @@ public class SimulationPanel extends JPanel {
 									SimulationPanel.this), document, multiSims[finalMult]);
 					};
 					Thread thread = new Thread(runnable);
+					thread.setDaemon(true);
 					thread.start();
-					System.out.println("SUCCESSFULLY SUBMITTED START REQUEST");
+					// System.out.println("SUCCESSFULLY SUBMITTED START REQUEST");
 				}
 				System.out.println("GOGOGO");
 
