@@ -151,7 +151,7 @@ public class StateActionTuple implements Serializable {
         private void setThrust(double thrust) {
             assert (thrust >= 0.0);
             assert (thrust <= 1.0);
-            this.thrust = group_by_precision(thrust, thrust_precision);
+            this.thrust = group_by_precision(thrust * 100.0, thrust_precision);
         }
 
         private void setGimbleY(double gimbleY) {

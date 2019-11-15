@@ -66,7 +66,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
             state.setThrust(100);
         }
         action = model.generateAction(state);
-        action.thrust = 100;
 
         episodeStateActions.add(new StateActionTuple(state, action));
     }
@@ -158,6 +157,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 
         if ((status.getRocketPosition().z > 200.0) || (status.getSimulationTime() > 15.0)) {

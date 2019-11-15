@@ -82,7 +82,7 @@ public class RLModel {
         double [] thrustChanges = new double[] {
                 MIN_MOTOR_INCREMENT_PER_TIMESTEP, MAX_MOTOR_INCREMENT_PER_TIMESTEP
         };
-        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(currentThrust, thrustChanges, 0.0, 100);
+        ArrayList<Double> possibleThrustValues = generatePossibleActionValues(currentThrust, thrustChanges, 0, 100);
 
         double [] gimbleChanges = new double[] {
                 MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP
