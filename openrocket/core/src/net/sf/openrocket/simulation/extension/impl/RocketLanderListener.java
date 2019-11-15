@@ -211,7 +211,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double forceY = - RLVectoringThrust * gimbleComponentY;
         double forceZ = - RLVectoringThrust * gimbleComponentZ;  // note double negative
 
-        System.out.println(gimbleComponentX + " " + gimbleComponentY + " " + gimbleComponentZ);
+        // System.out.println(gimbleComponentX + " " + gimbleComponentY + " " + gimbleComponentZ);
 
         // final directed force calculations
         double finalForceX = forceX - fN;
@@ -289,7 +289,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
                     momY / RLVectoringStructureMassData.getLongitudinalInertia(),
                     momZ / RLVectoringStructureMassData.getRotationalInertia());
 
-            System.out.println(angularAcceleration.x + " " + angularAcceleration.y + " " + angularAcceleration.z);
+            // System.out.println(angularAcceleration.x + " " + angularAcceleration.y + " " + angularAcceleration.z);
 
             double rollAcceleration = angularAcceleration.z;
             // TODO: LOW: This should be hypot, but does it matter?
