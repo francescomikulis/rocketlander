@@ -212,6 +212,7 @@ public class SimulationPanel extends JPanel {
 
 				long t = System.currentTimeMillis();
 				for (int mult = 1; mult < multiplier; mult++) {
+					System.out.println("STARTING");
 					// NEED new thread
 					int finalMult = mult;
 					Runnable runnable =
@@ -220,7 +221,10 @@ public class SimulationPanel extends JPanel {
 					};
 					Thread thread = new Thread(runnable);
 					thread.start();
+					System.out.println("SUCCESSFULLY SUBMITTED START REQUEST");
 				}
+				System.out.println("GOGOGO");
+
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, multiSims[0]).setVisible(true);
 				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");

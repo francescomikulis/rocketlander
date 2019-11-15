@@ -42,16 +42,17 @@ public class StateActionTuple implements Serializable {
 
     private static double angle_precision = Math.PI / 360;
     private static double gimble_precision = Math.PI / 360;
+    private static int thrust_precision = 25;
 
     public static class State implements Serializable {
-        double altitude = 0.0;
-        double velocity = 0.0;
-        double angleX = 0.0;
-        double angleZ = 0.0;
+        int altitude = 0;
+        int velocity = 0;
+        int angleX = 0;
+        int angleZ = 0;
         //double angularVelocity = 0.0;
-        double gimbleY = 0.0;
-        double gimbleZ = 0.0;
-        double thrust = 0.0;
+        int gimbleY = 0;
+        int gimbleZ = 0;
+        int thrust = 0;
 
         public State(SimulationStatus status) {
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
@@ -90,37 +91,31 @@ public class StateActionTuple implements Serializable {
             this.angleZ = group_by_precision(angle, angle_precision);
         }
 
-        public void setGimbleYWithoutRounding(double roundedGimbleY) { this.gimbleY = roundedGimbleY; }
-
-        public void setGimbleZWithoutRounding(double roundedGimbleZ) { this.gimbleZ = roundedGimbleZ; }
-
         public double getGimbleInRadians(double angle) { return angle * gimble_precision; }
 
-        public void setThrust(double thurst) { this.thrust = thurst; }
+        public void setThrust(double thrust) {
+            assert (thrust >= 0.0);
+            assert (thrust <= 1.0);
+            this.thrust = group_by_precision(thrust, thrust_precision);
+        }
 
         // private void setAngularVelocity(double angularVelocity) { this.angularVelocity = group_by_precision(angularVelocity, 0.1); }
 
         @Override
         public String toString() { return stringifyObject(this); }
 
-        private int getDoubleHashCode(Double val) {
-            return Double.valueOf(val).hashCode();
-        }
-
         @Override
         public int hashCode() {
-            return getDoubleHashCode(altitude) + getDoubleHashCode(velocity) +
-                    getDoubleHashCode(special_area_angle_hashcode()) +
-                    getDoubleHashCode(gimbleY) + getDoubleHashCode(gimbleZ);
+            return velocity + altitude * (thrust + 1);
         }
 
-        private Double special_area_angle_hashcode() {
+        private int special_area_angle_hashcode() {
             if (this.angleZ == group_by_precision(Math.PI / 2, angle_precision)) {
-                this.angleX = 0.0;  // adapt for this special case.  May be needed when comparing equals code.
-                return (double) getDoubleHashCode(this.angleZ);
+                this.angleX = 0;  // adapt for this special case.  May be needed when comparing equals code.
+                return this.angleZ;
             }
 
-            return (double) getDoubleHashCode(this.angleX) + getDoubleHashCode(this.angleZ);
+            return this.angleX * this.angleZ;
         }
 
         @Override
@@ -139,12 +134,14 @@ public class StateActionTuple implements Serializable {
     }
 
     public static class Action implements Serializable {
-        double thrust = 0.0;
-        double gimbleY = 0.0;
-        double gimbleZ = 0.0;
+        int thrust = 0;
+        int gimbleY = 0;
+        int gimbleZ = 0;
 
         public Action(double thrust, double gimbleY, double gimbleZ) {
             setThrust(thrust);
+            gimbleY = gimbleY % (2 * Math.PI) - Math.PI;
+            gimbleZ = gimbleZ % (2 * Math.PI) - Math.PI;
             setGimbleY(gimbleY);
             setGimbleZ(gimbleZ);
             setGimbleY(0.0);
@@ -152,21 +149,35 @@ public class StateActionTuple implements Serializable {
         }
 
         private void setThrust(double thrust) {
-            this.thrust = thrust;
+            assert (thrust >= 0.0);
+            assert (thrust <= 1.0);
+            this.thrust = group_by_precision(thrust, thrust_precision);
         }
 
         private void setGimbleY(double gimbleY) {
             this.gimbleY = group_by_precision(gimbleY, gimble_precision);
         }
 
+        public double getGimbleYInRadians() {
+            return gimbleY * gimble_precision;
+        }
+
         private void setGimbleZ(double gimbleZ) { this.gimbleZ = group_by_precision(gimbleZ, gimble_precision); }
+
+        public double getGimbleZInRadians() {
+            return gimbleZ * gimble_precision;
+        }
+
+        public double getThrustDouble() {
+            return ((double)this.thrust) / 100.0;
+        }
 
         @Override
         public String toString() { return stringifyObject(this); }
 
         @Override
         public int hashCode() {
-            return Double.valueOf(thrust).hashCode() + Double.valueOf(gimbleY).hashCode() + Double.valueOf(gimbleZ).hashCode();
+            return thrust + gimbleY + gimbleZ;
         }
 
         @Override

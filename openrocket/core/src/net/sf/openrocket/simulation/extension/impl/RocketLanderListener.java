@@ -63,7 +63,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             //state.setGimbleZWithoutRounding(lastStateAction.action.gimbleZ);
             state.setThrust(lastStateAction.action.thrust);
         } else {
-            state.thrust = 100.0;
+            state.setThrust(100);
         }
         action = model.generateAction(state);
 
@@ -151,8 +151,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (RLVectoringFlightConditions == null) return null;
 
         //action = new Action(0.6, move_gimbal_to_y, move_gimbal_to_z);
-        RLVectoringThrust *= action.thrust / 100.0;
-        return calculateAcceleration(status, action.gimbleY, action.gimbleZ);
+        RLVectoringThrust *= (action.getThrustDouble());
+        return calculateAcceleration(status, action.getGimbleYInRadians(), action.getGimbleZInRadians());
     }
 
     @Override
@@ -198,18 +198,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double fN = RLVectoringAerodynamicForces.getCN() * dynP * refArea;
         double fSide = RLVectoringAerodynamicForces.getCside() * dynP * refArea;
 
-        // custom action here if wanted  TODO: NEED TO MOVE THE FOLLOWING LINES
-        double x = episodeStateActions.get(episodeStateActions.size() - 1).state.angleX;
-        double z = episodeStateActions.get(episodeStateActions.size() - 1).state.angleZ;
-        double theta = (x - Math.PI) % (2 * Math.PI);
-        double move_gimbal_to_x = Math.sin(z) * Math.cos(theta) / 10;
-        double move_gimbal_to_y = Math.sin(z) * Math.sin(theta) / 10;
-
-
         // gimble direction calculations
-        double gimbleComponentX = move_gimbal_to_x;
-        double gimbleComponentY = move_gimbal_to_y;
-        double gimbleComponentZ = - Math.sqrt(1.0 - Math.pow(gimbleComponentX, 2) + Math.pow(gimbleComponentY, 2));
+        double gimbleComponentZ = - Math.cos(gimbleZ);
+        double gimbleComponentX = gimbleComponentZ * Math.cos(gimbleY);
+        double gimbleComponentY = gimbleComponentZ * Math.sin(gimbleY);
 
         assert RLVectoringThrust >= 0;
 

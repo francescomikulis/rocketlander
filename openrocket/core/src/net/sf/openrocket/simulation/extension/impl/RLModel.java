@@ -87,8 +87,8 @@ public class RLModel {
         double [] gimbleChanges = new double[] {
                 MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP
         };
-        ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleY), gimbleChanges, - MAX_ANGLE, MAX_ANGLE);
-        ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleZ), gimbleChanges, - MAX_ANGLE, MAX_ANGLE);
+        ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleY), gimbleChanges, -Double.MAX_VALUE, Double.MAX_VALUE);
+        ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(state.getGimbleInRadians(state.gimbleZ), gimbleChanges, 0, Math.PI / 180 * 20);
         for (Double possibleThrust: possibleThrustValues) {
             for (Double possibleGimbleY: possibleGimbleYValues) {
                 for (Double possibleGimbleZ: possibleGimbleZValues) {
