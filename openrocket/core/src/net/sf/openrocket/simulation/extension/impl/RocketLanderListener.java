@@ -66,6 +66,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             state.setThrust(100);
         }
         action = model.generateAction(state);
+        action.thrust = 100;
 
         episodeStateActions.add(new StateActionTuple(state, action));
     }
@@ -200,8 +201,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         // gimble direction calculations
         double gimbleComponentZ = - Math.cos(gimbleZ);
-        double gimbleComponentX = gimbleComponentZ * Math.cos(gimbleY);
-        double gimbleComponentY = gimbleComponentZ * Math.sin(gimbleY);
+        double gimbleComponentX = Math.sin(gimbleZ) * Math.cos(gimbleY);
+        double gimbleComponentY = Math.sin(gimbleZ) * Math.sin(gimbleY);
 
         assert RLVectoringThrust >= 0;
 
@@ -209,6 +210,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double forceX = - RLVectoringThrust * gimbleComponentX;
         double forceY = - RLVectoringThrust * gimbleComponentY;
         double forceZ = - RLVectoringThrust * gimbleComponentZ;  // note double negative
+
+        System.out.println(gimbleComponentX + " " + gimbleComponentY + " " + gimbleComponentZ);
 
         // final directed force calculations
         double finalForceX = forceX - fN;
@@ -277,14 +280,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double Tx = - Math.signum(wx) * Math.PI * Math.pow(wx,2) * Math.pow(r,4) * h * rho * RLVectoringAerodynamicForces.getCyaw();
             double Ty = - Math.signum(wy) * Math.PI * Math.pow(wy,2) * Math.pow(r,4) * h * rho * RLVectoringAerodynamicForces.getCm();
 //            double Tz = - Math.signum(wz)*Math.PI*Math.pow(wy,2)*Math.pow(r,4)*h*rho*RLVectoringAerodynamicForces.getCyaw();
-            double momX = -Cyaw * dynP * refArea * refLength + gimbleMomentX + Tx;
-            double momY = Cm * dynP * refArea * refLength + gimbleMomentY + Ty;
+            double momX = -(Cyaw * dynP * refArea * refLength) + gimbleMomentX + Tx;
+            double momY = -(Cm * dynP * refArea * refLength) + gimbleMomentY + Ty;
             double momZ = RLVectoringAerodynamicForces.getCroll() * dynP * refArea * refLength;
 
             // Compute acceleration in rocket coordinates
             angularAcceleration = new Coordinate(momX / RLVectoringStructureMassData.getLongitudinalInertia(),
                     momY / RLVectoringStructureMassData.getLongitudinalInertia(),
                     momZ / RLVectoringStructureMassData.getRotationalInertia());
+
+            System.out.println(angularAcceleration.x + " " + angularAcceleration.y + " " + angularAcceleration.z);
 
             double rollAcceleration = angularAcceleration.z;
             // TODO: LOW: This should be hypot, but does it matter?
