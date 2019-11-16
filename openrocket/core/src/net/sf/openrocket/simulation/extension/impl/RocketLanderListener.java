@@ -169,8 +169,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 
-        if ((status.getRocketPosition().z > 200.0) || (status.getSimulationTime() > 15.0)) {
-            status.setRocketVelocity(terminalVelocity);
+
+        if (StateActionTuple.isStateOutOfBounds(state) || (status.getSimulationTime() > 15.0)) {
+            //status.setRocketVelocity(terminalVelocity);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 

@@ -10,12 +10,21 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 
 public class StateActionTuple implements Serializable {
+    // thurst
     public static double MIN_THRUST = 0.0;
     public static double MAX_THRUST = 1.0;
+    // orientation
+    public static double MIN_ORIENTATION_X = 0;
+    public static double MAX_ORIENTATION_X = Math.PI / 6; // 30deg
+    public static double MIN_ORIENTATION_Z = 0;
+    public static double MAX_ORIENTATION_Z = 2 * Math.PI;
+
     public static double MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25;
     public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0;
     public static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
     public static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 2;
+    public static double ALTITUDE_PRECISION = 1.0;
+    public static double VELOCITY_PRECISION = 1.0;
 
     public State state;
     public Action action;
@@ -104,11 +113,11 @@ public class StateActionTuple implements Serializable {
         }
 
         private void setAltitude(double altitude) {
-            this.altitude = group_by_precision(altitude, 1);
+            this.altitude = group_by_precision(altitude, ALTITUDE_PRECISION);
         }
 
         private void setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, 1);
+            this.velocity = group_by_precision(velocity, VELOCITY_PRECISION);
         }
 
         private void setAngleX(double angle) {
@@ -117,6 +126,22 @@ public class StateActionTuple implements Serializable {
 
         private void setAngleZ(double angle) {
             this.angleZ = group_by_precision(angle, MIN_ANGLE_INCREMENT_PER_TIMESTEP);
+        }
+
+        public double getAltitudeDouble() {
+            return altitude * ALTITUDE_PRECISION;
+        }
+
+        public double getVelocityDouble() {
+            return velocity * VELOCITY_PRECISION;
+        }
+
+        public double getAngleXDouble() {
+            return angleX * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
+        }
+
+        public double getAngleZDouble() {
+            return angleZ * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
         }
 
         @Override
@@ -182,7 +207,15 @@ public class StateActionTuple implements Serializable {
 
 
 
+    public static boolean isStateOutOfBounds(State state) {
+        if (state.getAltitudeDouble() > 200.0) return false;
+        if (state.getAngleXDouble() < MIN_ORIENTATION_X) return false;
+        if (state.getAngleXDouble() > MAX_ORIENTATION_X) return false;
+        if (state.getAngleZDouble() < MIN_ORIENTATION_Z) return false;
+        if (state.getAngleZDouble() > MAX_ORIENTATION_Z) return false;
 
+        return true;
+    }
 
 
     public static Quaternion getConjugateQuaternion(Quaternion quaternion) {
