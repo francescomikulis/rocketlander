@@ -75,11 +75,11 @@ public class RLModel {
         ArrayList<Double> possibleThrustValues = generatePossibleActionValues(
                 currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
         ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(
-                state.getGimbleYDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
+                state.getGimbleYDouble(), MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP,
                 -Math.PI * 4, Math.PI * 4
         );
         ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(
-                state.getGimbleZDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
+                state.getGimbleZDouble(), MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP,
                 0, Math.PI * 15.0 / 180.0
         );
         for (Double possibleThrust: possibleThrustValues) {

@@ -86,6 +86,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+
         // initialize the state and the action
         setupStateActionAndStore(status);
     }

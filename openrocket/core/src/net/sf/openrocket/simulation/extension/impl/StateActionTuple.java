@@ -10,21 +10,27 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 
 public class StateActionTuple implements Serializable {
+    // altitude & velocity
+    public static double ALTITUDE_PRECISION = 1.0;
+    public static double VELOCITY_PRECISION = 1.0;
     // thurst
     public static double MIN_THRUST = 0.0;
     public static double MAX_THRUST = 1.0;
-    // orientation
-    public static double MIN_ORIENTATION_X = 0;
-    public static double MAX_ORIENTATION_X = Math.PI / 6; // 30deg
-    public static double MIN_ORIENTATION_Z = 0;
-    public static double MAX_ORIENTATION_Z = 2 * Math.PI;
-
     public static double MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25;
     public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0;
-    public static double MIN_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    public static double MAX_ANGLE_INCREMENT_PER_TIMESTEP = Math.PI / 2;
-    public static double ALTITUDE_PRECISION = 1.0;
-    public static double VELOCITY_PRECISION = 1.0;
+    // orientation
+    public static double MIN_TERMINAL_ORIENTATION_Z = -Math.PI / 6; // 30deg
+    public static double MAX_TERMINAL_ORIENTATION_Z = Math.PI / 6; // 30deg
+    // orientation angles
+    public static double MIN_ANGLE_X_INCREMENT_PER_TIMESTEP = Math.PI / 360;
+    public static double MAX_ANGLE_X_INCREMENT_PER_TIMESTEP = Math.PI / 4;
+    public static double MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 36;
+    public static double MAX_ANGLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 4;
+    // gimble angles
+    public static double MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = Math.PI / 36;
+    public static double MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = Math.PI / 4;
+    public static double MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 36;
+    public static double MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 4;
 
     public State state;
     public Action action;
@@ -78,21 +84,21 @@ public class StateActionTuple implements Serializable {
         // GimbleY
 
         protected void setGimbleY(double gimbleY) {
-            this.gimbleY = group_by_precision(gimbleY, MIN_ANGLE_INCREMENT_PER_TIMESTEP);
+            this.gimbleY = group_by_precision(gimbleY, MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP);
         }
 
         public double getGimbleYDouble() {
             // Radians
-            return gimbleY * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
+            return gimbleY * MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP;
         }
 
         // GimbleZ
 
-        protected void setGimbleZ(double gimbleZ) { this.gimbleZ = group_by_precision(gimbleZ, MIN_ANGLE_INCREMENT_PER_TIMESTEP); }
+        protected void setGimbleZ(double gimbleZ) { this.gimbleZ = group_by_precision(gimbleZ, MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP); }
 
         public double getGimbleZDouble() {
             // Radians
-            return gimbleZ * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
+            return gimbleZ * MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP;
         }
     }
 
@@ -116,32 +122,32 @@ public class StateActionTuple implements Serializable {
             this.altitude = group_by_precision(altitude, ALTITUDE_PRECISION);
         }
 
-        private void setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, VELOCITY_PRECISION);
-        }
-
-        private void setAngleX(double angle) {
-            this.angleX = group_by_precision(angle, MIN_ANGLE_INCREMENT_PER_TIMESTEP);
-        }
-
-        private void setAngleZ(double angle) {
-            this.angleZ = group_by_precision(angle, MIN_ANGLE_INCREMENT_PER_TIMESTEP);
-        }
-
         public double getAltitudeDouble() {
             return altitude * ALTITUDE_PRECISION;
+        }
+
+        private void setVelocity(double velocity) {
+            this.velocity = group_by_precision(velocity, VELOCITY_PRECISION);
         }
 
         public double getVelocityDouble() {
             return velocity * VELOCITY_PRECISION;
         }
 
+        private void setAngleX(double angle) {
+            this.angleX = group_by_precision(angle, MIN_ANGLE_X_INCREMENT_PER_TIMESTEP);
+        }
+
         public double getAngleXDouble() {
-            return angleX * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
+            return angleX * MIN_ANGLE_X_INCREMENT_PER_TIMESTEP;
+        }
+
+        private void setAngleZ(double angle) {
+            this.angleZ = group_by_precision(angle, MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP);
         }
 
         public double getAngleZDouble() {
-            return angleZ * MIN_ANGLE_INCREMENT_PER_TIMESTEP;
+            return angleZ * MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP;
         }
 
         @Override
@@ -150,7 +156,7 @@ public class StateActionTuple implements Serializable {
         }
 
         private int special_area_angle_hashcode() {
-            if (this.angleZ == group_by_precision(Math.PI / 2, MIN_ANGLE_INCREMENT_PER_TIMESTEP)) {
+            if (this.angleZ == group_by_precision(Math.PI / 2, MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP)) {
                 this.angleX = 0;  // adapt for this special case.  May be needed when comparing equals code.
                 return this.angleZ;
             }
@@ -208,13 +214,11 @@ public class StateActionTuple implements Serializable {
 
 
     public static boolean isStateOutOfBounds(State state) {
-        if (state.getAltitudeDouble() > 200.0) return false;
-        if (state.getAngleXDouble() < MIN_ORIENTATION_X) return false;
-        if (state.getAngleXDouble() > MAX_ORIENTATION_X) return false;
-        if (state.getAngleZDouble() < MIN_ORIENTATION_Z) return false;
-        if (state.getAngleZDouble() > MAX_ORIENTATION_Z) return false;
+        if (state.getAltitudeDouble() > 200.0) return true;
+        if (state.getAngleZDouble() < MIN_TERMINAL_ORIENTATION_Z) return true;
+        if (state.getAngleZDouble() > MAX_TERMINAL_ORIENTATION_Z) return true;
 
-        return true;
+        return false;
     }
 
 
