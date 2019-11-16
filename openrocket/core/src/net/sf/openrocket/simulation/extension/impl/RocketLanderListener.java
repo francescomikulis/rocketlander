@@ -111,9 +111,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
     */
 
+    public void setRollToZero(SimulationStatus status) {
+        Coordinate rotVel = status.getRocketRotationVelocity();
+        rotVel = rotVel.setZ(0.0);
+        status.setRocketRotationVelocity(rotVel);
+    }
+
     @Override
     public boolean preStep(SimulationStatus status) {
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        setRollToZero(status);
         return true;
     }
 
@@ -158,6 +165,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        setRollToZero(status);
 
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 

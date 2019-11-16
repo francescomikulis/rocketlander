@@ -76,11 +76,11 @@ public class RLModel {
                 currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
         ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(
                 state.getGimbleYDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
-                -Double.MAX_VALUE, Double.MAX_VALUE
+                -Math.PI * 4, Math.PI * 4
         );
         ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(
                 state.getGimbleZDouble(), MIN_ANGLE_INCREMENT_PER_TIMESTEP, MAX_ANGLE_INCREMENT_PER_TIMESTEP,
-                0, Math.PI / 180.0 * 20.0
+                0, Math.PI * 15.0 / 180.0
         );
         for (Double possibleThrust: possibleThrustValues) {
             for (Double possibleGimbleY: possibleGimbleYValues) {
@@ -264,9 +264,13 @@ public class RLModel {
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
-            double originalValue = valueFunction(stateActionTuple);
-            valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
-            G = (discount * G) - reward(stateActionTuple.state);
+            try {
+                double originalValue = valueFunction(stateActionTuple);
+                valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
+                G = (discount * G) - reward(stateActionTuple.state);
+            } catch (Exception e) {
+                System.out.println("EXCEPTION HERE WHEN EVALUATING VALUE FUNCTION");
+            }
         }
     }
 
