@@ -48,7 +48,6 @@ public class SwingStartup {
 	 * OpenRocket startup main method.
 	 */
 	public static void main(final String[] args) throws Exception {
-		
 		// Check for "openrocket.debug" property before anything else
 		checkDebugStatus();
 
@@ -57,7 +56,7 @@ public class SwingStartup {
 		}
 		
 		// Initialize logging first so we can use it
-		initializeLogging();
+		//initializeLogging();
 		log.info("Starting up OpenRocket version {}", BuildProperties.getVersion());
 		
 		// Check that we're not running headless
