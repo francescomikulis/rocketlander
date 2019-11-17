@@ -79,12 +79,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.getSimulationConditions().setTimeStep(timeStep);
 
         // set the rocket position at the launch altitude as defined by the extension
-        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(100, variation)));
-        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(50, variation)));
+        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-40, variation))));
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-30, variation))));
+        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
         status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
@@ -184,7 +184,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        model.updateTerminalStateActionValueFunction(episodeStateActions);
+        if (exception == null)
+            model.updateTerminalStateActionValueFunction(episodeStateActions);
     }
 
 

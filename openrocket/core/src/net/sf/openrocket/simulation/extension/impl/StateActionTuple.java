@@ -1,6 +1,5 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.util.Coordinate;
@@ -10,6 +9,14 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 
 public class StateActionTuple implements Serializable {
+    public static double _1deg = Math.PI / 180;
+    public static double _30deg = Math.PI / 6;
+    public static double _45deg = Math.PI / 4;
+    public static double _5deg = Math.PI / 36;
+    public static double _2deg = Math.PI / 90;
+    public static double _15deg = Math.PI / 12;
+    public static double _720deg = Math.PI * 4;
+
     // altitude & velocity
     public static double ALTITUDE_PRECISION = 1.0;
     public static double VELOCITY_PRECISION = 1.0;
@@ -19,18 +26,21 @@ public class StateActionTuple implements Serializable {
     public static double MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25;
     public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0;
     // orientation
-    public static double MIN_TERMINAL_ORIENTATION_Z = -Math.PI / 6; // 30deg
-    public static double MAX_TERMINAL_ORIENTATION_Z = Math.PI / 6; // 30deg
+    public static double MIN_TERMINAL_ORIENTATION_Z = -_30deg; // 30deg
+    public static double MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
     // orientation angles
-    public static double MIN_ANGLE_X_INCREMENT_PER_TIMESTEP = Math.PI / 360;
-    public static double MAX_ANGLE_X_INCREMENT_PER_TIMESTEP = Math.PI / 4;
-    public static double MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    public static double MAX_ANGLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 4;
+    public static double ANGLE_X_PRECISION = _45deg;
+    public static double ANGLE_Z_PRECISION = _2deg;
     // gimble angles
-    public static double MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    public static double MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = Math.PI / 4;
-    public static double MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 36;
-    public static double MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = Math.PI / 4;
+    public static double MIN_GIMBLE_Y = -_720deg;
+    public static double MAX_GIMBLE_Y = _720deg;
+    public static double MIN_GIMBLE_Z = 0;
+    public static double MAX_GIMBLE_Z = _15deg;
+
+    public static double MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static double MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static double MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg;
+    public static double MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
 
     public State state;
     public Action action;
@@ -75,7 +85,7 @@ public class StateActionTuple implements Serializable {
         public double getThrustDouble() { return ((double)this.thrust * MIN_THRUST_INCREMENT_PER_TIMESTEP); }
 
         public void setThrust(double thrust) {
-            if ((thrust < 0.0) || (thrust > 1.0)) {
+            if ((thrust < MIN_THRUST) || (thrust > MAX_THRUST)) {
                 throw new IllegalArgumentException("Invalid Thrust");
             }
             this.thrust = group_by_precision(thrust, MIN_THRUST_INCREMENT_PER_TIMESTEP);
@@ -135,19 +145,19 @@ public class StateActionTuple implements Serializable {
         }
 
         private void setAngleX(double angle) {
-            this.angleX = group_by_precision(angle, MIN_ANGLE_X_INCREMENT_PER_TIMESTEP);
+            this.angleX = group_by_precision(angle, ANGLE_X_PRECISION);
         }
 
         public double getAngleXDouble() {
-            return angleX * MIN_ANGLE_X_INCREMENT_PER_TIMESTEP;
+            return angleX * ANGLE_X_PRECISION;
         }
 
         private void setAngleZ(double angle) {
-            this.angleZ = group_by_precision(angle, MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP);
+            this.angleZ = group_by_precision(angle, ANGLE_Z_PRECISION);
         }
 
         public double getAngleZDouble() {
-            return angleZ * MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP;
+            return angleZ * ANGLE_Z_PRECISION;
         }
 
         @Override
@@ -156,7 +166,7 @@ public class StateActionTuple implements Serializable {
         }
 
         private int special_area_angle_hashcode() {
-            if (this.angleZ == group_by_precision(Math.PI / 2, MIN_ANGLE_Z_INCREMENT_PER_TIMESTEP)) {
+            if (this.angleZ == group_by_precision(Math.PI / 2, ANGLE_Z_PRECISION)) {
                 this.angleX = 0;  // adapt for this special case.  May be needed when comparing equals code.
                 return this.angleZ;
             }
@@ -217,6 +227,7 @@ public class StateActionTuple implements Serializable {
         if (state.getAltitudeDouble() > 200.0) return true;
         if (state.getAngleZDouble() < MIN_TERMINAL_ORIENTATION_Z) return true;
         if (state.getAngleZDouble() > MAX_TERMINAL_ORIENTATION_Z) return true;
+        // TODO: consider terminating if the rocket starts going back upwards
 
         return false;
     }

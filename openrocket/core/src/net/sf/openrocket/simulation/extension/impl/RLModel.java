@@ -76,11 +76,11 @@ public class RLModel {
                 currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
         ArrayList<Double> possibleGimbleYValues = generatePossibleActionValues(
                 state.getGimbleYDouble(), MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP,
-                -Math.PI * 4, Math.PI * 4
+                MIN_GIMBLE_Y, MAX_GIMBLE_Y
         );
         ArrayList<Double> possibleGimbleZValues = generatePossibleActionValues(
                 state.getGimbleZDouble(), MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP,
-                0, Math.PI * 15.0 / 180.0
+                MIN_GIMBLE_Z, MAX_GIMBLE_Z
         );
         for (Double possibleThrust: possibleThrustValues) {
             for (Double possibleGimbleY: possibleGimbleYValues) {
@@ -162,6 +162,7 @@ public class RLModel {
 
         double val = Double.NEGATIVE_INFINITY;
         ArrayList<Action> bestActions = new ArrayList<>();
+        bestActions.add(new Action(state.getThrustDouble(), state.getGimbleYDouble(), state.getGimbleZDouble()));
 
         boolean greedy = ONLY_GREEDY;
         if (randomGenerator.nextDouble() <= 0.05) {
@@ -169,19 +170,23 @@ public class RLModel {
         }
 
         for (Action action: possibleActions) {
-            double v = func.apply(state, action);
-            if (greedy) {
-                if (v > val) {
-                    // value is best compared to all previous encounters.  Reset bestAction ArrayList.
-                    val = v;
-                    bestActions = new ArrayList<>();
-                    bestActions.add(action);
-                } else if (v == val) {
-                    // value is equal to other best value.  Add to bestAction ArrayList.
+            try {
+                double v = func.apply(state, action);
+                if (greedy) {
+                    if (v > val) {
+                        // value is best compared to all previous encounters.  Reset bestAction ArrayList.
+                        val = v;
+                        bestActions = new ArrayList<>();
+                        bestActions.add(action);
+                    } else if (v == val) {
+                        // value is equal to other best value.  Add to bestAction ArrayList.
+                        bestActions.add(action);
+                    }
+                } else {
                     bestActions.add(action);
                 }
-            } else {
-                bestActions.add(action);
+            } catch (Exception e) {
+                System.out.println("Failed to compute the value in the hashmap");
             }
         }
         // ties broken completely at random
