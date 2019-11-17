@@ -230,20 +230,20 @@ public class RLModel {
 
     private double terminalReward(State lastState) {
         double lowSpeedLandingBonus = 0.0;
-        if (Math.abs(lastState.velocity) <= 2.0) {
+        if (Math.abs(lastState.getVelocityDouble()) <= 2.0) {
             lowSpeedLandingBonus = 50;
-            if (Math.abs(lastState.velocity) <= 1.0)
+            if (Math.abs(lastState.getVelocityDouble()) <= 1.0)
                 lowSpeedLandingBonus = 100;
         }
 
-        double altitudeMultiplier = lastState.altitude;
-        if (altitudeMultiplier < 1) {
+        double altitudeMultiplier = lastState.getAltitudeDouble();
+        if (altitudeMultiplier <= 2.0) {
             altitudeMultiplier = 1;
         } else {
             lowSpeedLandingBonus = 0;
         }
 
-        double landingVelocity = Math.abs(lastState.velocity);
+        double landingVelocity = Math.abs(lastState.getVelocityDouble());
         // this edge case will tell the system it was doing well because the multiplication wasn't penalizing enough
         if ((landingVelocity < 100) && (altitudeMultiplier != 1)) {
             landingVelocity = 100;
