@@ -24,9 +24,13 @@ public class RLModel {
     private static double THRUST_ON_PENALTY = -5;
 
     private RLMethod currentMethod = RLMethod.MONTE;
+    public SimulationType simulationType = SimulationType._1D;
 
     enum RLMethod {
         MONTE, TD0, SEMI_SARSA
+    }
+    enum SimulationType {
+        _1D,_3D
     }
 
     private static volatile RLModel instance;

@@ -66,6 +66,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
             state.setThrust(1.0);
         }
         action = model.generateAction(state);
+        if (model.simulationType == SimulationType._1D){
+            action.setGimbleY(0.0); // prevent gimble action if 1D sim
+            action.setGimbleZ(0.0);
+        }
 
         episodeStateActions.add(new StateActionTuple(state, action));
     }
@@ -121,8 +125,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public boolean preStep(SimulationStatus status) {
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
-        setRollToZero(status);
+        if (model.simulationType == SimulationType._1D){
+            status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
+        } else if(model.simulationType == SimulationType._3D) {
+            setRollToZero(status); // prevent rocket from spinning
+        }
         return true;
     }
 
@@ -166,15 +173,19 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
-        setRollToZero(status);
+        if (model.simulationType == SimulationType._1D){
+            status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
+        } else if(model.simulationType == SimulationType._3D) {
+            setRollToZero(status); // prevent rocket from spinning
+        }
 
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 
         if (StateActionTuple.isStateOutOfBounds(state) || (status.getSimulationTime() > 15.0)) {
             status.setRocketVelocity(terminalVelocity);
             setupStateActionAndStore(status);
-            model.updateStepStateActionValueFunction(episodeStateActions);
+            //model.updateStepStateActionValueFunction(episodeStateActions); WRONG!!
+            model.updateTerminalStateActionValueFunction(episodeStateActions);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
