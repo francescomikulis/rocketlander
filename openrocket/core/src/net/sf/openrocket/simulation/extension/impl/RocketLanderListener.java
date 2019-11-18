@@ -184,7 +184,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (StateActionTuple.isStateOutOfBounds(state) || (status.getSimulationTime() > 15.0)) {
             status.setRocketVelocity(terminalVelocity);
             setupStateActionAndStore(status);
-            //model.updateStepStateActionValueFunction(episodeStateActions); WRONG!!
             model.updateTerminalStateActionValueFunction(episodeStateActions);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }

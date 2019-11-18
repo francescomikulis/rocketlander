@@ -35,10 +35,6 @@ public class RLObjectFileStore {
         return (ArrayList) readObjects(episodeDataFileName);
     }
 
-    public void storeEpisodesData(ArrayList episodesData){
-        storeObject(episodeDataFileName, episodesData);
-    }
-
     public HashMap<StateActionTuple, Double> readActionValueFunction(String filenameExtension){
         return (HashMap<StateActionTuple, Double>) readObjects(actionValueFunctionFileName + filenameExtension);
     }
@@ -69,22 +65,18 @@ public class RLObjectFileStore {
     private Object readObjects(String fileName) {
         InputStream fileIs = null;
         ObjectInputStream objIs = null;
-        Object data = new Object();
+        Object data = null;
         try {
             fileIs = new FileInputStream(fileName);
             objIs = new ObjectInputStream(fileIs);
             data = objIs.readObject();
+            objIs.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (objIs != null) objIs.close();
-            } catch (Exception ex) {
-            }
         }
         return data;
     }

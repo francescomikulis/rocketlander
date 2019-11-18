@@ -198,38 +198,17 @@ public class RLModel {
     }
 
     public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        try {
-            mutex.acquire();
-
             if(currentMethod == RLMethod.SEMI_SARSA)
                 actuallySemiSarsaUpdateStateActionValueFunction(stateActionTuples);
             else if(currentMethod == RLMethod.TD0)
                 actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::reward);
-
-            // actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);
-
-
-        } catch (InterruptedException e) {
-            // exception handling code
-        } finally {
-            mutex.release();
-        }
     }
 
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
-       //try {
-       //     mutex.acquire();
-
             if(currentMethod == RLMethod.MONTE)
                 actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);
             else if(currentMethod == RLMethod.TD0)
                 actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::terminalReward);
-
-        //} catch (InterruptedException e) {
-            // exception handling code
-        //} finally {
-        //    mutex.release();
-        //}
     }
 
     private double terminalReward(State lastState) {
@@ -259,7 +238,7 @@ public class RLModel {
     private double reward(State state) {
         double reward = 0.0;
 
-        reward = - Math.abs(state.velocity) / 10;
+        reward = - Math.abs(state.getVelocityDouble()) / 10;
         return reward;
     }
 

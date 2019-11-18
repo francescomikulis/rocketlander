@@ -117,7 +117,6 @@ public class RLEpisodeManager {
 
     public void addAndStoreEpisode(HashMap<String, ArrayList<Double>> episode) {
         episodesData.add(episode);
-        mof.storeEpisodesData(episodesData);
     }
 
     /*

@@ -17,22 +17,8 @@ public class Visualize3D extends AbstractSimulationListener {
 	private static final double DEFAULT_ALTITUDE = 1000.0;
 	
 	@Override
-	public void startSimulation(SimulationStatus status) throws SimulationException {
-		
-		// Get the launch altitude
-		double altitude;
-		String arg = System.getProperty("openrocket.visualize3d.altitude");
-		try {
-			altitude = Double.parseDouble(arg);
-		} catch (RuntimeException e) {
-			altitude = DEFAULT_ALTITUDE;
-		}
-		
-		// Modify launch position
-		Coordinate position = status.getRocketPosition();
-		position = position.add(0, 0, altitude);
-		status.setRocketPosition(position);
-		
+	public void startSimulation(SimulationStatus status) {
+
 	}
 	
 }
