@@ -414,15 +414,13 @@ public class Rocket extends ComponentAssembly {
 	public void addComponentChangeListener(ComponentChangeListener l) {
 		checkState();
 		listenerList.add(l);
-		log.trace("Added ComponentChangeListener " + l + ", current number of listeners is " +
-				listenerList.size());
+		// MODIFIED CODE HERE log.trace("Added ComponentChangeListener " + l + ", current number of listeners is " + listenerList.size());
 	}
 	
 	@Override
 	public void removeComponentChangeListener(ComponentChangeListener l) {
 		listenerList.remove(l);
-		log.trace("Removed ComponentChangeListener " + l + ", current number of listeners is " +
-				listenerList.size());
+		// MODIFIED CODE HERE log.trace("Removed ComponentChangeListener " + l + ", current number of listeners is " + listenerList.size());
 	}
 	
 	@Override
@@ -454,7 +452,7 @@ public class Rocket extends ComponentAssembly {
 			
 			// Check whether frozen
 			if (freezeList != null) {
-				log.debug("Rocket is in frozen state, adding event " + cce + " info freeze list");
+				// MODIFIED CODE HERE log.debug("Rocket is in frozen state, adding event " + cce + " info freeze list");
 				freezeList.add(cce);
 				return;
 			}
@@ -536,7 +534,7 @@ public class Rocket extends ComponentAssembly {
 		checkState();
 		if (freezeList == null) {
 			freezeList = new LinkedList<>();
-			log.debug("Freezing Rocket");
+			// MODIFIED CODE HERE log.debug("Freezing Rocket");
 		} else {
 			Application.getExceptionHandler().handleErrorCondition("Attempting to freeze Rocket when it is already frozen, " +
 					"freezeList=" + freezeList);
@@ -557,12 +555,12 @@ public class Rocket extends ComponentAssembly {
 			return;
 		}
 		if (freezeList.size() == 0) {
-			log.warn("Thawing rocket with no changes made");
+			// MODIFIED CODE HERE log.warn("Thawing rocket with no changes made");
 			freezeList = null;
 			return;
 		}
 		
-		log.debug("Thawing rocket, freezeList=" + freezeList);
+		// MODIFIED CODE HERE log.debug("Thawing rocket, freezeList=" + freezeList);
 		
 		int type = 0;
 		Object c = null;
@@ -762,7 +760,7 @@ public class Rocket extends ComponentAssembly {
 	public void setFlightConfiguration(final FlightConfigurationId fcid, FlightConfiguration newConfig) {
 		checkState();
 		if( fcid.hasError() ){
-			log.error("attempt to set a 'fcid = config' with a error fcid.  Ignored.", new IllegalArgumentException("error id:"+fcid));
+			// MODIFIED CODE HERE log.error("attempt to set a 'fcid = config' with a error fcid.  Ignored.", new IllegalArgumentException("error id:"+fcid));
 			return;
 		}
 

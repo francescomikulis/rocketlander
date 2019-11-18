@@ -60,12 +60,12 @@ public class UndoRedoAction extends AbstractAction implements UndoRedoListener {
 	public void actionPerformed(ActionEvent e) {
 		switch (type) {
 		case UNDO:
-			log.info(Markers.USER_MARKER, "Performing undo, event=" + e);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Performing undo, event=" + e);
 			document.undo();
 			break;
 		
 		case REDO:
-			log.info(Markers.USER_MARKER, "Performing redo, event=" + e);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Performing redo, event=" + e);
 			document.redo();
 			break;
 		}

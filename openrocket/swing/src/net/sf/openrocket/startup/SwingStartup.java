@@ -51,16 +51,18 @@ public class SwingStartup {
 		// Check for "openrocket.debug" property before anything else
 		checkDebugStatus();
 
+		// MODIFIED CODE HERE   //
+		System.clearProperty("openrocket.debug.layout");
 		if (System.getProperty("openrocket.debug.layout") != null) {
 			LayoutUtil.setGlobalDebugMillis(100);
 		}
 		
 		// Initialize logging first so we can use it
 		//initializeLogging();
-		log.info("Starting up OpenRocket version {}", BuildProperties.getVersion());
+		// MODIFIED CODE HERE log.info("Starting up OpenRocket version {}", BuildProperties.getVersion());
 		
 		// Check that we're not running headless
-		log.info("Checking for graphics head");
+		// MODIFIED CODE HERE log.info("Checking for graphics head");
 		checkHead();
 		
 		// If running on a MAC set up OSX UI Elements.
@@ -71,7 +73,7 @@ public class SwingStartup {
 		final SwingStartup runner = new SwingStartup();
 		
 		// Run the actual startup method in the EDT since it can use progress dialogs etc.
-		log.info("Moving startup to EDT");
+		// MODIFIED CODE HERE log.info("Moving startup to EDT");
 		SwingUtilities.invokeAndWait(new Runnable() {
 			@Override
 			public void run() {
@@ -79,7 +81,7 @@ public class SwingStartup {
 			}
 		});
 		
-		log.info("Startup complete");
+		// MODIFIED CODE HERE log.info("Startup complete");
 		
 	}
 	
@@ -87,12 +89,19 @@ public class SwingStartup {
 	 * Set proper system properties if openrocket.debug is defined.
 	 */
 	private static void checkDebugStatus() {
+		// MODIFIED CODE HERE   //
+		System.clearProperty("openrocket.debug");
+		setPropertyIfNotSet("jogl.debug", "none");
+		return;
+		/*
+
 		if (System.getProperty("openrocket.debug") != null) {
 			setPropertyIfNotSet("openrocket.debug.menu", "true");
 			setPropertyIfNotSet("openrocket.debug.mutexlocation", "true");
 			setPropertyIfNotSet("openrocket.debug.motordigest", "true");
 			setPropertyIfNotSet("jogl.debug", "all");
 		}
+		 */
 	}
 	
 	private static void setPropertyIfNotSet(String key, String value) {
@@ -125,17 +134,17 @@ public class SwingStartup {
 	private void runInEDT(String[] args) {
 		
 		// Initialize the splash screen with version info
-		log.info("Initializing the splash screen");
+		// MODIFIED CODE HERE log.info("Initializing the splash screen");
 		Splash.init();
 		
 		// Setup the uncaught exception handler
-		log.info("Registering exception handler");
+		// MODIFIED CODE HERE log.info("Registering exception handler");
 		SwingExceptionHandler exceptionHandler = new SwingExceptionHandler();
 		Application.setExceptionHandler(exceptionHandler);
 		exceptionHandler.registerExceptionHandler();
 		
 		// Load motors etc.
-		log.info("Loading databases");
+		// MODIFIED CODE HERE log.info("Loading databases");
 		
 		GuiModule guiModule = new GuiModule();
 		Module pluginModule = new PluginModule();
@@ -147,16 +156,16 @@ public class SwingStartup {
 		// Start update info fetching
 		final UpdateInfoRetriever updateInfo;
 		if (Application.getPreferences().getCheckUpdates()) {
-			log.info("Starting update check");
+			// MODIFIED CODE HERE log.info("Starting update check");
 			updateInfo = new UpdateInfoRetriever();
 			updateInfo.start();
 		} else {
-			log.info("Update check disabled");
+			// MODIFIED CODE HERE log.info("Update check disabled");
 			updateInfo = null;
 		}
 		
 		// Set the best available look-and-feel
-		log.info("Setting best LAF");
+		// MODIFIED CODE HERE log.info("Setting best LAF");
 		GUIUtil.setBestLAF();
 		
 		// Set tooltip delay time.  Tooltips are used in MotorChooserDialog extensively.
@@ -168,7 +177,7 @@ public class SwingStartup {
 		Databases.fakeMethod();
 		
 		// Starting action (load files or open new document)
-		log.info("Opening main application window");
+		// MODIFIED CODE HERE log.info("Opening main application window");
 		if (!handleCommandLine(args)) {
 			if (!Application.getPreferences().isAutoOpenLastDesignOnStartupEnabled()) {
 				BasicFrame.newAction();
@@ -190,7 +199,7 @@ public class SwingStartup {
 		}
 		
 		// Check whether update info has been fetched or whether it needs more time
-		log.info("Checking update status");
+		// MODIFIED CODE HERE log.info("Checking update status");
 		checkUpdateStatus(updateInfo);
 		
 	}
@@ -201,7 +210,7 @@ public class SwingStartup {
 	private static void checkHead() {
 		
 		if (GraphicsEnvironment.isHeadless()) {
-			log.error("Application is headless.");
+			// MODIFIED CODE HERE log.error("Application is headless.");
 			System.err.println();
 			System.err.println("OpenRocket cannot currently be run without the graphical " +
 					"user interface.");

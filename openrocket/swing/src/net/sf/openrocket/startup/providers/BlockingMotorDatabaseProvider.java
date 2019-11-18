@@ -62,7 +62,7 @@ public class BlockingMotorDatabaseProvider implements Provider<ThrustCurveMotorS
 		SplashScreen splash = Splash.getSplashScreen();
 		if (splash == null || !splash.isVisible()) {
 			
-			log.info("Motor database not loaded yet, displaying dialog");
+			// MODIFIED CODE HERE log.info("Motor database not loaded yet, displaying dialog");
 			
 			final LoadingDialog dialog = new LoadingDialog();
 			
@@ -73,10 +73,10 @@ public class BlockingMotorDatabaseProvider implements Provider<ThrustCurveMotorS
 				public void actionPerformed(ActionEvent e) {
 					count++;
 					if (loader.isLoaded()) {
-						log.debug("Database loaded, closing dialog");
+						// MODIFIED CODE HERE log.debug("Database loaded, closing dialog");
 						dialog.setVisible(false);
 					} else if (count % 10 == 0) {
-						log.debug("Database not loaded, count=" + count);
+						// MODIFIED CODE HERE log.debug("Database not loaded, count=" + count);
 					}
 				}
 			});
@@ -88,12 +88,12 @@ public class BlockingMotorDatabaseProvider implements Provider<ThrustCurveMotorS
 			
 		} else {
 			
-			log.info("Motor database not loaded yet, splash screen still present, delaying until loaded");
+			// MODIFIED CODE HERE log.info("Motor database not loaded yet, splash screen still present, delaying until loaded");
 			loader.blockUntilLoaded();
 			
 		}
 		
-		log.info("Motor database now loaded");
+		// MODIFIED CODE HERE log.info("Motor database now loaded");
 	}
 	
 	

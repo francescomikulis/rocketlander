@@ -63,7 +63,7 @@ public class OpenRocketSaver extends RocketSaver {
 	@Override
 	public void save(OutputStream output, OpenRocketDocument document, StorageOptions options) throws IOException {
 		
-		log.info("Saving .ork file");
+		// MODIFIED CODE HERE log.info("Saving .ork file");
 		
 		dest = new BufferedWriter(new OutputStreamWriter(output, OPENROCKET_CHARSET));
 		
@@ -71,7 +71,7 @@ public class OpenRocketSaver extends RocketSaver {
 		final int fileVersion = calculateNecessaryFileVersion(document, options);
 		final String fileVersionString =
 				(fileVersion / FILE_VERSION_DIVISOR) + "." + (fileVersion % FILE_VERSION_DIVISOR);
-		log.debug("Storing file version " + fileVersionString);
+		// MODIFIED CODE HERE log.debug("Storing file version " + fileVersionString);
 		
 		
 		this.indent = 0;
@@ -106,7 +106,7 @@ public class OpenRocketSaver extends RocketSaver {
 		indent--;
 		writeln("</openrocket>");
 		
-		log.debug("Writing complete, flushing buffers");
+		// MODIFIED CODE HERE log.debug("Writing complete, flushing buffers");
 		dest.flush();
 	}
 	
@@ -269,7 +269,7 @@ public class OpenRocketSaver extends RocketSaver {
 	
 	@SuppressWarnings("unchecked")
 	private void saveComponent(RocketComponent component) throws IOException {
-		log.debug("Saving component " + component.getComponentName());
+		// MODIFIED CODE HERE log.debug("Saving component " + component.getComponentName());
 		
 		Reflection.Method m = findGetElementsMethod(component);
 		
@@ -454,7 +454,7 @@ public class OpenRocketSaver extends RocketSaver {
 			writeln("</entry>");
 		} else {
 			// Unknown type
-			log.error("Unknown configuration value type " + value.getClass() + "  value=" + value);
+			// MODIFIED CODE HERE log.error("Unknown configuration value type " + value.getClass() + "  value=" + value);
 		}
 	}
 	

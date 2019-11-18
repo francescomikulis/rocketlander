@@ -159,7 +159,7 @@ public class ExpressionBuilderDialog extends JDialog {
 		insertVariableButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.debug("Opening insert variable window");
+				// MODIFIED CODE HERE log.debug("Opening insert variable window");
 				Window myParentWindow = SwingUtilities.getWindowAncestor(ExpressionBuilderDialog.this);
 				new VariableSelector(myParentWindow, ExpressionBuilderDialog.this, doc).setVisible(true);
 			}
@@ -170,7 +170,7 @@ public class ExpressionBuilderDialog extends JDialog {
 		insertOperatorButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.debug("Opening insert operator window");
+				// MODIFIED CODE HERE log.debug("Opening insert operator window");
 				Window myParentWindow = SwingUtilities.getWindowAncestor(ExpressionBuilderDialog.this);
 				new OperatorSelector(myParentWindow, ExpressionBuilderDialog.this).setVisible(true);
 			}

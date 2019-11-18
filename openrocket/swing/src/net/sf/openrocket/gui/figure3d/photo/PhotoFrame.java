@@ -111,7 +111,7 @@ public class PhotoFrame extends JFrame {
 			item.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					log.info(Markers.USER_MARKER, "Open... selected");
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Open... selected");
 
 					JFileChooser chooser = new JFileChooser();
 
@@ -126,7 +126,7 @@ public class PhotoFrame extends JFrame {
 					int option = chooser.showOpenDialog(PhotoFrame.this);
 					if (option == JFileChooser.APPROVE_OPTION) {
 						File file = chooser.getSelectedFile();
-						log.debug("Opening File " + file.getAbsolutePath());
+						// MODIFIED CODE HERE log.debug("Opening File " + file.getAbsolutePath());
 						((SwingPreferences) Application.getPreferences()).setDefaultDirectory(chooser
 								.getCurrentDirectory());
 						GeneralRocketLoader grl = new GeneralRocketLoader(file);
@@ -150,14 +150,14 @@ public class PhotoFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Save... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Save... selected");
 				photoPanel.addImageCallback(new PhotoPanel.ImageCallback() {
 					@Override
 					public void performAction(final BufferedImage image) {
 						SwingUtilities.invokeLater(new Runnable() {
 							@Override
 							public void run() {
-								log.info("Got image {} to save...", image);
+								// MODIFIED CODE HERE log.info("Got image {} to save...", image);
 
 								final FileFilter png = new SimpleFileFilter(trans.get("PhotoFrame.fileFilter.png"),
 										".png");
@@ -173,19 +173,19 @@ public class PhotoFrame extends JFrame {
 								final int option = chooser.showSaveDialog(PhotoFrame.this);
 
 								if (option != JFileChooser.APPROVE_OPTION) {
-									log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
+									// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
 									return;
 								}
 
 								final File file = FileHelper.forceExtension(chooser.getSelectedFile(), "png");
 								if (file == null) {
-									log.info(Markers.USER_MARKER, "User did not select a file");
+									// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User did not select a file");
 									return;
 								}
 
 								((SwingPreferences) Application.getPreferences()).setDefaultDirectory(chooser
 										.getCurrentDirectory());
-								log.info(Markers.USER_MARKER, "User chose to save image as {}", file);
+								// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User chose to save image as {}", file);
 
 								if (FileHelper.confirmWrite(file, PhotoFrame.this)) {
 									try {
@@ -311,13 +311,13 @@ public class PhotoFrame extends JFrame {
 		LoggingSystemSetup.addConsoleAppender();
 
 		// Setup the uncaught exception handler
-		log.info("Registering exception handler");
+		// MODIFIED CODE HERE log.info("Registering exception handler");
 		SwingExceptionHandler exceptionHandler = new SwingExceptionHandler();
 		Application.setExceptionHandler(exceptionHandler);
 		exceptionHandler.registerExceptionHandler();
 
 		// Load motors etc.
-		log.info("Loading databases");
+		// MODIFIED CODE HERE log.info("Loading databases");
 
 		GuiModule guiModule = new GuiModule();
 		Module pluginModule = new PluginModule();
@@ -327,7 +327,7 @@ public class PhotoFrame extends JFrame {
 		guiModule.startLoader();
 
 		// Set the best available look-and-feel
-		log.info("Setting best LAF");
+		// MODIFIED CODE HERE log.info("Setting best LAF");
 		GUIUtil.setBestLAF();
 
 		// Load defaults

@@ -289,7 +289,7 @@ public class GeneralOptimizationDialog extends JDialog {
 					addModifier(mod);
 					clearHistory();
 				} else {
-					log.error("Attempting to add simulation modifier when none is selected");
+					// MODIFIED CODE HERE log.error("Attempting to add simulation modifier when none is selected");
 				}
 			}
 		});
@@ -303,7 +303,7 @@ public class GeneralOptimizationDialog extends JDialog {
 			public void actionPerformed(ActionEvent e) {
 				SimulationModifier mod = getSelectedModifier();
 				if (mod == null) {
-					log.error("Attempting to remove simulation modifier when none is selected");
+					// MODIFIED CODE HERE log.error("Attempting to remove simulation modifier when none is selected");
 					return;
 				}
 				removeModifier(mod);
@@ -318,7 +318,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		removeAllButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Removing all selected modifiers");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Removing all selected modifiers");
 				selectedModifiers.clear();
 				selectedModifierTableModel.fireTableDataChanged();
 				availableModifierTree.repaint();
@@ -349,7 +349,7 @@ public class GeneralOptimizationDialog extends JDialog {
 						addModifier(mod);
 						clearHistory();
 					} else {
-						log.info(Markers.USER_MARKER, "Double-clicked non-available option");
+						// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Double-clicked non-available option");
 					}
 				}
 			}
@@ -555,14 +555,14 @@ public class GeneralOptimizationDialog extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (updating) {
-					log.debug("Updating, ignoring event");
+					// MODIFIED CODE HERE log.debug("Updating, ignoring event");
 					return;
 				}
 				if (running) {
-					log.info(Markers.USER_MARKER, "Stopping optimization");
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Stopping optimization");
 					stopOptimization();
 				} else {
-					log.info(Markers.USER_MARKER, "Starting optimization");
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Starting optimization");
 					startOptimization();
 				}
 			}
@@ -574,7 +574,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		plotButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Plotting optimization path, dimensionality=" + selectedModifiers.size());
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Plotting optimization path, dimensionality=" + selectedModifiers.size());
 				OptimizationPlotDialog dialog = new OptimizationPlotDialog(
 						Collections.unmodifiableList(optimizationPath),
 						Collections.unmodifiableMap(evaluationHistory),
@@ -593,7 +593,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		saveButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "User selected save path");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User selected save path");
 				savePath();
 			}
 		});
@@ -609,7 +609,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		applyButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Applying optimization changes");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Applying optimization changes");
 				applyDesign();
 			}
 		});
@@ -621,7 +621,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		resetButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Resetting optimization design");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Resetting optimization design");
 				resetDesign();
 			}
 		});
@@ -633,7 +633,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		closeButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Closing optimization dialog");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Closing optimization dialog");
 				stopOptimization();
 				GeneralOptimizationDialog.this.dispose();
 			}
@@ -648,7 +648,7 @@ public class GeneralOptimizationDialog extends JDialog {
 	
 	private void startOptimization() {
 		if (running) {
-			log.info("Optimization already running");
+			// MODIFIED CODE HERE log.info("Optimization already running");
 			return;
 		}
 		
@@ -756,7 +756,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		worker = new OptimizationWorker(simulation, parameter, goal, domain, modifiers) {
 			@Override
 			protected void done(OptimizationException exception) {
-				log.info("Optimization finished, exception=" + exception, exception);
+				// MODIFIED CODE HERE log.info("Optimization finished, exception=" + exception, exception);
 				
 				if (exception != null) {
 					JOptionPane.showMessageDialog(GeneralOptimizationDialog.this,
@@ -843,12 +843,12 @@ public class GeneralOptimizationDialog extends JDialog {
 	
 	private void stopOptimization() {
 		if (!running) {
-			log.info("Optimization not running");
+			// MODIFIED CODE HERE log.info("Optimization not running");
 			return;
 		}
 		
 		if (worker != null && worker.isAlive()) {
-			log.info("Worker still running, interrupting it and setting to null");
+			// MODIFIED CODE HERE log.info("Worker still running, interrupting it and setting to null");
 			worker.interrupt();
 			worker = null;
 			return;
@@ -1065,17 +1065,17 @@ public class GeneralOptimizationDialog extends JDialog {
 	
 	private void addModifier(SimulationModifier mod) {
 		if (!selectedModifiers.contains(mod)) {
-			log.info(Markers.USER_MARKER, "Adding simulation modifier " + mod);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Adding simulation modifier " + mod);
 			selectedModifiers.add(mod);
 			selectedModifierTableModel.fireTableDataChanged();
 			availableModifierTree.repaint();
 		} else {
-			log.info(Markers.USER_MARKER, "Attempting to add an already existing simulation modifier " + mod);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Attempting to add an already existing simulation modifier " + mod);
 		}
 	}
 	
 	private void removeModifier(SimulationModifier mod) {
-		log.info(Markers.USER_MARKER, "Removing simulation modifier " + mod);
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Removing simulation modifier " + mod);
 		selectedModifiers.remove(mod);
 		selectedModifierTableModel.fireTableDataChanged();
 		availableModifierTree.repaint();
@@ -1088,17 +1088,17 @@ public class GeneralOptimizationDialog extends JDialog {
 		boolean state;
 		
 		if (updating) {
-			log.debug("Ignoring updateComponents");
+			// MODIFIED CODE HERE log.debug("Ignoring updateComponents");
 			return;
 		}
 		
-		log.debug("Running updateComponents()");
+		// MODIFIED CODE HERE log.debug("Running updateComponents()");
 		
 		updating = true;
 		
 		// First enable all components if optimization not running
 		if (!running) {
-			log.debug("Initially enabling all components");
+			// MODIFIED CODE HERE log.debug("Initially enabling all components");
 			for (JComponent c : disableComponents) {
 				c.setEnabled(true);
 			}
@@ -1107,51 +1107,50 @@ public class GeneralOptimizationDialog extends JDialog {
 		// "Add" button
 		SimulationModifier mod = getSelectedAvailableModifier();
 		state = (mod != null && !selectedModifiers.contains(mod));
-		log.debug("addButton enabled: " + state);
+		// MODIFIED CODE HERE log.debug("addButton enabled: " + state);
 		addButton.setEnabled(state);
 		
 		// "Remove" button
 		state = (selectedModifierTable.getSelectedRow() >= 0);
-		log.debug("removeButton enabled: " + state);
+		// MODIFIED CODE HERE log.debug("removeButton enabled: " + state);
 		removeButton.setEnabled(state);
 		
 		// "Remove all" button
 		state = (!selectedModifiers.isEmpty());
-		log.debug("removeAllButton enabled: " + state);
+		// MODIFIED CODE HERE log.debug("removeAllButton enabled: " + state);
 		removeAllButton.setEnabled(state);
 		
 		// Optimization goal
 		String selected = (String) optimizationGoalCombo.getSelectedItem();
 		state = GOAL_SEEK.equals(selected);
-		log.debug("optimizationGoalSpinner & UnitSelector enabled: " + state);
+		// MODIFIED CODE HERE log.debug("optimizationGoalSpinner & UnitSelector enabled: " + state);
 		optimizationGoalSpinner.setVisible(state);
 		optimizationGoalUnitSelector.setVisible(state);
 		
 		// Minimum/maximum stability options
 		state = minimumStabilitySelected.isSelected();
-		log.debug("minimumStabilitySpinner & UnitSelector enabled: " + state);
+		// MODIFIED CODE HERE log.debug("minimumStabilitySpinner & UnitSelector enabled: " + state);
 		minimumStabilitySpinner.setEnabled(state);
 		minimumStabilityUnitSelector.setEnabled(state);
 		
 		state = maximumStabilitySelected.isSelected();
-		log.debug("maximumStabilitySpimmer & UnitSelector enabled: " + state);
+		// MODIFIED CODE HERE log.debug("maximumStabilitySpimmer & UnitSelector enabled: " + state);
 		maximumStabilitySpinner.setEnabled(state);
 		maximumStabilityUnitSelector.setEnabled(state);
 		
 		// Plot button (enabled if path exists and dimensionality is 1 or 2)
 		state = (!optimizationPath.isEmpty() && (selectedModifiers.size() == 1 || selectedModifiers.size() == 2));
-		log.debug("plotButton enabled: " + state + " optimizationPath.isEmpty=" + optimizationPath.isEmpty() +
-				" selectedModifiers.size=" + selectedModifiers.size());
+		// MODIFIED CODE HERE log.debug("plotButton enabled: " + state + " optimizationPath.isEmpty=" + optimizationPath.isEmpty() + " selectedModifiers.size=" + selectedModifiers.size());
 		plotButton.setEnabled(state);
 		
 		// Save button (enabled if path exists)
 		state = (!evaluationHistory.isEmpty());
-		log.debug("saveButton enabled: " + state);
+		// MODIFIED CODE HERE log.debug("saveButton enabled: " + state);
 		saveButton.setEnabled(state);
 		
 		// Last disable all components if optimization is running
 		if (running) {
-			log.debug("Disabling all components because optimization is running");
+			// MODIFIED CODE HERE log.debug("Disabling all components because optimization is running");
 			for (JComponent c : disableComponents) {
 				c.setEnabled(false);
 			}
@@ -1200,8 +1199,7 @@ public class GeneralOptimizationDialog extends JDialog {
 		boolean includeHeader = csvOptions.getSelectionOption(0);
 		csvOptions.storePreferences();
 		
-		log.info("Saving optimization path to " + file + ", fieldSeparator=" + fieldSeparator +
-				", commentCharacter=" + commentCharacter + ", includeHeader=" + includeHeader);
+		// MODIFIED CODE HERE log.info("Saving optimization path to " + file + ", fieldSeparator=" + fieldSeparator + ", commentCharacter=" + commentCharacter + ", includeHeader=" + includeHeader);
 		
 		try {
 			Writer writer = new BufferedWriter(new FileWriter(file));
@@ -1248,7 +1246,7 @@ public class GeneralOptimizationDialog extends JDialog {
 			}
 			
 			writer.close();
-			log.info("File successfully saved");
+			// MODIFIED CODE HERE log.info("File successfully saved");
 			
 		} catch (IOException e) {
 			FileHelper.errorWriting(e, this);

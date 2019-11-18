@@ -55,7 +55,7 @@ public class PrintSettingsDialog extends JDialog {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 				Color c = (Color) evt.getNewValue();
-				log.info("Template fill color changed to " + c);
+				// MODIFIED CODE HERE log.info("Template fill color changed to " + c);
 				settings.setTemplateFillColor(c);
 			}
 		});
@@ -68,7 +68,7 @@ public class PrintSettingsDialog extends JDialog {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 				Color c = (Color) evt.getNewValue();
-				log.info("Template border color changed to " + c);
+				// MODIFIED CODE HERE log.info("Template border color changed to " + c);
 				settings.setTemplateBorderColor(c);
 			}
 		});
@@ -95,7 +95,7 @@ public class PrintSettingsDialog extends JDialog {
 		button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Resetting print setting values to defaults");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Resetting print setting values to defaults");
 				PrintSettings defaults = new PrintSettings();
 				settings.loadFrom(defaults);
 				fillColorButton.setSelectedColor(settings.getTemplateFillColor());

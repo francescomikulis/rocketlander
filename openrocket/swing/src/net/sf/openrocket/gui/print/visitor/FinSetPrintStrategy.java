@@ -60,7 +60,7 @@ public class FinSetPrintStrategy extends AbstractPrintStrategy<Void> {
                 render(pfs);
             }
             catch (DocumentException e) {
-                log.error("Could not render fin.", e);
+                // MODIFIED CODE HERE log.error("Could not render fin.", e);
             }
         }
     }

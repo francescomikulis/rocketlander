@@ -39,14 +39,13 @@ public class IntegerModel implements StateChangeListener {
 		public void setValue(Object value) {
 			if (firing > 0) {
 				// Ignore, if called when model is sending events
-				log.trace("Ignoring call to SpinnerModel setValue for " + IntegerModel.this.toString() +
-						" value=" + value + ", currently firing events");
+				// MODIFIED CODE HERE log.trace("Ignoring call to SpinnerModel setValue for " + IntegerModel.this.toString() + " value=" + value + ", currently firing events");
 				return;
 				
 			}
 			Number num = (Number) value;
 			int newValue = num.intValue();
-			log.info(Markers.USER_MARKER, "SpinnerModel setValue called for " + IntegerModel.this.toString() + " newValue=" + newValue);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "SpinnerModel setValue called for " + IntegerModel.this.toString() + " newValue=" + newValue);
 			IntegerModel.this.setValue(newValue);
 		}
 		
@@ -210,7 +209,7 @@ public class IntegerModel implements StateChangeListener {
 	 * Sets the value of the variable.
 	 */
 	public void setValue(int v) {
-		log.debug("Setting value " + v + " for " + this);
+		// MODIFIED CODE HERE log.debug("Setting value " + v + " for " + this);
 		try {
 			setMethod.invoke(source, v);
 		} catch (IllegalArgumentException e) {
@@ -235,7 +234,7 @@ public class IntegerModel implements StateChangeListener {
 		}
 		
 		listeners.add(l);
-		log.trace(this + " adding listener (total " + listeners.size() + "): " + l);
+		// MODIFIED CODE HERE log.trace(this + " adding listener (total " + listeners.size() + "): " + l);
 	}
 	
 	/**
@@ -248,7 +247,7 @@ public class IntegerModel implements StateChangeListener {
 		if (listeners.isEmpty()) {
 			source.removeChangeListener(this);
 		}
-		log.trace(this + " removing listener (total " + listeners.size() + "): " + l);
+		// MODIFIED CODE HERE log.trace(this + " removing listener (total " + listeners.size() + "): " + l);
 	}
 	
 	
@@ -256,7 +255,7 @@ public class IntegerModel implements StateChangeListener {
 	protected void finalize() throws Throwable {
 		super.finalize();
 		if (!listeners.isEmpty()) {
-			log.warn(this + " being garbage-collected while having listeners " + listeners);
+			// MODIFIED CODE HERE log.warn(this + " being garbage-collected while having listeners " + listeners);
 		}
 	};
 	

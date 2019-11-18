@@ -22,13 +22,13 @@ public class AbstractChangeSource implements ChangeSource {
 	@Override
 	public final void addChangeListener(StateChangeListener listener) {
 		listeners.add(listener);
-		log.trace("Adding change listeners, listener count is now " + listeners.size());
+		// MODIFIED CODE HERE log.trace("Adding change listeners, listener count is now " + listeners.size());
 	}
 	
 	@Override
 	public final void removeChangeListener(StateChangeListener listener) {
 		listeners.remove(listener);
-		log.trace("Removing change listeners, listener count is now " + listeners.size());
+		// MODIFIED CODE HERE log.trace("Removing change listeners, listener count is now " + listeners.size());
 	}
 	
 	/**

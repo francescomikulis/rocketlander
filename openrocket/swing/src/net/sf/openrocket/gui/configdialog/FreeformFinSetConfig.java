@@ -232,7 +232,7 @@ public class FreeformFinSetConfig extends FinSetConfig {
 		scaleButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Scaling free-form fin");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Scaling free-form fin");
 				ScaleDialog dialog = new ScaleDialog(document, finset, SwingUtilities.getWindowAncestor(FreeformFinSetConfig.this), true);
 				dialog.setVisible(true);
 				dialog.dispose();
@@ -246,7 +246,7 @@ public class FreeformFinSetConfig extends FinSetConfig {
 		exportCsvButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Export CSV free-form fin");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Export CSV free-form fin");
 				
 				JFileChooser chooser = new JFileChooser();
 				// Demonstrate "Save" dialog:
@@ -342,7 +342,7 @@ public class FreeformFinSetConfig extends FinSetConfig {
 				document.startUndo(trans.get("CustomFinImport.undo"));
 				finset.setPoints( points);
 			} catch (IOException e) {
-				log.warn("Error loading file", e);
+				// MODIFIED CODE HERE log.warn("Error loading file", e);
 				JOptionPane.showMessageDialog(this, e.getLocalizedMessage(),
 						trans.get("CustomFinImport.error.title"), JOptionPane.ERROR_MESSAGE);
 			} finally {
@@ -445,7 +445,7 @@ public class FreeformFinSetConfig extends FinSetConfig {
                         Point2D.Double point = getCoordinates(event);
                         finset.removePoint(clickIndex);
                     } catch (IllegalFinPointException ignore) {
-                        log.error("Ignoring IllegalFinPointException while dragging, dragIndex=" + dragIndex + ".  This is likely an internal error.");
+                        // MODIFIED CODE HERE log.error("Ignoring IllegalFinPointException while dragging, dragIndex=" + dragIndex + ".  This is likely an internal error.");
                     }
                     return;
                 }
@@ -574,7 +574,7 @@ public class FreeformFinSetConfig extends FinSetConfig {
 				
 				updateFields();
 			} catch (NumberFormatException ignore) {
-			    log.warn("ignoring NumberFormatException while editing a Freeform Fin");
+			    // MODIFIED CODE HERE log.warn("ignoring NumberFormatException while editing a Freeform Fin");
 			}
 		}
 	}

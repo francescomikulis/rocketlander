@@ -169,7 +169,7 @@ public class BasicFrame extends JFrame {
 	 * @param document	the document to show.
 	 */
 	public BasicFrame(OpenRocketDocument document) {
-		log.debug("Instantiating new BasicFrame");
+		// MODIFIED CODE HERE log.debug("Instantiating new BasicFrame");
 
 		this.document = document;
 		this.rocket = document.getRocket();
@@ -192,7 +192,7 @@ public class BasicFrame extends JFrame {
 		actions = new RocketActions(document, selectionModel, this);
 
 
-		log.debug("Constructing the BasicFrame UI");
+		// MODIFIED CODE HERE log.debug("Constructing the BasicFrame UI");
 
 		// The main vertical split pane
 		JSplitPane vertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
@@ -274,7 +274,7 @@ public class BasicFrame extends JFrame {
 		});
 
 		frames.add(this);
-		log.debug("BasicFrame instantiation complete");
+		// MODIFIED CODE HERE log.debug("BasicFrame instantiation complete");
 	}
 
 	/**
@@ -430,7 +430,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "New... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "New... selected");
 				newAction();
 				closeIfReplaceable();
 			}
@@ -446,7 +446,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Open... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Open... selected");
 				openAction();
 			}
 		});
@@ -475,7 +475,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Save selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Save selected");
 				saveAction();
 			}
 		});
@@ -491,7 +491,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Save as... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Save as... selected");
 				saveAsAction();
 			}
 		});
@@ -505,7 +505,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Import... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Import... selected");
 				importAction();
 			}
 		});
@@ -517,7 +517,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Export... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Export... selected");
 				exportAction();
 			}
 		});
@@ -554,7 +554,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Print action selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Print action selected");
 				printAction();
 			}
 		});
@@ -572,7 +572,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Close selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Close selected");
 				closeAction();
 			}
 		});
@@ -589,7 +589,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Quit selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Quit selected");
 				quitAction();
 			}
 		});
@@ -647,7 +647,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Scale... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Scale... selected");
 				ScaleDialog dialog = new ScaleDialog(document, getSelectedComponent(), BasicFrame.this);
 				dialog.setVisible(true);
 				dialog.dispose();
@@ -665,7 +665,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Preferences selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Preferences selected");
 				PreferencesDialog.showPreferences(BasicFrame.this);
 			}
 		});
@@ -704,7 +704,7 @@ public class BasicFrame extends JFrame {
 //		item.addActionListener(new ActionListener() {
 //			@Override
 //			public void actionPerformed(ActionEvent e) {
-//				log.info(Markers.USER_MARKER, "Component analysis selected");
+//				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Component analysis selected");
 //				ComponentAnalysisDialog.showDialog(rocketpanel);
 //			}
 //		});
@@ -717,7 +717,7 @@ public class BasicFrame extends JFrame {
 //		item.addActionListener(new ActionListener() {
 //			@Override
 //			public void actionPerformed(ActionEvent e) {
-//				log.info(Markers.USER_MARKER, "Rocket optimization selected");
+//				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Rocket optimization selected");
 //				new GeneralOptimizationDialog(document, BasicFrame.this).setVisible(true);
 //			}
 //		});
@@ -729,7 +729,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.debug("Custom expressions selected");
+				// MODIFIED CODE HERE log.debug("Custom expressions selected");
 				new CustomExpressionDialog(document, BasicFrame.this).setVisible(true);
 			}
 		});
@@ -740,7 +740,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Photo... selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Photo... selected");
 				PhotoFrame pa = new PhotoFrame(document, BasicFrame.this);
 				pa.setVisible(true);
 			}
@@ -771,7 +771,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Guided tours selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Guided tours selected");
 				GuidedTourSelectionDialog.showDialog(BasicFrame.this);
 			}
 		});
@@ -786,7 +786,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Bug report selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Bug report selected");
 				BugReportDialog.showBugReportDialog(BasicFrame.this);
 			}
 		});
@@ -800,7 +800,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Debug log selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Debug log selected");
 				new DebugLogDialog(BasicFrame.this).setVisible(true);
 			}
 		});
@@ -816,7 +816,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "License selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "License selected");
 				new LicenseDialog(BasicFrame.this).setVisible(true);
 			}
 		});
@@ -830,7 +830,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "About selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "About selected");
 				new AboutDialog(BasicFrame.this).setVisible(true);
 			}
 		});
@@ -858,7 +858,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "What is this menu? selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "What is this menu? selected");
 				JOptionPane.showMessageDialog(BasicFrame.this,
 						new Object[] {
 								"The 'Debug' menu includes actions for testing and debugging " +
@@ -878,7 +878,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Create test rocket selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Create test rocket selected");
 				JTextField field = new JTextField();
 				int sel = JOptionPane.showOptionDialog(BasicFrame.this, new Object[] {
 						"Input text key to generate random rocket:",
@@ -911,7 +911,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Create Iso-Haisu selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Create Iso-Haisu selected");
 				Rocket r = TestRockets.makeIsoHaisu();
 				OpenRocketDocument doc = OpenRocketDocumentFactory.createDocumentFromRocket(r);
 				doc.setSaved(true);
@@ -926,7 +926,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Create Big Blue selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Create Big Blue selected");
 				Rocket r = TestRockets.makeBigBlue();
 				OpenRocketDocument doc = OpenRocketDocumentFactory.createDocumentFromRocket(r);
 				doc.setSaved(true);
@@ -943,7 +943,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Memory statistics selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Memory statistics selected");
 
 				// Get discarded but remaining objects (this also runs System.gc multiple times)
 				List<MemoryData> objects = MemoryManagement.getRemainingCollectableObjects();
@@ -985,7 +985,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Exhaust memory selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Exhaust memory selected");
 				LinkedList<byte[]> data = new LinkedList<byte[]>();
 				int count = 0;
 				final int bytesPerArray = 10240;
@@ -1003,7 +1003,7 @@ public class BasicFrame extends JFrame {
 					long size = bytesPerArray * (long) count;
 					String s = String.format("OutOfMemory occurred after %d iterations (approx. %.1f MB consumed)",
 							count, size / 1024.0 / 1024.0);
-					log.debug(s, error);
+					// MODIFIED CODE HERE log.debug(s, error);
 					JOptionPane.showMessageDialog(BasicFrame.this, s);
 				}
 			}
@@ -1018,7 +1018,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Exception here selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Exception here selected");
 				throw new RuntimeException("Testing exception from menu action listener");
 			}
 		});
@@ -1028,7 +1028,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Exception from EDT selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Exception from EDT selected");
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
@@ -1044,7 +1044,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Exception from other thread selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Exception from other thread selected");
 				new Thread() {
 					@Override
 					public void run() {
@@ -1059,7 +1059,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "OutOfMemoryError here selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "OutOfMemoryError here selected");
 				throw new OutOfMemoryError("Testing OutOfMemoryError from menu action listener");
 			}
 		});
@@ -1073,7 +1073,7 @@ public class BasicFrame extends JFrame {
 		item.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Test popup selected");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Test popup selected");
 				JPanel panel = new JPanel();
 				panel.add(new JTextField(40));
 				panel.add(new JSpinner());
@@ -1115,17 +1115,17 @@ public class BasicFrame extends JFrame {
 		chooser.setCurrentDirectory(((SwingPreferences) Application.getPreferences()).getDefaultDirectory());
 		int option = chooser.showOpenDialog(this);
 		if (option != JFileChooser.APPROVE_OPTION) {
-			log.info(Markers.USER_MARKER, "Decided not to open files, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Decided not to open files, option=" + option);
 			return;
 		}
 
 		((SwingPreferences) Application.getPreferences()).setDefaultDirectory(chooser.getCurrentDirectory());
 
 		File[] files = chooser.getSelectedFiles();
-		log.info(Markers.USER_MARKER, "Opening files " + Arrays.toString(files));
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Opening files " + Arrays.toString(files));
 
 		for (File file : files) {
-			log.info("Opening file: " + file);
+			// MODIFIED CODE HERE log.info("Opening file: " + file);
 			if (open(file, this)) {
 				MRUDesignFile opts = MRUDesignFile.getInstance();
 				opts.addFile(file.getAbsolutePath());
@@ -1145,17 +1145,17 @@ public class BasicFrame extends JFrame {
 		chooser.setCurrentDirectory(((SwingPreferences) Application.getPreferences()).getDefaultDirectory());
 		int option = chooser.showOpenDialog(this);
 		if (option != JFileChooser.APPROVE_OPTION) {
-			log.info(Markers.USER_MARKER, "Decided not to open files, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Decided not to open files, option=" + option);
 			return;
 		}
 
 		((SwingPreferences) Application.getPreferences()).setDefaultDirectory(chooser.getCurrentDirectory());
 
 		File[] files = chooser.getSelectedFiles();
-		log.info(Markers.USER_MARKER, "Opening files " + Arrays.toString(files));
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Opening files " + Arrays.toString(files));
 
 		for (File file : files) {
-			log.info("Opening file: " + file);
+			// MODIFIED CODE HERE log.info("Opening file: " + file);
 			if (open(file, this)) {
 				MRUDesignFile opts = MRUDesignFile.getInstance();
 				opts.addFile(file.getAbsolutePath());
@@ -1171,7 +1171,7 @@ public class BasicFrame extends JFrame {
 			BasicFrame newFrame = frames.get(frames.size() - 1);
 			newFrame.setLocation(this.getLocation());
 
-			log.info("Closing window because it is replaceable");
+			// MODIFIED CODE HERE log.info("Closing window because it is replaceable");
 			closeAction();
 		}
 
@@ -1213,7 +1213,7 @@ public class BasicFrame extends JFrame {
 
 
 		// Open the file
-		log.info("Opening file from url=" + url + " filename=" + displayName);
+		// MODIFIED CODE HERE log.info("Opening file from url=" + url + " filename=" + displayName);
 
 		OpenFileWorker worker = new OpenFileWorker(url);
 		open(worker, displayName, parent, true);
@@ -1246,10 +1246,10 @@ public class BasicFrame extends JFrame {
 	 */
 	private static boolean open(OpenFileWorker worker, String displayName, Window parent, boolean openRocketConfigDialog) {
 		// Open the file in a Swing worker thread
-		log.info("Starting OpenFileWorker");
+		// MODIFIED CODE HERE log.info("Starting OpenFileWorker");
 		if (!SwingWorkerDialog.runWorker(parent, "Opening file", "Reading " + displayName + "...", worker)) {
 			// User cancelled the operation
-			log.info("User cancelled the OpenFileWorker");
+			// MODIFIED CODE HERE log.info("User cancelled the OpenFileWorker");
 			return false;
 		}
 
@@ -1266,7 +1266,7 @@ public class BasicFrame extends JFrame {
 
 			if (cause instanceof FileNotFoundException) {
 
-				log.warn("File not found", cause);
+				// MODIFIED CODE HERE log.warn("File not found", cause);
 				JOptionPane.showMessageDialog(parent,
 						"File not found: " + displayName,
 						"Error opening file", JOptionPane.ERROR_MESSAGE);
@@ -1274,7 +1274,7 @@ public class BasicFrame extends JFrame {
 
 			} else if (cause instanceof RocketLoadException) {
 
-				log.warn("Error loading the file", cause);
+				// MODIFIED CODE HERE log.warn("Error loading the file", cause);
 				JOptionPane.showMessageDialog(parent,
 						"Unable to open file '" + displayName + "': "
 								+ cause.getMessage(),
@@ -1299,7 +1299,7 @@ public class BasicFrame extends JFrame {
 		// Show warnings
 		WarningSet warnings = worker.getRocketLoader().getWarnings();
 		if (!warnings.isEmpty()) {
-			log.info("Warnings while reading file: " + warnings);
+			// MODIFIED CODE HERE log.info("Warnings while reading file: " + warnings);
 			WarningDialog.showWarnings(parent,
 					new Object[] {
 							//// The following problems were encountered while opening
@@ -1312,7 +1312,7 @@ public class BasicFrame extends JFrame {
 		}
 
 		// Open the frame
-		log.debug("Opening new frame with the document");
+		// MODIFIED CODE HERE log.debug("Opening new frame with the document");
 		BasicFrame frame = new BasicFrame(doc);
 		frame.setVisible(true);
 
@@ -1337,11 +1337,11 @@ public class BasicFrame extends JFrame {
 	private boolean saveAction() {
 		File file = document.getFile();
 		if (file == null || document.getDefaultStorageOptions().getFileType().equals(FileType.ROCKSIM)) {
-			log.info("Document does not contain file, opening save as dialog instead");
+			// MODIFIED CODE HERE log.info("Document does not contain file, opening save as dialog instead");
 			return saveAsAction();
 		}
 		
-		log.info("Saving document to " + file);
+		// MODIFIED CODE HERE log.info("Saving document to " + file);
 
 		return saveAsOpenRocket(file);
 	}
@@ -1360,13 +1360,13 @@ public class BasicFrame extends JFrame {
 		int option = chooser.showSaveDialog(BasicFrame.this);
 
 		if (option != JFileChooser.APPROVE_OPTION) {
-			log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
 			return false;
 		}
 
 		file = chooser.getSelectedFile();
 		if (file == null) {
-			log.info(Markers.USER_MARKER, "User did not select a file");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User did not select a file");
 			return false;
 		}
 
@@ -1440,13 +1440,13 @@ public class BasicFrame extends JFrame {
 		int option = chooser.showSaveDialog(BasicFrame.this);
 
 		if (option != JFileChooser.APPROVE_OPTION) {
-			log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
 			return false;
 		}
 
 		file = chooser.getSelectedFile();
 		if (file == null) {
-			log.info(Markers.USER_MARKER, "User did not select a file");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User did not select a file");
 			return false;
 		}
 
@@ -1471,11 +1471,11 @@ public class BasicFrame extends JFrame {
 	 */
 	private boolean saveAsOpenRocket(File file) {
 		file = FileHelper.forceExtension(file, "ork");
-		log.info("Saving document as " + file);
+		// MODIFIED CODE HERE log.info("Saving document as " + file);
 
 		if (!StorageOptionChooser.verifyStorageOptions(document, this)) {
 			// User cancelled the dialog
-			log.info(Markers.USER_MARKER, "User cancelled saving in storage options dialog");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User cancelled saving in storage options dialog");
 			return false;
 		}
 
@@ -1486,7 +1486,7 @@ public class BasicFrame extends JFrame {
 				"Writing " + file.getName() + "...", worker)) {
 
 			// User cancelled the save
-			log.info(Markers.USER_MARKER, "User cancelled the save, deleting the file");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User cancelled the save, deleting the file");
 			file.delete();
 			return false;
 		}
@@ -1502,7 +1502,7 @@ public class BasicFrame extends JFrame {
 			Throwable cause = e.getCause();
 
 			if (cause instanceof IOException) {
-				log.warn("An I/O error occurred while saving " + file, cause);
+				// MODIFIED CODE HERE log.warn("An I/O error occurred while saving " + file, cause);
 				JOptionPane.showMessageDialog(this, new String[] {
 						"An I/O error occurred while saving:",
 						e.getMessage() }, "Saving failed", JOptionPane.ERROR_MESSAGE);
@@ -1521,7 +1521,7 @@ public class BasicFrame extends JFrame {
 
 	private boolean closeAction() {
 		if (!document.isSaved()) {
-			log.info("Confirming whether to save the design");
+			// MODIFIED CODE HERE log.info("Confirming whether to save the design");
 			ComponentConfigDialog.hideDialog();
 			int result = JOptionPane.showConfirmDialog(this,
 					trans.get("BasicFrame.dlg.lbl1") + rocket.getName() +
@@ -1531,23 +1531,23 @@ public class BasicFrame extends JFrame {
 					JOptionPane.QUESTION_MESSAGE);
 			if (result == JOptionPane.YES_OPTION) {
 				// Save
-				log.info(Markers.USER_MARKER, "User requested file save");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User requested file save");
 				if (!saveAction()) {
-					log.info("File save was interrupted, not closing");
+					// MODIFIED CODE HERE log.info("File save was interrupted, not closing");
 					return false;
 				}
 			} else if (result == JOptionPane.NO_OPTION) {
 				// Don't save: No-op
-				log.info(Markers.USER_MARKER, "User requested to discard design");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User requested to discard design");
 			} else {
 				// Cancel or close
-				log.info(Markers.USER_MARKER, "User cancelled closing, result=" + result);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User cancelled closing, result=" + result);
 				return false;
 			}
 		}
 
 		// Rocket has been saved or discarded
-		log.debug("Disposing window");
+		// MODIFIED CODE HERE log.debug("Disposing window");
 		this.dispose();
 
 		ComponentConfigDialog.hideDialog();
@@ -1555,7 +1555,7 @@ public class BasicFrame extends JFrame {
 
 		frames.remove(this);
 		if (frames.isEmpty()) {
-			log.info("Last frame closed, exiting");
+			// MODIFIED CODE HERE log.info("Last frame closed, exiting");
 			System.exit(0);
 		}
 		return true;
@@ -1575,7 +1575,7 @@ public class BasicFrame extends JFrame {
 	 * Open a new design window with a basic rocket+stage.
 	 */
 	public static void newAction() {
-		log.info("New action initiated");
+		// MODIFIED CODE HERE log.info("New action initiated");
 
 		OpenRocketDocument doc = OpenRocketDocumentFactory.createNewRocket();
 
@@ -1588,17 +1588,17 @@ public class BasicFrame extends JFrame {
 	 * Quit the application.  Confirms saving unsaved designs.  The action of File->Quit.
 	 */
 	public static void quitAction() {
-		log.info("Quit action initiated");
+		// MODIFIED CODE HERE log.info("Quit action initiated");
 		for (int i = frames.size() - 1; i >= 0; i--) {
-			log.debug("Closing frame " + frames.get(i));
+			// MODIFIED CODE HERE log.debug("Closing frame " + frames.get(i));
 			if (!frames.get(i).closeAction()) {
 				// Close canceled
-				log.info("Quit was cancelled");
+				// MODIFIED CODE HERE log.info("Quit was cancelled");
 				return;
 			}
 		}
 		// Should not be reached, but just in case
-		log.error("Should already have exited application");
+		// MODIFIED CODE HERE log.error("Should already have exited application");
 		System.exit(0);
 	}
 
@@ -1634,11 +1634,11 @@ public class BasicFrame extends JFrame {
 	public static BasicFrame findFrame(Rocket rocket) {
 		for (BasicFrame f : frames) {
 			if (f.rocket == rocket) {
-				log.debug("Found frame " + f + " for rocket " + rocket);
+				// MODIFIED CODE HERE log.debug("Found frame " + f + " for rocket " + rocket);
 				return f;
 			}
 		}
-		log.debug("Could not find frame for rocket " + rocket);
+		// MODIFIED CODE HERE log.debug("Could not find frame for rocket " + rocket);
 		return null;
 	}
 

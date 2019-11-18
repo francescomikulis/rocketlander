@@ -79,8 +79,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		public void setValue(Object value) {
 			if (firing > 0) {
 				// Ignore, if called when model is sending events
-				log.trace("Ignoring call to SpinnerModel setValue for " + DoubleModel.this.toString() +
-						" value=" + value + ", currently firing events");
+				// MODIFIED CODE HERE log.trace("Ignoring call to SpinnerModel setValue for " + DoubleModel.this.toString() + " value=" + value + ", currently firing events");
 				return;
 			}
 			
@@ -102,21 +101,20 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 			// Update the doublemodel with the new number or return to the last number if not possible
 			if (((Double) num).isNaN()) {
 				DoubleModel.this.setValue(lastValue);
-				log.info(Markers.USER_MARKER, "SpinnerModel could not set value for " + DoubleModel.this.toString() + ". Could not convert " + value.toString());
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "SpinnerModel could not set value for " + DoubleModel.this.toString() + ". Could not convert " + value.toString());
 			}
 			else {
 				double newValue = num.doubleValue();
 				double converted = currentUnit.fromUnit(newValue);
 				
-				log.info(Markers.USER_MARKER, "SpinnerModel setValue called for " + DoubleModel.this.toString() + " newValue=" + newValue +
-						" converted=" + converted);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "SpinnerModel setValue called for " + DoubleModel.this.toString() + " newValue=" + newValue + " converted=" + converted);
 				DoubleModel.this.setValue(converted);
 			}
 			
 			// Force a refresh if text doesn't match up exactly with the stored value
 			if (!((Double) lastValue).toString().equals(this.getValue().toString())) {
 				DoubleModel.this.fireStateChanged();
-				log.debug("SpinnerModel " + DoubleModel.this.toString() + " refresh forced because string did not match actual value.");
+				// MODIFIED CODE HERE log.debug("SpinnerModel " + DoubleModel.this.toString() + " refresh forced because string did not match actual value.");
 			}
 		}
 		
@@ -315,8 +313,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		public void setValue(int newValue) {
 			if (firing > 0) {
 				// Ignore loops
-				log.trace("Ignoring call to SliderModel setValue for " + DoubleModel.this.toString() +
-						" value=" + newValue + ", currently firing events");
+				// MODIFIED CODE HERE log.trace("Ignoring call to SliderModel setValue for " + DoubleModel.this.toString() + " value=" + newValue + ", currently firing events");
 				return;
 			}
 			
@@ -335,8 +332,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 			}
 			
 			double converted = currentUnit.fromUnit(currentUnit.round(currentUnit.toUnit(scaledValue)));
-			log.info(Markers.USER_MARKER, "SliderModel setValue called for " + DoubleModel.this.toString() + " newValue=" + newValue +
-					" scaledValue=" + scaledValue + " converted=" + converted);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "SliderModel setValue called for " + DoubleModel.this.toString() + " newValue=" + newValue + " scaledValue=" + scaledValue + " converted=" + converted);
 			DoubleModel.this.setValue(converted);
 		}
 		
@@ -472,18 +468,15 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		@Override
 		public void putValue(String key, Object value) {
 			if (firing > 0) {
-				log.trace("Ignoring call to ActionModel putValue for " + DoubleModel.this.toString() +
-						" key=" + key + " value=" + value + ", currently firing events");
+				// MODIFIED CODE HERE log.trace("Ignoring call to ActionModel putValue for " + DoubleModel.this.toString() + " key=" + key + " value=" + value + ", currently firing events");
 				return;
 			}
 			if (key.equals(Action.SELECTED_KEY) && (value instanceof Boolean)) {
-				log.info(Markers.USER_MARKER, "ActionModel putValue called for " + DoubleModel.this.toString() +
-						" key=" + key + " value=" + value);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "ActionModel putValue called for " + DoubleModel.this.toString() + " key=" + key + " value=" + value);
 				oldValue = (Boolean) value;
 				setAutomatic((Boolean) value);
 			} else {
-				log.debug("Passing ActionModel putValue call to supermethod for " + DoubleModel.this.toString() +
-						" key=" + key + " value=" + value);
+				// MODIFIED CODE HERE log.debug("Passing ActionModel putValue call to supermethod for " + DoubleModel.this.toString() + " key=" + key + " value=" + value);
 				super.putValue(key, value);
 			}
 		}
@@ -757,7 +750,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 	public void setValue(double v) {
 		checkState(true);
 		
-		log.debug("Setting value " + v + " for " + this);
+		// MODIFIED CODE HERE log.debug("Setting value " + v + " for " + this);
 		if (setMethod == null) {
 			if (getMethod != null) {
 				throw new BugException("setMethod not available for variable '" + valueName +
@@ -813,12 +806,12 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		checkState(true);
 		
 		if (setAutoMethod == null) {
-			log.debug("Setting automatic to " + auto + " for " + this + ", automatic not available");
+			// MODIFIED CODE HERE log.debug("Setting automatic to " + auto + " for " + this + ", automatic not available");
 			fireStateChanged(); // in case something is out-of-sync
 			return;
 		}
 		
-		log.debug("Setting automatic to " + auto + " for " + this);
+		// MODIFIED CODE HERE log.debug("Setting automatic to " + auto + " for " + this);
 		lastAutomatic = auto;
 		try {
 			setAutoMethod.invoke(source, auto);
@@ -848,7 +841,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		checkState(true);
 		if (currentUnit == u)
 			return;
-		log.debug("Setting unit for " + this + " to '" + u + "'");
+		// MODIFIED CODE HERE log.debug("Setting unit for " + this + " to '" + u + "'");
 		currentUnit = u;
 		fireStateChanged();
 	}
@@ -892,7 +885,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		}
 		
 		listeners.add(l);
-		log.trace(this + " adding listener (total " + listeners.size() + "): " + l);
+		// MODIFIED CODE HERE log.trace(this + " adding listener (total " + listeners.size() + "): " + l);
 	}
 	
 	/**
@@ -914,7 +907,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 		checkState(false);
 		
 		listeners.remove(l);
-		log.trace(this + " removing listener (total " + listeners.size() + "): " + l);
+		// MODIFIED CODE HERE log.trace(this + " removing listener (total " + listeners.size() + "): " + l);
 	}
 	
 	
@@ -925,11 +918,11 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 	 */
 	@Override
 	public void invalidate() {
-		log.trace("Invalidating " + this);
+		// MODIFIED CODE HERE log.trace("Invalidating " + this);
 		invalidator.invalidate();
 		
 		if (!listeners.isEmpty()) {
-			log.warn("Invalidating " + this + " while still having listeners " + listeners);
+			// MODIFIED CODE HERE log.warn("Invalidating " + this + " while still having listeners " + listeners);
 		}
 		listeners.clear();
 		MemoryManagement.collectable(this);
@@ -945,7 +938,7 @@ public class DoubleModel implements StateChangeListener, ChangeSource, Invalidat
 	protected void finalize() throws Throwable {
 		super.finalize();
 		if (!listeners.isEmpty()) {
-			log.warn(this + " being garbage-collected while having listeners " + listeners);
+			// MODIFIED CODE HERE log.warn(this + " being garbage-collected while having listeners " + listeners);
 		}
 	};
 	

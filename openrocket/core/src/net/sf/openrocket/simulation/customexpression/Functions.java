@@ -32,7 +32,7 @@ public class Functions {
 			try {
 				instance = new Functions();
 			} catch (InvalidCustomFunctionException e) {
-				log.error("Invalid custom function.");
+				// MODIFIED CODE HERE log.error("Invalid custom function.");
 			}
 		}
 		return instance;

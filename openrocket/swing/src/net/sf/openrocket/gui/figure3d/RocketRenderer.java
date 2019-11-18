@@ -97,7 +97,7 @@ public abstract class RocketRenderer {
 		final int pickColor = bb.getInt();
 		final int pickIndex = ((pickColor >> 20) & 0xF00) | ((pickColor >> 16) & 0x0F0) | ((pickColor >> 12) & 0x00F);
 		
-		log.trace("Picked pixel color is {} index is {}", pickColor, pickIndex);
+		// MODIFIED CODE HERE log.trace("Picked pixel color is {} index is {}", pickColor, pickIndex);
 		
 		if (pickIndex < 0 || pickIndex > pickParts.size() - 1)
 			return null;

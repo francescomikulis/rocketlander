@@ -76,7 +76,7 @@ public class FinMarkingGuideStrategy {
                         document, writer, image);
             }
         } catch (DocumentException e) {
-            log.error("Could not render the fin marking guide.", e);
+            // MODIFIED CODE HERE log.error("Could not render the fin marking guide.", e);
         }
     }
 

@@ -47,7 +47,7 @@ public class ListenerList<T> implements Invalidatable, Iterable<T> {
 		
 		ListenerData<T> data = new ListenerData<T>(listener);
 		if (listeners.contains(data)) {
-			log.warn("Attempting to add duplicate listener " + listener);
+			// MODIFIED CODE HERE log.warn("Attempting to add duplicate listener " + listener);
 			return false;
 		}
 		listeners.add(data);
@@ -69,11 +69,11 @@ public class ListenerList<T> implements Invalidatable, Iterable<T> {
 		while (iterator.hasNext()) {
 			if (iterator.next().listener == listener) {
 				iterator.remove();
-				log.trace("Removing listener " + listener);
+				// MODIFIED CODE HERE log.trace("Removing listener " + listener);
 				return true;
 			}
 		}
-		log.info("Attempting to remove non-existant listener " + listener);
+		// MODIFIED CODE HERE log.info("Attempting to remove non-existant listener " + listener);
 		return false;
 	}
 	
@@ -116,7 +116,7 @@ public class ListenerList<T> implements Invalidatable, Iterable<T> {
 	public void invalidate() {
 		this.invalidated = new Throwable("Invalidation occurred at this point");
 		if (!listeners.isEmpty()) {
-			log.info("Invalidating " + this + " while still having listeners " + listeners);
+			// MODIFIED CODE HERE log.info("Invalidating " + this + " while still having listeners " + listeners);
 		}
 		listeners.clear();
 	}
@@ -132,8 +132,7 @@ public class ListenerList<T> implements Invalidatable, Iterable<T> {
 			if (error) {
 				throw new BugException(this + ": this ListenerList has been invalidated", invalidated);
 			} else {
-				log.warn(this + ": this ListenerList has been invalidated",
-						new Throwable("ListenerList was attempted to be used here", invalidated));
+				// MODIFIED CODE HERE log.warn(this + ": this ListenerList has been invalidated", new Throwable("ListenerList was attempted to be used here", invalidated));
 			}
 		}
 	}

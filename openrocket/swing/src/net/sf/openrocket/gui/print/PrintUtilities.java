@@ -98,7 +98,7 @@ public class PrintUtilities implements Printable {
 			p.add(sectionHeader);
 			document.add(p);
 		} catch (DocumentException e) {
-			log.error("Could not add paragraph.", e);
+			// MODIFIED CODE HERE log.error("Could not add paragraph.", e);
 		}
 	}
 }

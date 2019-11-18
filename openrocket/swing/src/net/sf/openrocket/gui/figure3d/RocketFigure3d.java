@@ -136,48 +136,48 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 	}
 	
 	private void initGLCanvas() {
-		log.debug("Initializing RocketFigure3D OpenGL Canvas");
+		// MODIFIED CODE HERE log.debug("Initializing RocketFigure3D OpenGL Canvas");
 		try {
-			log.debug("Setting up GL capabilities...");
+			// MODIFIED CODE HERE log.debug("Setting up GL capabilities...");
 			
-			log.trace("GL - Getting Default Profile");
+			// MODIFIED CODE HERE log.trace("GL - Getting Default Profile");
 			final GLProfile glp = GLProfile.get(GLProfile.GL2);
 			
-			log.trace("GL - creating GLCapabilities");
+			// MODIFIED CODE HERE log.trace("GL - creating GLCapabilities");
 			final GLCapabilities caps = new GLCapabilities(glp);
 			
 			if (Application.getPreferences().getBoolean(Preferences.OPENGL_ENABLE_AA, true)) {
-				log.trace("GL - setSampleBuffers");
+				// MODIFIED CODE HERE log.trace("GL - setSampleBuffers");
 				caps.setSampleBuffers(true);
 				
-				log.trace("GL - setNumSamples");
+				// MODIFIED CODE HERE log.trace("GL - setNumSamples");
 				caps.setNumSamples(6);
 			} else {
-				log.trace("GL - Not enabling AA by user pref");
+				// MODIFIED CODE HERE log.trace("GL - Not enabling AA by user pref");
 			}
 			
 			if (Application.getPreferences().getBoolean(Preferences.OPENGL_USE_FBO, false)) {
-				log.trace("GL - Creating GLJPanel");
+				// MODIFIED CODE HERE log.trace("GL - Creating GLJPanel");
 				canvas = new GLJPanel(caps);
 			} else {
-				log.trace("GL - Creating GLCanvas");
+				// MODIFIED CODE HERE log.trace("GL - Creating GLCanvas");
 				canvas = new GLCanvas(caps);
 			}
 			
-			log.trace("GL - Registering as GLEventListener on canvas");
+			// MODIFIED CODE HERE log.trace("GL - Registering as GLEventListener on canvas");
 			((GLAutoDrawable) canvas).addGLEventListener(this);
 			
-			log.trace("GL - Adding canvas to this JPanel");
+			// MODIFIED CODE HERE log.trace("GL - Adding canvas to this JPanel");
 			this.add(canvas, BorderLayout.CENTER);
 			
-			log.trace("GL - Setting up mouse listeners");
+			// MODIFIED CODE HERE log.trace("GL - Setting up mouse listeners");
 			setupMouseListeners();
 			
-			log.trace("GL - Rasterizing Carets");
+			// MODIFIED CODE HERE log.trace("GL - Rasterizing Carets");
 			rasterizeCarets();
 			
 		} catch (Throwable t) {
-			log.error("An error occurred creating 3d View", t);
+			// MODIFIED CODE HERE log.error("An error occurred creating 3d View", t);
 			canvas = null;
 			this.add(new JLabel("Unable to load 3d Libraries: "
 					+ t.getMessage()));
@@ -305,7 +305,7 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 					@Override
 					public void run() {
 						if (picked == null) {
-							log.debug("unselecting");
+							// MODIFIED CODE HERE log.debug("unselecting");
 							csl.componentClicked(new RocketComponent[] {}, e);
 						} else {
 							csl.componentClicked(new RocketComponent[] { picked }, e);
@@ -387,7 +387,7 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 		//	extrasOverlay.contentsLost(): For some reason the buffer with this
 		//		data is lost.
 		if (redrawExtras || extrasOverlay.contentsLost()) {
-			log.debug("Redrawing Overlay");
+			// MODIFIED CODE HERE log.debug("Redrawing Overlay");
 			
 			final Graphics2D og2d = extrasOverlay.createGraphics();
 			setRenderingHints(og2d);
@@ -417,13 +417,13 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 	
 	@Override
 	public void dispose(final GLAutoDrawable drawable) {
-		log.trace("GL - dispose() called");
+		// MODIFIED CODE HERE log.trace("GL - dispose() called");
 		rr.dispose(drawable);
 	}
 	
 	@Override
 	public void init(final GLAutoDrawable drawable) {
-		log.trace("GL - init()");
+		// MODIFIED CODE HERE log.trace("GL - init()");
 		
 		final GL2 gl = drawable.getGL().getGL2();
 		gl.glClearDepth(1.0f); // clear z-buffer to the farthest
@@ -453,7 +453,7 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 	
 	@Override
 	public void reshape(final GLAutoDrawable drawable, final int x, final int y, final int w, final int h) {
-		log.trace("GL - reshape()");
+		// MODIFIED CODE HERE log.trace("GL - reshape()");
 		final GL2 gl = drawable.getGL().getGL2();
 		final GLU glu = new GLU();
 		
@@ -553,7 +553,7 @@ public class RocketFigure3d extends JPanel implements GLEventListener {
 	 * Call when the rocket has changed
 	 */
 	public void updateFigure() {
-		log.debug("3D Figure Updated");
+		// MODIFIED CODE HERE log.debug("3D Figure Updated");
 		cachedBounds = null;
 		if (canvas != null) {
 			((GLAutoDrawable) canvas).invoke(true, new GLRunnable() {

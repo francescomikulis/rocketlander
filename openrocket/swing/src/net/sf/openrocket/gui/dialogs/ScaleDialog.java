@@ -442,14 +442,14 @@ public class ScaleDialog extends JDialog {
 		
 		if (MathUtil.equals(mul, 1.0)) {
 			// Nothing to do
-			log.info(Markers.USER_MARKER, "Scaling by value 1.0 - nothing to do");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Scaling by value 1.0 - nothing to do");
 			return;
 		}
 		
 		boolean scaleMass = scaleMassValues.isSelected();
 		
 		Object item = selectionOption.getSelectedItem();
-		log.info(Markers.USER_MARKER, "Scaling design by factor " + mul + ", option=" + item);
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Scaling design by factor " + mul + ", option=" + item);
 		if (SCALE_ROCKET.equals(item)) {
 			
 			// Scale the entire rocket design

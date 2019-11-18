@@ -285,15 +285,12 @@ public class FlightDataType implements Comparable<FlightDataType> {
 			   {
 				oldPriority = type.priority;
 				EXISTING_TYPES.remove(type);
-				log.info("Unitgroup of type "+type.getName() + 
-						 ", has changed from "+type.getUnitGroup().toString() + 
-						 " to "+u.toString() +
-						 ". Removing old version.");
+				// MODIFIED CODE HERE log.info("Unitgroup of type "+type.getName() + ", has changed from "+type.getUnitGroup().toString() + " to "+u.toString() + ". Removing old version.");
 			}
 			else if (!s.equals(type.getName())) {
 				oldPriority = type.priority;
 				EXISTING_TYPES.remove(type);
-				log.info("Name of type "+type.getName()+", has changed to "+s+". Removing old version.");
+				// MODIFIED CODE HERE log.info("Name of type "+type.getName()+", has changed to "+s+". Removing old version.");
 			}
 			else{
 				return type;
@@ -302,7 +299,7 @@ public class FlightDataType implements Comparable<FlightDataType> {
 		
 		if (u == null){
 			u = UnitGroup.UNITS_NONE;
-			log.error("Made a new flightdatatype, but did not know what units to use.");
+			// MODIFIED CODE HERE log.error("Made a new flightdatatype, but did not know what units to use.");
 		}
 		
 		// make a new one

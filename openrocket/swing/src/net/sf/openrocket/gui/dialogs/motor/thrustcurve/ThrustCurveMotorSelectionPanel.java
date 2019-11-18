@@ -262,12 +262,12 @@ public class ThrustCurveMotorSelectionPanel extends JPanel implements MotorSelec
 					if (row >= 0) {
 						row = table.convertRowIndexToModel(row);
 						ThrustCurveMotorSet motorSet = model.getMotorSet(row);
-						log.info(Markers.USER_MARKER, "Selected table row " + row + ": " + motorSet);
+						// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Selected table row " + row + ": " + motorSet);
 						if (motorSet != selectedMotorSet) {
 							select(selectMotor(motorSet));
 						}
 					} else {
-						log.info(Markers.USER_MARKER, "Selected table row " + row + ", nothing selected");
+						// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Selected table row " + row + ", nothing selected");
 					}
 				}
 			});
@@ -391,14 +391,14 @@ public class ThrustCurveMotorSelectionPanel extends JPanel implements MotorSelec
 	@Override
 	public void selectedMotor(Motor motorSelection) {
 		if (!(motorSelection instanceof ThrustCurveMotor)) {
-			log.error("Received argument that was not ThrustCurveMotor: " + motorSelection);
+			// MODIFIED CODE HERE log.error("Received argument that was not ThrustCurveMotor: " + motorSelection);
 			return;
 		}
 
 		ThrustCurveMotor motor = (ThrustCurveMotor) motorSelection;
 		ThrustCurveMotorSet set = findMotorSet(motor);
 		if (set == null) {
-			log.error("Could not find set for motor:" + motorSelection);
+			// MODIFIED CODE HERE log.error("Could not find set for motor:" + motorSelection);
 			return;
 		}
 
@@ -486,7 +486,7 @@ public class ThrustCurveMotorSelectionPanel extends JPanel implements MotorSelec
 					continue;
 				}
 				double similarity = MotorCorrelation.similarity(selectedMotor, m);
-				log.debug("Motor similarity: " + similarity);
+				// MODIFIED CODE HERE log.debug("Motor similarity: " + similarity);
 				if (similarity < MOTOR_SIMILARITY_THRESHOLD) {
 					filtered.add(m);
 				}

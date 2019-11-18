@@ -42,7 +42,7 @@ public final class MotorLoaderHelper {
 			try {
 				return load(new DirectoryIterator(target, new SimpleFileFilter("", loader.getSupportedExtensions()), true));
 			} catch (IOException e) {
-				log.warn("Could not read directory " + target, e);
+				// MODIFIED CODE HERE log.warn("Could not read directory " + target, e);
 				return Collections.emptyList();
 			}
 
@@ -53,14 +53,14 @@ public final class MotorLoaderHelper {
 				is = new FileInputStream(target);
 				return loader.load(new BufferedInputStream(is), target.getName());
 			} catch (IOException e) {
-				log.warn("Could not load file " + target, e);
+				// MODIFIED CODE HERE log.warn("Could not load file " + target, e);
 				return Collections.emptyList();
 			} finally {
 				if (is != null) {
 					try {
 						is.close();
 					} catch (IOException e) {
-						log.error("Could not close file " + target, e);
+						// MODIFIED CODE HERE log.error("Could not close file " + target, e);
 					}
 				}
 			}
@@ -73,11 +73,11 @@ public final class MotorLoaderHelper {
 		try {
 			List<ThrustCurveMotor.Builder> motors = loader.load(is, fileName);
 			if (motors.size() == 0) {
-				log.warn("No motors found in file " + fileName);
+				// MODIFIED CODE HERE log.warn("No motors found in file " + fileName);
 			}
 			return motors;
 		} catch (IOException e) {
-			log.warn("IOException when loading motor file " + fileName, e);
+			// MODIFIED CODE HERE log.warn("IOException when loading motor file " + fileName, e);
 		}
 		return Collections.<ThrustCurveMotor.Builder>emptyList();
 	}
@@ -96,7 +96,7 @@ public final class MotorLoaderHelper {
 
 		while (iterator.hasNext()) {
 			final Pair<String, InputStream> input = iterator.next();
-			log.debug("Loading motors from file " + input.getU());
+			// MODIFIED CODE HERE log.debug("Loading motors from file " + input.getU());
 			try {
 				List<ThrustCurveMotor.Builder> motors = load(input.getV(), input.getU());
 				for (ThrustCurveMotor.Builder m : motors) {
@@ -106,7 +106,7 @@ public final class MotorLoaderHelper {
 				try {
 					input.getV().close();
 				} catch (IOException e) {
-					log.error("IOException when closing InputStream", e);
+					// MODIFIED CODE HERE log.error("IOException when closing InputStream", e);
 				}
 			}
 		}

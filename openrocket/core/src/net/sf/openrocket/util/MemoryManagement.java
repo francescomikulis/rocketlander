@@ -53,7 +53,7 @@ public final class MemoryManagement {
 		if (o == null) {
 			throw new IllegalArgumentException("object is null");
 		}
-		log.debug("Adding object into collectable list: " + o);
+		// MODIFIED CODE HERE log.debug("Adding object into collectable list: " + o);
 		objects.add(new MemoryData(o));
 		collectableCallCount++;
 		if (collectableCallCount % PURGE_CALL_COUNT == 0) {
@@ -144,7 +144,7 @@ public final class MemoryManagement {
 				iterator.remove();
 			}
 		}
-		log.debug(objects.size() + " of " + origCount + " objects remaining in discarded objects list after purge.");
+		// MODIFIED CODE HERE log.debug(objects.size() + " of " + origCount + " objects remaining in discarded objects list after purge.");
 	}
 	
 	
@@ -160,7 +160,7 @@ public final class MemoryManagement {
 				iterator.remove();
 			}
 		}
-		log.debug(listenerLists.size() + " of " + origCount + " listener lists remaining after purge.");
+		// MODIFIED CODE HERE log.debug(listenerLists.size() + " of " + origCount + " listener lists remaining after purge.");
 	}
 	
 	/**

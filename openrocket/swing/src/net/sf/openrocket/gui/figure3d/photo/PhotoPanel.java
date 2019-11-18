@@ -99,7 +99,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 				doc.addDocumentChangeListener(new DocumentChangeListener() {
 					@Override
 					public void documentChanged(DocumentChangeEvent event) {
-						log.debug("Repainting on document change");
+						// MODIFIED CODE HERE log.debug("Repainting on document change");
 						needUpdate = true;
 						PhotoPanel.this.repaint();
 					}
@@ -130,7 +130,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 		p.addChangeListener(new StateChangeListener() {
 			@Override
 			public void stateChanged(EventObject e) {
-				log.debug("Repainting on settings state change");
+				// MODIFIED CODE HERE log.debug("Repainting on settings state change");
 				PhotoPanel.this.repaint();
 			}
 		});
@@ -139,7 +139,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 
 	private void initGLCanvas() {
 		try {
-			log.debug("Setting up GL capabilities...");
+			// MODIFIED CODE HERE log.debug("Setting up GL capabilities...");
 			final GLProfile glp = GLProfile.get(GLProfile.GL2);
 
 			final GLCapabilities caps = new GLCapabilities(glp);
@@ -149,22 +149,22 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 				caps.setSampleBuffers(true);
 				caps.setNumSamples(6);
 			} else {
-				log.trace("GL - Not enabling AA by user pref");
+				// MODIFIED CODE HERE log.trace("GL - Not enabling AA by user pref");
 			}
 
 			if (Application.getPreferences().getBoolean(
 					Preferences.OPENGL_USE_FBO, false)) {
-				log.trace("GL - Creating GLJPanel");
+				// MODIFIED CODE HERE log.trace("GL - Creating GLJPanel");
 				canvas = new GLJPanel(caps);
 			} else {
-				log.trace("GL - Creating GLCanvas");
+				// MODIFIED CODE HERE log.trace("GL - Creating GLCanvas");
 				canvas = new GLCanvas(caps);
 			}
 
 			((GLAutoDrawable) canvas).addGLEventListener(this);
 			this.add(canvas, BorderLayout.CENTER);
 		} catch (Throwable t) {
-			log.error("An error occurred creating 3d View", t);
+			// MODIFIED CODE HERE log.error("An error occurred creating 3d View", t);
 			canvas = null;
 			this.add(new JLabel("Unable to load 3d Libraries: "
 					+ t.getMessage()));
@@ -274,7 +274,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 				try {
 					ia.performAction(i);
 				} catch (Throwable t) {
-					log.error("Image Callback {} threw", i, t);
+					// MODIFIED CODE HERE log.error("Image Callback {} threw", i, t);
 				}
 			}
 		}
@@ -447,7 +447,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 
 	@Override
 	public void dispose(final GLAutoDrawable drawable) {
-		log.trace("GL - dispose() called");
+		// MODIFIED CODE HERE log.trace("GL - dispose() called");
 		if (rr != null)
 			rr.dispose(drawable);
 		textureCache.dispose(drawable);
@@ -455,7 +455,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 
 	@Override
 	public void init(final GLAutoDrawable drawable) {
-		log.trace("GL - init()");
+		// MODIFIED CODE HERE log.trace("GL - init()");
 		//drawable.setGL(new DebugGL2(drawable.getGL().getGL2()));
 
 		final GL2 gl = drawable.getGL().getGL2();
@@ -474,7 +474,7 @@ public class PhotoPanel extends JPanel implements GLEventListener {
 	@Override
 	public void reshape(final GLAutoDrawable drawable, final int x,
 			final int y, final int w, final int h) {
-		log.trace("GL - reshape()");
+		// MODIFIED CODE HERE log.trace("GL - reshape()");
 		ratio = (double) w / (double) h;
 	}
 

@@ -54,7 +54,7 @@ public class SlideShowLinkListener implements HyperlinkListener {
 				dialog.setSlideSet(ss, 0);
 				dialog.setVisible(true);
 			} catch (IllegalArgumentException e) {
-				log.warn("Guided tour '" + name + "' not found");
+				// MODIFIED CODE HERE log.warn("Guided tour '" + name + "' not found");
 				JOptionPane.showMessageDialog(parent,
 						trans.get("error.msg"), trans.get("error.title"), JOptionPane.WARNING_MESSAGE);
 			}

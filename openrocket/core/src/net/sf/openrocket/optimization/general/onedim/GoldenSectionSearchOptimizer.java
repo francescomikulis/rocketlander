@@ -60,7 +60,7 @@ public class GoldenSectionSearchOptimizer implements FunctionOptimizer, Statisti
 					initial.dim());
 		}
 		
-		log.info("Starting golden section search for optimization");
+		// MODIFIED CODE HERE log.info("Starting golden section search for optimization");
 		
 		Point guessAC = null;
 		Point guessBD = null;
@@ -161,7 +161,7 @@ public class GoldenSectionSearchOptimizer implements FunctionOptimizer, Statisti
 					b = guessAC;
 					functionExecutor.abort(guessBD);
 					guessBD = null;
-					log.debug("Selecting A-C region, a=" + a.get(0) + " c=" + c.get(0));
+					// MODIFIED CODE HERE log.debug("Selecting A-C region, a=" + a.get(0) + " c=" + c.get(0));
 					if (guessedAC) {
 						guessSuccess++;
 					} else {
@@ -173,7 +173,7 @@ public class GoldenSectionSearchOptimizer implements FunctionOptimizer, Statisti
 					c = guessBD;
 					functionExecutor.abort(guessAC);
 					guessAC = null;
-					log.debug("Selecting B-D region, b=" + b.get(0) + " d=" + d.get(0));
+					// MODIFIED CODE HERE log.debug("Selecting B-D region, b=" + b.get(0) + " d=" + d.get(0));
 					if (!guessedAC) {
 						guessSuccess++;
 					} else {
@@ -196,7 +196,7 @@ public class GoldenSectionSearchOptimizer implements FunctionOptimizer, Statisti
 			
 
 		} catch (InterruptedException e) {
-			log.info("Optimization was interrupted with InterruptedException");
+			// MODIFIED CODE HERE log.info("Optimization was interrupted with InterruptedException");
 		}
 		
 		if (guessAC != null) {
@@ -207,8 +207,8 @@ public class GoldenSectionSearchOptimizer implements FunctionOptimizer, Statisti
 		}
 		
 
-		log.info("Finishing optimization at point " + getOptimumPoint() + " value " + getOptimumValue());
-		log.info("Optimization statistics: " + getStatistics());
+		// MODIFIED CODE HERE log.info("Finishing optimization at point " + getOptimumPoint() + " value " + getOptimumValue());
+		// MODIFIED CODE HERE log.info("Optimization statistics: " + getStatistics());
 	}
 	
 	

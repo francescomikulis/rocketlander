@@ -39,7 +39,7 @@ public class OpenRocketComponentSaver {
             context = JAXBContext.newInstance(OpenRocketComponentDTO.class);
         }
         catch (JAXBException jaxb) {
-           log.error("Unable to create JAXBContext for loading of *.orc files.", jaxb);
+           // MODIFIED CODE HERE log.error("Unable to create JAXBContext for loading of *.orc files.", jaxb);
         }
     }
 

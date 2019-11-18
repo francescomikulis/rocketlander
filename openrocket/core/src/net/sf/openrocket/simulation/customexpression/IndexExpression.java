@@ -57,7 +57,7 @@ public class IndexExpression extends CustomExpression {
 			return new Variable(hash(), interp.getValue( tvalue ) );
 		}
 		catch (java.util.EmptyStackException e){
-			log.info(Markers.USER_MARKER, "Unable to calculate time index for indexed expression "+getExpressionString()+" due to empty stack exception");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Unable to calculate time index for indexed expression "+getExpressionString()+" due to empty stack exception");
 			return new Variable("Unknown");
 		}
 	}

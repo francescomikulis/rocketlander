@@ -76,9 +76,9 @@ final class OSXSetup {
 	 */
 	static void setupOSX() {
 		if (SystemInfo.getPlatform() != Platform.MAC_OS) {
-			log.warn("Attempting to set up OSX UI on non-MAC_OS");
+			// MODIFIED CODE HERE log.warn("Attempting to set up OSX UI on non-MAC_OS");
 		}
-		log.debug("Setting up OSX UI Elements");
+		// MODIFIED CODE HERE log.debug("Setting up OSX UI Elements");
 		try {
 			// Put the menu bar at the top of the screen
 			System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -109,7 +109,7 @@ final class OSXSetup {
 		} catch (final Throwable t) {
 			// None of the preceding is critical to the app,
 			// so at worst case log an error and continue
-			log.warn("Error setting up OSX UI:", t);
+			// MODIFIED CODE HERE log.warn("Error setting up OSX UI:", t);
 		}
 	}
 

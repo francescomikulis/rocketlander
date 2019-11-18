@@ -61,17 +61,17 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 	private void loadUserDefinedMotors() {
 		GeneralMotorLoader loader = new GeneralMotorLoader();
 		SimpleFileFilter fileFilter = new SimpleFileFilter("", loader.getSupportedExtensions());
-		log.info("Starting reading user-defined motors");
+		// MODIFIED CODE HERE log.info("Starting reading user-defined motors");
 		for (File file : ((SwingPreferences) Application.getPreferences()).getUserThrustCurveFiles()) {
 			if (file.isFile()) {
 				loadFile(loader, file);
 			} else if (file.isDirectory()) {
 				loadDirectory(loader, fileFilter, file);
 			} else {
-				log.warn("User-defined motor file " + file + " is neither file nor directory");
+				// MODIFIED CODE HERE log.warn("User-defined motor file " + file + " is neither file nor directory");
 			}
 		}
-		log.info("Ending reading user-defined motors, motorCount=" + motorCount);
+		// MODIFIED CODE HERE log.info("Ending reading user-defined motors, motorCount=" + motorCount);
 	}
 
 
@@ -80,13 +80,13 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 	 * uses directory "datafiles/thrustcurves" for data  
 	 */
 	private void loadSerializedMotorDatabase() {
-		log.info("Starting reading serialized motor database");
+		// MODIFIED CODE HERE log.info("Starting reading serialized motor database");
 		FileIterator iterator = DirectoryIterator.findDirectory(THRUSTCURVE_DIRECTORY, new SimpleFileFilter("", false, "ser"));
 		while (iterator.hasNext()) {
 			Pair<String, InputStream> f = iterator.next();
 			loadSerialized(f);
 		}
-		log.info("Ending reading serialized motor database, motorCount=" + motorCount);
+		// MODIFIED CODE HERE log.info("Ending reading serialized motor database, motorCount=" + motorCount);
 	}
 	
 	
@@ -98,7 +98,7 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 	@SuppressWarnings("unchecked")
 	private void loadSerialized(Pair<String, InputStream> f) {
 		try {
-			log.debug("Reading motors from file " + f.getU());
+			// MODIFIED CODE HERE log.debug("Reading motors from file " + f.getU());
 			ObjectInputStream ois = new ObjectInputStream(f.getV());
 			List<ThrustCurveMotor> motors = (List<ThrustCurveMotor>) ois.readObject();
 			addMotors(motors);
@@ -115,14 +115,14 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 	 */
 	private void loadFile(GeneralMotorLoader loader, File file) {
 		try {
-			log.debug("Loading motors from file " + file);
+			// MODIFIED CODE HERE log.debug("Loading motors from file " + file);
 			loadFile(
 					loader,
 					new Pair<String,InputStream>(
 							file.getName(),
 							new BufferedInputStream(new FileInputStream(file))));
 		} catch (IOException e) {
-			log.warn("IOException while reading " + file + ": " + e, e);
+			// MODIFIED CODE HERE log.warn("IOException while reading " + file + ": " + e, e);
 		}
 	}
 	
@@ -138,7 +138,7 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 			addMotorsFromBuilders(motors);
 			f.getV().close();
 		} catch (IOException e) {
-			log.warn("IOException while loading file " + f.getU() + ": " + e, e);
+			// MODIFIED CODE HERE log.warn("IOException while loading file " + f.getU() + ": " + e, e);
 			try {
 				f.getV().close();
 			} catch (IOException e1) {
@@ -158,7 +158,7 @@ public class MotorDatabaseLoader extends AsynchronousDatabaseLoader {
 		try {
 			iterator = new DirectoryIterator(file, fileFilter, true);
 		} catch (IOException e) {
-			log.warn("Unable to read directory " + file + ": " + e, e);
+			// MODIFIED CODE HERE log.warn("Unable to read directory " + file + ": " + e, e);
 			return;
 		}
 		while (iterator.hasNext()) {

@@ -43,12 +43,12 @@ public class SkyBox extends Sky {
 				dir = tryDir;
 				try {
 					URL u = url(dir[0]);
-					log.debug("Trying URL {}", u);
+					// MODIFIED CODE HERE log.debug("Trying URL {}", u);
 					InputStream is = u.openStream();
 					is.close();
 					break found;
 				} catch (IOException e) {
-					log.debug("Nope, {}", e.getMessage());
+					// MODIFIED CODE HERE log.debug("Nope, {}", e.getMessage());
 				}
 			}
 		}

@@ -27,10 +27,10 @@ public class ExpressionParser {
 			ExpressionBuilder builder = new ExpressionBuilder(modified);
 			Calculable calc = builder.build();
 			double n = calc.calculate().getDoubleValue();
-			log.debug("Evaluated expression '" + expression + "' (modified='" + modified + "') to " + n);
+			// MODIFIED CODE HERE log.debug("Evaluated expression '" + expression + "' (modified='" + modified + "') to " + n);
 			return n;
 		} catch (Exception e) {
-			log.warn("Unable to parse expression '" + expression + "' (modified='" + modified + "')", e);
+			// MODIFIED CODE HERE log.warn("Unable to parse expression '" + expression + "' (modified='" + modified + "')", e);
 			throw new InvalidExpressionException("Invalid expression: " + expression, e);
 		}
 	}

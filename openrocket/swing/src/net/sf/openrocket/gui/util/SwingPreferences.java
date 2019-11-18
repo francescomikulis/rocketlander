@@ -56,7 +56,8 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 	 */
 	private static final boolean DEBUG;
 	static {
-		DEBUG = (System.getProperty("openrocket.debug.prefs") != null);
+		// MODIFIED CODE HERE //
+		DEBUG = false;// (System.getProperty("openrocket.debug.prefs") != null);
 	}
 	
 	/**
@@ -578,7 +579,7 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 					materials.add(m);
 					
 				} catch (IllegalArgumentException e) {
-					log.warn("Illegal material string " + value);
+					// MODIFIED CODE HERE log.warn("Illegal material string " + value);
 				}
 				
 			}

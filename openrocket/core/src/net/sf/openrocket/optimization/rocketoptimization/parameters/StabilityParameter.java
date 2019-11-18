@@ -48,7 +48,7 @@ public class StabilityParameter implements OptimizableParameter {
 		double cpx, cgx;
 		double stability;
 		
-		log.debug("Calculating stability of simulation, absolute=" + absolute);
+		// MODIFIED CODE HERE log.debug("Calculating stability of simulation, absolute=" + absolute);
 		
 		/*
 		 * These are instantiated each time because this class must be thread-safe.
@@ -92,7 +92,7 @@ public class StabilityParameter implements OptimizableParameter {
 			stability = stability / diameter;
 		}
 		
-		log.debug("Resulting stability is " + stability + ", absolute=" + absolute);
+		// MODIFIED CODE HERE log.debug("Resulting stability is " + stability + ", absolute=" + absolute);
 		
 		return stability;
 	}

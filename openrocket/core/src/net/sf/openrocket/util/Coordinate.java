@@ -50,7 +50,7 @@ public final class Coordinate implements Cloneable, Serializable {
 			synchronized (Coordinate.class) {
 				count++;
 				if ((count % COUNT_DIFF) == 0) {
-					log.debug("Coordinate instantiated " + count + " times.");
+					// MODIFIED CODE HERE log.debug("Coordinate instantiated " + count + " times.");
 				}
 			}
 		}

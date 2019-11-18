@@ -219,7 +219,7 @@ public class FreeformFinSet extends FinSet {
 		int testIndex = Math.min(index, (points.size() - 2));
 		if (intersects(testIndex)) {
 			// intersection found!  log error and abort!
-			log.error(String.format("ERROR: found an intersection while setting fin point #%d to [%6.4g, %6.4g] <body frame> : ABORTING setPoint(..) !! ", index, xRequest, yRequest));
+			// MODIFIED CODE HERE log.error(String.format("ERROR: found an intersection while setting fin point #%d to [%6.4g, %6.4g] <body frame> : ABORTING setPoint(..) !! ", index, xRequest, yRequest));
 			return;
 		}
 	}
@@ -417,9 +417,9 @@ public class FreeformFinSet extends FinSet {
 			
 			final Line2D.Double comparisonLine = new Line2D.Double(pc1, pc2);
 			if (targetLine.intersectsLine(comparisonLine)) {
-				log.error(String.format("Found intersection at %d-%d and %d-%d", targetIndex, targetIndex+1, comparisonIndex, comparisonIndex+1)); 
-				log.error(String.format("                   between (%g, %g) => (%g, %g)", pt1.x, pt1.y, pt2.x, pt2.y)); 
-				log.error(String.format("                       and (%g, %g) => (%g, %g)", pc1.x, pc1.y, pc2.x, pc2.y));
+				// MODIFIED CODE HERE log.error(String.format("Found intersection at %d-%d and %d-%d", targetIndex, targetIndex+1, comparisonIndex, comparisonIndex+1));
+				// MODIFIED CODE HERE log.error(String.format("                   between (%g, %g) => (%g, %g)", pt1.x, pt1.y, pt2.x, pt2.y));
+				// MODIFIED CODE HERE log.error(String.format("                       and (%g, %g) => (%g, %g)", pc1.x, pc1.y, pc2.x, pc2.y));
 				return true;
 			}
 		}

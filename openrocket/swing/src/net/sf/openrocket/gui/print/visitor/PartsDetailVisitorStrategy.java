@@ -368,7 +368,7 @@ public class PartsDetailVisitorStrategy {
             }
         }
         catch (DocumentException e) {
-            log.error("Could not write last cell to document.", e);
+            // MODIFIED CODE HERE log.error("Could not write last cell to document.", e);
         }
     }
 
@@ -542,7 +542,7 @@ public class PartsDetailVisitorStrategy {
             img = Image.getInstance(writer, awtImage, 0.25f);
         }
         catch (Exception e) {
-            log.error("Could not write image to document.", e);
+            // MODIFIED CODE HERE log.error("Could not write image to document.", e);
         }
 
         grid.addCell(iconToImage(theFinSet));

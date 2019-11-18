@@ -148,7 +148,7 @@ public class FlightConfiguration implements FlightConfigurableParameter<FlightCo
 			stages.get(stageNumber).active = _active;
 			return;
 		}
-		log.error("error: attempt to retrieve via a bad stage number: " + stageNumber);
+		// MODIFIED CODE HERE log.error("error: attempt to retrieve via a bad stage number: " + stageNumber);
 	}
 	
 	
@@ -159,7 +159,7 @@ public class FlightConfiguration implements FlightConfigurableParameter<FlightCo
 			return;
 		}
 		this.updateMotors();
-		log.error("error: attempt to retrieve via a bad stage number: " + stageNumber);
+		// MODIFIED CODE HERE log.error("error: attempt to retrieve via a bad stage number: " + stageNumber);
 	}
 
 		
@@ -437,7 +437,7 @@ public class FlightConfiguration implements FlightConfigurableParameter<FlightCo
 	 */
 	public void addMotor(MotorConfiguration motorConfig) {
 		if( motorConfig.isEmpty() ){
-			log.error("attempt to add an empty motorConfig! ignoring. ", new IllegalArgumentException("empty MotorInstance: "+motorConfig.toDebugDetail()));
+			// MODIFIED CODE HERE log.error("attempt to add an empty motorConfig! ignoring. ", new IllegalArgumentException("empty MotorInstance: "+motorConfig.toDebugDetail()));
 		}
 
 		this.motors.put( motorConfig.getID(), motorConfig);

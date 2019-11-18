@@ -337,14 +337,14 @@ public class ComponentPresetEditor extends JPanel implements PresetResultListene
 		int option = chooser.showOpenDialog(ComponentPresetEditor.this);
 		if (option != JFileChooser.APPROVE_OPTION) {
 			editContext.setOpenedFile(null);
-			log.info(Markers.USER_MARKER, "User decided not to open, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to open, option=" + option);
 			return false;
 		}
 		
 		File file = chooser.getSelectedFile();
 		try {
 			if (file == null) {
-				log.info(Markers.USER_MARKER, "User did not select a file");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User did not select a file");
 				return false;
 			}
 			
@@ -416,13 +416,13 @@ public class ComponentPresetEditor extends JPanel implements PresetResultListene
 		
 		int option = chooser.showSaveDialog(ComponentPresetEditor.this);
 		if (option != JFileChooser.APPROVE_OPTION) {
-			log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to save, option=" + option);
 			return false;
 		}
 		
 		file = chooser.getSelectedFile();
 		if (file == null) {
-			log.info(Markers.USER_MARKER, "User did not select a file");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User did not select a file");
 			return false;
 		}
 		

@@ -56,7 +56,7 @@ public class ComponentPresetDatabaseLoader extends AsynchronousDatabaseLoader {
 		loadPresetComponents();
 		loadUserComponents();
 		long end = System.currentTimeMillis();
-		log.debug("Time to load presets: " + (end - startTime) + "ms " + presetCount + " loaded from " + fileCount + " files");
+		// MODIFIED CODE HERE log.debug("Time to load presets: " + (end - startTime) + "ms " + presetCount + " loaded from " + fileCount + " files");
 		
 	}
 
@@ -73,7 +73,7 @@ public class ComponentPresetDatabaseLoader extends AsynchronousDatabaseLoader {
 					orcFilter,
 					true);
 		} catch (IOException ioex) {
-			log.debug("Error opening UserComponentDirectory", ioex);
+			// MODIFIED CODE HERE log.debug("Error opening UserComponentDirectory", ioex);
 			return;
 		}
 		while (iterator.hasNext()) {
@@ -90,7 +90,7 @@ public class ComponentPresetDatabaseLoader extends AsynchronousDatabaseLoader {
 	 * uses the file directory from "datafiles/presets"
 	 */
 	private void loadPresetComponents() {
-		log.info("Loading component presets from " + SYSTEM_PRESET_DIR);
+		// MODIFIED CODE HERE log.info("Loading component presets from " + SYSTEM_PRESET_DIR);
 		FileIterator iterator = DirectoryIterator.findDirectory(SYSTEM_PRESET_DIR, new SimpleFileFilter("", false, "ser"));
 		
 		if(iterator == null)
@@ -120,7 +120,7 @@ public class ComponentPresetDatabaseLoader extends AsynchronousDatabaseLoader {
 	 * @return	a collection of components preset from the file
 	 */
 	private Collection<ComponentPreset> loadFile(String fileName, InputStream stream) {
-		log.debug("loading from file: " + fileName);
+		// MODIFIED CODE HERE log.debug("loading from file: " + fileName);
 		OpenRocketComponentLoader loader = new OpenRocketComponentLoader();
 		Collection<ComponentPreset> presets = loader.load(stream, fileName);
 		return presets;

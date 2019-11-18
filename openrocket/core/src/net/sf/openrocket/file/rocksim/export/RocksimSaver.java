@@ -50,7 +50,7 @@ public class RocksimSaver extends RocketSaver {
 			marshaller.marshal(toRocksimDocumentDTO(doc), sw);
 			return sw.toString();
 		} catch (Exception e) {
-			log.error("Could not marshall a design to Rocksim format. " + e.getMessage());
+			// MODIFIED CODE HERE log.error("Could not marshall a design to Rocksim format. " + e.getMessage());
 		}
 		
 		return null;
@@ -58,7 +58,7 @@ public class RocksimSaver extends RocketSaver {
 	
 	@Override
 	public void save(OutputStream dest, OpenRocketDocument doc, StorageOptions options) throws IOException {
-		log.info("Saving .rkt file");
+		// MODIFIED CODE HERE log.info("Saving .rkt file");
 		
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(dest, "UTF-8"));
 		writer.write(marshalToRocksim(doc));

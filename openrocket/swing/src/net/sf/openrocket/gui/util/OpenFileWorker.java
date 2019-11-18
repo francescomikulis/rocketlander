@@ -100,7 +100,7 @@ public class OpenFileWorker extends SwingWorker<OpenRocketDocument, Void> {
 			try {
 				s = in.available();
 			} catch (IOException e) {
-				log.info("Exception while estimating available bytes!", e);
+				// MODIFIED CODE HERE log.info("Exception while estimating available bytes!", e);
 				s = 0;
 			}
 			size = Math.max(s, 1);

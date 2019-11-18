@@ -65,11 +65,11 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 		
 		RocketComponent c = ComponentTreeModel.componentFromPath(path);
 		if (c instanceof Rocket) {
-			log.info("Attempting to create transferable from Rocket");
+			// MODIFIED CODE HERE log.info("Attempting to create transferable from Rocket");
 			return null;
 		}
 		
-		log.info("Creating transferable from component " + c.getComponentName());
+		// MODIFIED CODE HERE log.info("Creating transferable from component " + c.getComponentName());
 		return new RocketComponentTransferable(c);
 	}
 	
@@ -92,13 +92,13 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 		}
 		
 		boolean allowed = data.destParent.isCompatible(data.child);
-		log.trace("Checking validity of drag-drop " + data.toString() + " allowed:" + allowed);
+		// MODIFIED CODE HERE log.trace("Checking validity of drag-drop " + data.toString() + " allowed:" + allowed);
 		
 		// Ensure we're not dropping a component onto a child component
 		RocketComponent path = data.destParent;
 		while (path != null) {
 			if (path.equals(data.child)) {
-				log.trace("Drop would cause cycle in tree, disallowing.");
+				// MODIFIED CODE HERE log.trace("Drop would cause cycle in tree, disallowing.");
 				allowed = false;
 				break;
 			}
@@ -119,7 +119,7 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 		
 		// We currently only support drop, not paste
 		if (!support.isDrop()) {
-			log.warn("Import action is not a drop action");
+			// MODIFIED CODE HERE log.warn("Import action is not a drop action");
 			return false;
 		}
 		
@@ -132,7 +132,7 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 			int action = support.getDropAction();
 			if (data.srcParent.getRoot() != data.destParent.getRoot()) {
 				// If drag-dropping to another rocket always copy
-				log.info("Performing DnD between different rockets, forcing copy action");
+				// MODIFIED CODE HERE log.info("Performing DnD between different rockets, forcing copy action");
 				action = TransferHandler.COPY;
 			}
 			
@@ -140,14 +140,14 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 			// Check whether move action would be a no-op
 			if ((action == MOVE) && (data.srcParent == data.destParent) &&
 					(data.destIndex == data.srcIndex || data.destIndex == data.srcIndex + 1)) {
-				log.info(Markers.USER_MARKER, "Dropped component at the same place as previously: " + data);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Dropped component at the same place as previously: " + data);
 				return false;
 			}
 			
 			
 			switch (action) {
 			case MOVE:
-				log.info(Markers.USER_MARKER, "Performing DnD move operation: " + data);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Performing DnD move operation: " + data);
 				
 				// If parents are the same, check whether removing the child changes the insert position
 				int index = data.destIndex;
@@ -171,7 +171,7 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 				return true;
 				
 			case COPY:
-				log.info(Markers.USER_MARKER, "Performing DnD copy operation: " + data);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Performing DnD copy operation: " + data);
 				RocketComponent copy = data.child.copy();
 				try {
 					document.startUndo("Copy component");
@@ -182,7 +182,7 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 				return true;
 				
 			default:
-				log.warn("Unknown transfer action " + action);
+				// MODIFIED CODE HERE log.warn("Unknown transfer action " + action);
 				return false;
 			}
 			
@@ -210,21 +210,20 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 	private SourceTarget getSourceAndTarget(TransferHandler.TransferSupport support) {
 		// We currently only support drop, not paste
 		if (!support.isDrop()) {
-			log.warn("Import action is not a drop action");
+			// MODIFIED CODE HERE log.warn("Import action is not a drop action");
 			return null;
 		}
 		
 		// we only import RocketComponentTransferable
 		if (!support.isDataFlavorSupported(RocketComponentTransferable.ROCKET_COMPONENT_DATA_FLAVOR)) {
-			log.debug("Attempting to import data with data flavors " +
-					Arrays.toString(support.getTransferable().getTransferDataFlavors()));
+			// MODIFIED CODE HERE log.debug("Attempting to import data with data flavors " + Arrays.toString(support.getTransferable().getTransferDataFlavors()));
 			return null;
 		}
 		
 		// Fetch the drop location and convert it to work around bug 6560955
 		JTree.DropLocation dl = (JTree.DropLocation) support.getDropLocation();
 		if (dl.getPath() == null) {
-			log.debug("No drop path location available");
+			// MODIFIED CODE HERE log.debug("No drop path location available");
 			return null;
 		}
 		MyDropLocation location = convertDropLocation((JTree) support.getComponent(), dl);
@@ -247,7 +246,7 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 		// Get the source component & index
 		RocketComponent srcParent = child.getParent();
 		if (srcParent == null) {
-			log.debug("Attempting to drag root component");
+			// MODIFIED CODE HERE log.debug("Attempting to drag root component");
 			return null;
 		}
 		int srcIndex = srcParent.getChildPosition(child);
@@ -352,11 +351,12 @@ public class ComponentTreeTransferHandler extends TransferHandler {
 		int correctInsertIndex = model.getIndexOfChild(correctInsertPath.getLastPathComponent(),
 				dropPath.getLastPathComponent()) + 1;
 		
-		log.trace("Working around Sun JRE bug 6560955: " +
+		// MODIFIED CODE HERE log.trace("Working around Sun JRE bug 6560955: " +
+		/*
 				"converted path=" + ComponentTreeModel.pathToString(originalPath) + " index=" + originalIndex +
 				" into path=" + ComponentTreeModel.pathToString(correctInsertPath) +
 				" index=" + correctInsertIndex);
-		
+		*/
 		return new MyDropLocation(correctInsertPath, correctInsertIndex);
 	}
 	

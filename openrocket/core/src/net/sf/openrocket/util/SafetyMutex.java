@@ -227,7 +227,7 @@ public abstract class SafetyMutex {
 				errorReported = true;
 				Application.getExceptionHandler().handleErrorCondition(ex);
 			} else {
-				log.error(message, ex);
+				// MODIFIED CODE HERE log.error(message, ex);
 			}
 			
 			if (throwException) {

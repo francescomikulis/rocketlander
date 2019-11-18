@@ -23,7 +23,7 @@ public class OpenRocketComponentLoader  implements Loader<ComponentPreset> {
 	@Override
 	public Collection<ComponentPreset> load(InputStream stream,	String filename) {
 
-		log.debug("Loading presets from file " + filename);
+		// MODIFIED CODE HERE log.debug("Loading presets from file " + filename);
 		
 		if ( ! (stream instanceof BufferedInputStream) ) {
 			stream = new BufferedInputStream(stream);
@@ -32,7 +32,7 @@ public class OpenRocketComponentLoader  implements Loader<ComponentPreset> {
 		try {
 			List<ComponentPreset> presets;
 			presets = (new OpenRocketComponentSaver().unmarshalFromOpenRocketComponent( new InputStreamReader (stream))).asComponentPresets();
-			log.debug("ComponentPreset file " + filename + " contained " + presets.size() + " presets");
+			// MODIFIED CODE HERE log.debug("ComponentPreset file " + filename + " contained " + presets.size() + " presets");
 			return presets;
 		} catch (JAXBException e) {
 			throw new BugException("Unable to parse file: "+ filename, e);
