@@ -40,11 +40,11 @@ public class RLObjectFileStore {
     }
 
     public HashMap readActionValueFunction(String filenameExtension){
-        return (HashMap) readObjects(actionValueFunctionFileName+filenameExtension);
+        return (HashMap) readObjects(actionValueFunctionFileName + filenameExtension);
     }
 
     public void storeActionValueFunction(HashMap actionValueFunction,String filenameExtension){
-        storeObject(actionValueFunctionFileName+filenameExtension, actionValueFunction);
+        storeObject(actionValueFunctionFileName + filenameExtension, actionValueFunction);
     }
 
     /*

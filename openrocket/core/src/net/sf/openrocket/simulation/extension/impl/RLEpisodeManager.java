@@ -72,19 +72,15 @@ public class RLEpisodeManager {
         }
     }
 
-
-
-
-
     /* SAFE INITIALIZERS */
 
     public void safeActionValueFunctionInitialization() {
         if (model.getValueFunctionTable() == null) {
             try {
                 if (model.simulationType==SimulationType._1D) {
-                    model.setValueFunctionTable(mof.readActionValueFunction("1D"));
-                } else if (model.simulationType==SimulationType._3D){
-                    model.setValueFunctionTable(mof.readActionValueFunction("3D"));
+                    model.setValueFunctionTable(mof.readActionValueFunction("1D.txt"));
+                } else if (model.simulationType==SimulationType._3D) {
+                    model.setValueFunctionTable(mof.readActionValueFunction("3D.txt"));
                 }
             } catch (Exception e) {
                 model.resetValueFunctionTable();
