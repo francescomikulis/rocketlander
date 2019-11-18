@@ -23,19 +23,16 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	}
 
 	@Override
-	public void startSimulation(SimulationStatus status) throws SimulationException {
+	public void startSimulation(SimulationStatus status) {
 		client.setConnectionString(visualize3D.getConnectionString());
 		client.Connect();
 	}
 
 	@Override
-	public void postStep(SimulationStatus status) throws SimulationException{
+	public void postStep(SimulationStatus status) {
 		if (!client.Connected()){
 			client.Connect();
 		} else{
-			//HashMap<String, ArrayList<Double>> data = RLEpisodeManager.initializeEmptyEpisode();
-			//RLEpisodeManager.addData(status, data);
-			//client.write(RLEpisodeManager.serialize_single_timestep(data), 0, RLEpisodeManager.serialize_length());
 			byte[] bytes = serialize_single_timeStep(status);
 			client.write(bytes, 0, bytes.length);
 		}

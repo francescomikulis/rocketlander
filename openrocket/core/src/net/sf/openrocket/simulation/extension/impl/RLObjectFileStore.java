@@ -39,11 +39,11 @@ public class RLObjectFileStore {
         storeObject(episodeDataFileName, episodesData);
     }
 
-    public HashMap readActionValueFunction(String filenameExtension){
-        return (HashMap) readObjects(actionValueFunctionFileName + filenameExtension);
+    public HashMap<StateActionTuple, Double> readActionValueFunction(String filenameExtension){
+        return (HashMap<StateActionTuple, Double>) readObjects(actionValueFunctionFileName + filenameExtension);
     }
 
-    public void storeActionValueFunction(HashMap actionValueFunction,String filenameExtension){
+    public void storeActionValueFunction(HashMap actionValueFunction, String filenameExtension){
         storeObject(actionValueFunctionFileName + filenameExtension, actionValueFunction);
     }
 
@@ -58,16 +58,11 @@ public class RLObjectFileStore {
             ops = new FileOutputStream(fileName);
             objOps = new ObjectOutputStream(ops);
             objOps.writeObject(data);
-            objOps.flush();
+            objOps.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (objOps != null) objOps.close();
-            } catch (Exception ex) {
-            }
         }
     }
 
