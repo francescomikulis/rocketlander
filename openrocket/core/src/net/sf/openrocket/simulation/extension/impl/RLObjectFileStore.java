@@ -18,7 +18,7 @@ https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
 
 public class RLObjectFileStore {
     private static String episodeDataFileName = "episodesData.txt";
-    private static String actionValueFunctionFileName = "actionValue.txt";
+    private static String actionValueFunctionFileName = "actionValue";
 
     private static class InstanceHolder {
         private static final RLObjectFileStore instance = new RLObjectFileStore();
@@ -39,12 +39,12 @@ public class RLObjectFileStore {
         storeObject(episodeDataFileName, episodesData);
     }
 
-    public HashMap readActionValueFunction(){
-        return (HashMap) readObjects(actionValueFunctionFileName);
+    public HashMap readActionValueFunction(String filenameExtension){
+        return (HashMap) readObjects(actionValueFunctionFileName+filenameExtension);
     }
 
-    public void storeActionValueFunction(HashMap actionValueFunction){
-        storeObject(actionValueFunctionFileName, actionValueFunction);
+    public void storeActionValueFunction(HashMap actionValueFunction,String filenameExtension){
+        storeObject(actionValueFunctionFileName+filenameExtension, actionValueFunction);
     }
 
     /*

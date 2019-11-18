@@ -54,8 +54,11 @@ public class RLEpisodeManager {
         System.out.println("CLOSING!!!");
         initializeEpisodeManager();
         if (model.getValueFunctionTable().size() != 0) {
-            mof.storeActionValueFunction(model.getValueFunctionTable());
-            // printAll();
+            if (model.simulationType==SimulationType._1D) {
+                mof.storeActionValueFunction(model.getValueFunctionTable(),"1D.txt");
+            } else if (model.simulationType==SimulationType._3D){
+                mof.storeActionValueFunction(model.getValueFunctionTable(),"3D.txt");
+            }
         }
     }
 
@@ -78,7 +81,11 @@ public class RLEpisodeManager {
     public void safeActionValueFunctionInitialization() {
         if (model.getValueFunctionTable() == null) {
             try {
-                model.setValueFunctionTable(mof.readActionValueFunction());
+                if (model.simulationType==SimulationType._1D) {
+                    model.setValueFunctionTable(mof.readActionValueFunction("1D"));
+                } else if (model.simulationType==SimulationType._3D){
+                    model.setValueFunctionTable(mof.readActionValueFunction("3D"));
+                }
             } catch (Exception e) {
                 model.resetValueFunctionTable();
             }
