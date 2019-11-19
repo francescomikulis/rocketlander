@@ -35,19 +35,19 @@ public class RLObjectFileStore {
         return (ArrayList) readObjects(episodeDataFileName);
     }
 
-    public HashMap<StateActionTuple, Float> readActionValueFunction(String filenameExtension){
-        return (HashMap<StateActionTuple, Float>) readObjects(actionValueFunctionFileName + filenameExtension);
+    public OptimizedMap readActionValueFunction(String filenameExtension){
+        return new OptimizedMap((float[][][][][][][]) readObjects(actionValueFunctionFileName + filenameExtension));
     }
 
-    public void storeActionValueFunction(HashMap actionValueFunction, String filenameExtension){
-        storeObject(actionValueFunctionFileName + filenameExtension, actionValueFunction);
+    public void storeActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
+        storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
     }
 
     /*
     Private implementation.  Details.
      */
 
-    private void storeObject(String fileName, Object data) {
+    private void storeObject(Object data, String fileName) {
         OutputStream ops = null;
         ObjectOutputStream objOps = null;
         try {

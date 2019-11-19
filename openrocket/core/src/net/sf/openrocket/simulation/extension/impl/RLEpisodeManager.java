@@ -51,40 +51,26 @@ public class RLEpisodeManager {
     }
 
     public void storeActionValueFunction() {
-        System.out.println("CLOSING!!!");
+        System.out.println("SAVING ACTION VALUE FUNCTION!!!");
         initializeEpisodeManager();
-        if (model.getValueFunctionTable().size() != 0) {
-            if (model.simulationType==SimulationType._1D) {
-                mof.storeActionValueFunction(model.getValueFunctionTable(),"1D.txt");
-            } else if (model.simulationType==SimulationType._3D){
-                mof.storeActionValueFunction(model.getValueFunctionTable(),"3D.txt");
-            }
-        }
-    }
-
-    public void printAll() {
-        initializeEpisodeManager();
-        if (model.getValueFunctionTable() == null) return;
-        for (Map.Entry<StateActionTuple, Float> entry: model.getValueFunctionTable().entrySet()) {
-            StateActionTuple stateActionTuple = entry.getKey();
-            float value = entry.getValue();
-            System.out.println(stateActionTuple + ": " + value);
-        }
+        mof.storeActionValueFunction(model.getValueFunctionTable(),selectFileNameExtension());
     }
 
     /* SAFE INITIALIZERS */
 
     public void safeActionValueFunctionInitialization() {
         if (model.getValueFunctionTable() == null) {
-            try {
-                if (model.simulationType==SimulationType._1D) {
-                    model.setValueFunctionTable(mof.readActionValueFunction("1D.txt"));
-                } else if (model.simulationType==SimulationType._3D) {
-                    model.setValueFunctionTable(mof.readActionValueFunction("3D.txt"));
-                }
-            } catch (Exception e) {
-                model.resetValueFunctionTable();
-            }
+            model.setValueFunctionTable(mof.readActionValueFunction(selectFileNameExtension()));
         }
+    }
+
+    public String selectFileNameExtension() {
+        String filenameExtension = "1D.txt";
+        if (model.simulationType==SimulationType._1D) {
+            filenameExtension = "1D.txt";
+        } else if (model.simulationType==SimulationType._3D) {
+            filenameExtension = "3D.txt";
+        }
+        return filenameExtension;
     }
 }

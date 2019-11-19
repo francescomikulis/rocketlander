@@ -1,11 +1,12 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import java.io.Serializable;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
-import java.io.Serializable;
+
 import java.lang.reflect.Field;
 
 public class StateActionTuple implements Serializable {
@@ -14,10 +15,15 @@ public class StateActionTuple implements Serializable {
     public static float _45deg = (float)Math.PI / 4;
     public static float _2deg = (float)Math.PI / 90;
     public static float _15deg = (float)Math.PI / 12;
+    public static float _180deg = (float)Math.PI;
     public static float _720deg = (float)Math.PI * 4;
 
     // altitude & velocity
+    public static float MIN_ALTITUDE = 0.0f;
+    public static float MAX_ALTITUDE = 56.0f;
     public static float ALTITUDE_PRECISION = 1.0f;
+    public static float MIN_VELOCITY = -35.0f;
+    public static float MAX_VELOCITY = 5.0f;
     public static float VELOCITY_PRECISION = 1.0f;
     // thurst
     public static float MIN_THRUST = 0.0f;
@@ -25,7 +31,7 @@ public class StateActionTuple implements Serializable {
     public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;
     public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;
     // orientation
-    public static float MIN_TERMINAL_ORIENTATION_Z = -_30deg; // 30deg
+    public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
     public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
     // orientation angles
     public static float ANGLE_X_PRECISION = _45deg;
@@ -37,9 +43,11 @@ public class StateActionTuple implements Serializable {
     public static float MAX_GIMBLE_Z = _15deg;
 
     public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
-    public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg;
-    public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
+    //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg; // TODO: RESTORE TO 1!!!
+    //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
+    public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _15deg;
 
     public State state;
     public Action action;
@@ -83,17 +91,19 @@ public class StateActionTuple implements Serializable {
 
         public double getThrustDouble() { return ((double)this.thrust * MIN_THRUST_INCREMENT_PER_TIMESTEP); }
 
-        public void setThrust(double thrust) {
+        public StateActionClass setThrust(double thrust) {
             if ((thrust < MIN_THRUST) || (thrust > MAX_THRUST)) {
                 throw new IllegalArgumentException("Invalid Thrust");
             }
             this.thrust = group_by_precision(thrust, MIN_THRUST_INCREMENT_PER_TIMESTEP);
+            return this;
         }
 
         // GimbleY
 
-        protected void setGimbleY(double gimbleY) {
+        protected StateActionClass setGimbleY(double gimbleY) {
             this.gimbleY = group_by_precision(gimbleY, MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP);
+            return this;
         }
 
         public double getGimbleYDouble() {
@@ -103,7 +113,10 @@ public class StateActionTuple implements Serializable {
 
         // GimbleZ
 
-        protected void setGimbleZ(double gimbleZ) { this.gimbleZ = group_by_precision(gimbleZ, MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP); }
+        protected StateActionClass setGimbleZ(double gimbleZ) {
+            this.gimbleZ = group_by_precision(gimbleZ, MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP);
+            return this;
+        }
 
         public double getGimbleZDouble() {
             // Radians
@@ -120,6 +133,7 @@ public class StateActionTuple implements Serializable {
         int angleZ = 0;
 
         public State(SimulationStatus status) {
+            if (status == null) return;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
             setAltitude(status.getRocketPosition().z);
             setVelocity(status.getRocketVelocity().z);
@@ -127,32 +141,36 @@ public class StateActionTuple implements Serializable {
             setAngleZ(Math.acos(rocketDirection.z));
         }
 
-        private void setAltitude(double altitude) {
+        public State setAltitude(double altitude) {
             this.altitude = group_by_precision(altitude, ALTITUDE_PRECISION);
+            return this;
         }
 
         public double getAltitudeDouble() {
             return altitude * ALTITUDE_PRECISION;
         }
 
-        private void setVelocity(double velocity) {
+        public State setVelocity(double velocity) {
             this.velocity = group_by_precision(velocity, VELOCITY_PRECISION);
+            return this;
         }
 
         public double getVelocityDouble() {
             return velocity * VELOCITY_PRECISION;
         }
 
-        private void setAngleX(double angle) {
+        public State setAngleX(double angle) {
             this.angleX = group_by_precision(angle, ANGLE_X_PRECISION);
+            return this;
         }
 
         public double getAngleXDouble() {
             return angleX * ANGLE_X_PRECISION;
         }
 
-        private void setAngleZ(double angle) {
+        public State setAngleZ(double angle) {
             this.angleZ = group_by_precision(angle, ANGLE_Z_PRECISION);
+            return this;
         }
 
         public double getAngleZDouble() {
