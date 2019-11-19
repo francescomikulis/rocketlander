@@ -42,18 +42,18 @@ public class OptimizedMap {
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
         minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
         minThrust = lowState.setThrust(MIN_THRUST).thrust;
-        minAngleX = lowState.setAngleX(- Math.PI).angleX;
+        minAngleX = lowState.setAngleX(- MAX_HALF_CIRCLE).angleX;
         minAngleZ = lowState.setAngleZ(MIN_TERMINAL_ORIENTATION_Z).angleZ;
-        minGimbleY = lowState.setGimbleY(- Math.PI).gimbleY;
+        minGimbleY = lowState.setGimbleY(- MAX_HALF_CIRCLE).gimbleY;
         minGimbleZ = lowState.setGimbleZ(MIN_GIMBLE_Z).gimbleZ;
         // generate high maximum values
         State highState = new State(null);
         maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
         maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
         maxThrust = highState.setThrust(MAX_THRUST).thrust;
-        maxAngleX = highState.setAngleX(1 * Math.PI).angleX;
+        maxAngleX = highState.setAngleX(MAX_HALF_CIRCLE).angleX;
         maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
-        maxGimbleY = highState.setGimbleY(1 * Math.PI).gimbleY;
+        maxGimbleY = highState.setGimbleY(MAX_HALF_CIRCLE).gimbleY;
         maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
         // allocate new function table
         if (newValueFunctionTable == null)

@@ -205,6 +205,14 @@ public class RLModel {
                 actuallyTD0UpdateStateActionValueFunction(stateActionTuples, this::reward);
     }
 
+    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, boolean forcedTermination) {
+        if (forcedTermination) {  // set the last 'good' state to a bad behavior
+            // bad velocity
+            stateActionTuples.get(stateActionTuples.size() - 1).state.setVelocity(MIN_VELOCITY);
+        }
+        updateTerminalStateActionValueFunction(stateActionTuples);
+    }
+
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
             if(currentMethod == RLMethod.MONTE)
                 actuallyMonteCarloUpdateStateActionValueFunction(stateActionTuples);

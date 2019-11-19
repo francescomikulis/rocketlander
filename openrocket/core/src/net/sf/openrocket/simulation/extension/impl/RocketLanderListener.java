@@ -17,6 +17,7 @@ import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.MIN_VELOCITY;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 import net.sf.openrocket.util.Rotation2D;
@@ -123,13 +124,17 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketRotationVelocity(rotVel);
     }
 
-    @Override
-    public boolean preStep(SimulationStatus status) {
+    public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
         if (model.simulationType == SimulationType._1D){
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
         } else if(model.simulationType == SimulationType._3D) {
             setRollToZero(status); // prevent rocket from spinning
         }
+    }
+
+    @Override
+    public boolean preStep(SimulationStatus status) {
+        stabilizeRocketBasedOnSimType(status);
         return true;
     }
 
@@ -173,25 +178,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        if (model.simulationType == SimulationType._1D){
-            status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
-        } else if(model.simulationType == SimulationType._3D) {
-            setRollToZero(status); // prevent rocket from spinning
-        }
-
-        Coordinate terminalVelocity = new Coordinate(0,0,-35.0); //TODO: this is F'd up. It should get the min velocity from state object
+        stabilizeRocketBasedOnSimType(status);
 
         setupStateActionAndStore(status);
+
         if (!model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
-            //status.setRocketVelocity(terminalVelocity);
-            //setupStateActionAndStore(status);
-            //state.velocity=-35;
-            episodeStateActions.remove(episodeStateActions.size()-1);
-            episodeStateActions.get(episodeStateActions.size()-1).state.velocity =-35;
-            model.updateTerminalStateActionValueFunction(episodeStateActions);
+            // remove the last state because it goes out of bounds
+            episodeStateActions.remove(episodeStateActions.size() - 1);
+            model.updateTerminalStateActionValueFunction(episodeStateActions, true);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
-
 
         model.updateStepStateActionValueFunction(episodeStateActions);
     }
