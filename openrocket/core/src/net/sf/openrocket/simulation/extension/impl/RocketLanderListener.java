@@ -179,16 +179,20 @@ public class RocketLanderListener extends AbstractSimulationListener {
             setRollToZero(status); // prevent rocket from spinning
         }
 
-        Coordinate terminalVelocity = new Coordinate(0,0,-1000);
+        Coordinate terminalVelocity = new Coordinate(0,0,-35.0); //TODO: this is F'd up. It should get the min velocity from state object
 
-        if (model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
-            status.setRocketVelocity(terminalVelocity);
-            setupStateActionAndStore(status);
+        setupStateActionAndStore(status);
+        if (!model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
+            //status.setRocketVelocity(terminalVelocity);
+            //setupStateActionAndStore(status);
+            //state.velocity=-35;
+            episodeStateActions.remove(episodeStateActions.size()-1);
+            episodeStateActions.get(episodeStateActions.size()-1).state.velocity =-35;
             model.updateTerminalStateActionValueFunction(episodeStateActions);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
-        setupStateActionAndStore(status);
+
         model.updateStepStateActionValueFunction(episodeStateActions);
     }
 

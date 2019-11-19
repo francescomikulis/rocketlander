@@ -42,18 +42,18 @@ public class OptimizedMap {
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
         minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
         minThrust = lowState.setThrust(MIN_THRUST).thrust;
-        minAngleX = lowState.setAngleX(0).angleX;
+        minAngleX = lowState.setAngleX(- Math.PI).angleX;
         minAngleZ = lowState.setAngleZ(MIN_TERMINAL_ORIENTATION_Z).angleZ;
-        minGimbleY = lowState.setGimbleY(0).gimbleY;
+        minGimbleY = lowState.setGimbleY(- Math.PI).gimbleY;
         minGimbleZ = lowState.setGimbleZ(MIN_GIMBLE_Z).gimbleZ;
         // generate high maximum values
         State highState = new State(null);
         maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
         maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
         maxThrust = highState.setThrust(MAX_THRUST).thrust;
-        maxAngleX = highState.setAngleX(2 * Math.PI).angleX;
+        maxAngleX = highState.setAngleX(1 * Math.PI).angleX;
         maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
-        maxGimbleY = highState.setGimbleY(2 * Math.PI).gimbleY;
+        maxGimbleY = highState.setGimbleY(1 * Math.PI).gimbleY;
         maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
         // allocate new function table
         if (newValueFunctionTable == null)
@@ -99,8 +99,8 @@ public class OptimizedMap {
         if ((state.angleX < minAngleX) || (state.angleX > maxAngleX)) return false;
         // actionCheck
         if ((action.thrust < minThrust) || (action.thrust > maxThrust)) return false;
-        if ((action.gimbleY < minGimbleY) || (action.gimbleY > minGimbleY)) return false;
-        if ((action.gimbleZ < minGimbleZ) || (action.gimbleZ > minGimbleZ)) return false;
+        if ((action.gimbleY < minGimbleY) || (action.gimbleY > maxGimbleY)) return false;
+        if ((action.gimbleZ < minGimbleZ) || (action.gimbleZ > maxGimbleZ)) return false;
 
         return true;
     }
