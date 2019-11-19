@@ -239,17 +239,6 @@ public class StateActionTuple implements Serializable {
     }
 
 
-
-    public static boolean isStateOutOfBounds(State state) {
-        if (state.getAltitudeDouble() > 200.0) return true;
-        if (state.getAngleZDouble() < MIN_TERMINAL_ORIENTATION_Z) return true;
-        if (state.getAngleZDouble() > MAX_TERMINAL_ORIENTATION_Z) return true;
-        // TODO: consider terminating if the rocket starts going back upwards
-
-        return false;
-    }
-
-
     public static Quaternion getConjugateQuaternion(Quaternion quaternion) {
         return new Quaternion(quaternion.getW(), -quaternion.getX(), -quaternion.getY(), -quaternion.getZ());
     }

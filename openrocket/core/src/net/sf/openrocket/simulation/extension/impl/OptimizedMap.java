@@ -66,21 +66,26 @@ public class OptimizedMap {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         return valueFunctionTable
-                [state.altitude][state.velocity][state.angleX][state.angleZ]
-                [action.thrust][action.gimbleY][action.gimbleZ];
+                [state.altitude - minAltitude][state.velocity - minVelocity][state.angleX - minAngleX][state.angleZ - minAngleZ]
+                [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
         if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-        valueFunctionTable[state.altitude][state.velocity][state.angleX][state.angleZ]
-                [action.thrust][action.gimbleY][action.gimbleZ] = newValue;
+        valueFunctionTable
+                [state.altitude - minAltitude][state.velocity - minVelocity][state.angleX - minAngleX][state.angleZ - minAngleZ]
+                [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
         return newValue;
     }
 
     public boolean containsKey(StateActionTuple stateActionTuple) {
         return checkBounds(stateActionTuple);
+    }
+
+    public boolean checkBounds(State state) {
+        return checkBounds(new StateActionTuple(state, new Action(0, 0, 0)));
     }
 
     public boolean checkBounds(StateActionTuple stateActionTuple) {

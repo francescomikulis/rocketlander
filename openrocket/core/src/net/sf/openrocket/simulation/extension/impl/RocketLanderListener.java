@@ -181,7 +181,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         Coordinate terminalVelocity = new Coordinate(0,0,-1000);
 
-        if (StateActionTuple.isStateOutOfBounds(state) || (status.getSimulationTime() > 15.0)) {
+        if (model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
             status.setRocketVelocity(terminalVelocity);
             setupStateActionAndStore(status);
             model.updateTerminalStateActionValueFunction(episodeStateActions);
