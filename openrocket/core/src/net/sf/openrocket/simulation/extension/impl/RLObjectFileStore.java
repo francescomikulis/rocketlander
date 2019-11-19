@@ -35,8 +35,8 @@ public class RLObjectFileStore {
         return (ArrayList) readObjects(episodeDataFileName);
     }
 
-    public HashMap<StateActionTuple, Double> readActionValueFunction(String filenameExtension){
-        return (HashMap<StateActionTuple, Double>) readObjects(actionValueFunctionFileName + filenameExtension);
+    public HashMap<StateActionTuple, Float> readActionValueFunction(String filenameExtension){
+        return (HashMap<StateActionTuple, Float>) readObjects(actionValueFunctionFileName + filenameExtension);
     }
 
     public void storeActionValueFunction(HashMap actionValueFunction, String filenameExtension){

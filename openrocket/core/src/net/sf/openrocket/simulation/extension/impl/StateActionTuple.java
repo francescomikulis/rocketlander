@@ -9,38 +9,37 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 
 public class StateActionTuple implements Serializable {
-    public static double _1deg = Math.PI / 180;
-    public static double _30deg = Math.PI / 6;
-    public static double _45deg = Math.PI / 4;
-    public static double _5deg = Math.PI / 36;
-    public static double _2deg = Math.PI / 90;
-    public static double _15deg = Math.PI / 12;
-    public static double _720deg = Math.PI * 4;
+    public static float _1deg = (float)Math.PI / 180;
+    public static float _30deg = (float)Math.PI / 6;
+    public static float _45deg = (float)Math.PI / 4;
+    public static float _2deg = (float)Math.PI / 90;
+    public static float _15deg = (float)Math.PI / 12;
+    public static float _720deg = (float)Math.PI * 4;
 
     // altitude & velocity
-    public static double ALTITUDE_PRECISION = 1.0;
-    public static double VELOCITY_PRECISION = 1.0;
+    public static float ALTITUDE_PRECISION = 1.0f;
+    public static float VELOCITY_PRECISION = 1.0f;
     // thurst
-    public static double MIN_THRUST = 0.0;
-    public static double MAX_THRUST = 1.0;
-    public static double MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25;
-    public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0;
+    public static float MIN_THRUST = 0.0f;
+    public static float MAX_THRUST = 1.0f;
+    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;
+    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;
     // orientation
-    public static double MIN_TERMINAL_ORIENTATION_Z = -_30deg; // 30deg
-    public static double MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
+    public static float MIN_TERMINAL_ORIENTATION_Z = -_30deg; // 30deg
+    public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
     // orientation angles
-    public static double ANGLE_X_PRECISION = _45deg;
-    public static double ANGLE_Z_PRECISION = _2deg;
+    public static float ANGLE_X_PRECISION = _45deg;
+    public static float ANGLE_Z_PRECISION = _2deg;
     // gimble angles
-    public static double MIN_GIMBLE_Y = -_720deg;
-    public static double MAX_GIMBLE_Y = _720deg;
-    public static double MIN_GIMBLE_Z = 0;
-    public static double MAX_GIMBLE_Z = _15deg;
+    public static float MIN_GIMBLE_Y = -_720deg;
+    public static float MAX_GIMBLE_Y = _720deg;
+    public static float MIN_GIMBLE_Z = 0.0f;
+    public static float MAX_GIMBLE_Z = _15deg;
 
-    public static double MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
-    public static double MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
-    public static double MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg;
-    public static double MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
+    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg;
+    public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
 
     public State state;
     public Action action;
