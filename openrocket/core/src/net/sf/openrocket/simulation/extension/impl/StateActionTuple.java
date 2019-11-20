@@ -14,6 +14,7 @@ public class StateActionTuple implements Serializable {
     public static float _30deg = (float)Math.PI / 6;
     public static float _45deg = (float)Math.PI / 4;
     public static float _2deg = (float)Math.PI / 90;
+    public static float _0_5deg = (float)Math.PI / 360;
     public static float _15deg = (float)Math.PI / 12;
     public static float _180deg = (float)Math.PI;
     public static float _720deg = (float)Math.PI * 4;
@@ -28,8 +29,8 @@ public class StateActionTuple implements Serializable {
     // thurst
     public static float MIN_THRUST = 0.0f;
     public static float MAX_THRUST = 1.0f;
-    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;
-    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;
+    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.1f;  // TODO: RESTORE TO 0.25!!!
+    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 0.4f;  // TODO: RESTORE TO 1.0!!!
     // orientation
     public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
     public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
@@ -43,10 +44,10 @@ public class StateActionTuple implements Serializable {
     public static float MAX_GIMBLE_Z = _15deg;
     public static float MAX_HALF_CIRCLE = _180deg;
 
-    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
+    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _15deg;  // TODO: RESTORE TO 45!!!
     //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
     public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg; // TODO: RESTORE TO 1!!!
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _0_5deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _15deg;
 
@@ -93,7 +94,7 @@ public class StateActionTuple implements Serializable {
         public double getThrustDouble() { return ((double)this.thrust * MIN_THRUST_INCREMENT_PER_TIMESTEP); }
 
         public StateActionClass setThrust(double thrust) {
-            if ((thrust < MIN_THRUST) || (thrust > MAX_THRUST)) {
+            if ((thrust < MIN_THRUST) || (thrust > MAX_THRUST + 0.0001)) {
                 throw new IllegalArgumentException("Invalid Thrust");
             }
             this.thrust = group_by_precision(thrust, MIN_THRUST_INCREMENT_PER_TIMESTEP);
@@ -244,13 +245,14 @@ public class StateActionTuple implements Serializable {
         return new Quaternion(quaternion.getW(), -quaternion.getX(), -quaternion.getY(), -quaternion.getZ());
     }
 
-    private static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {
+    public static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {
         Quaternion q = status.getRocketOrientationQuaternion();
         Quaternion p = new Quaternion(0, 0, 0, 1);  // z direction - un-rotated
         Quaternion q_conjugate = getConjugateQuaternion(q);
         Quaternion p_result = q.multiplyRight(p).multiplyRight(q_conjugate);
         // NOTE: This code has been verified extensively.
-        return new Coordinate(p_result.getX(), p_result.getY(), p_result.getZ());
+        // TODO: CHECK THESE / 2 BECAUSE THEY SEEM WRONG.
+        return new Coordinate(p_result.getX() / 2, p_result.getY() / 2, p_result.getZ());
     }
 
     public static String stringifyObject(Object object) {

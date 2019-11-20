@@ -17,7 +17,7 @@ import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.MIN_VELOCITY;
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 import net.sf.openrocket.util.Rotation2D;
@@ -46,6 +46,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private RigidBody OLD_RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private double RLVectoringThrust;
 
+    private boolean hasCompletedTerminalUpdate = false;
+
 
     RocketLanderListener(RocketLander rocketLander) {
         this.rocketLander = rocketLander;
@@ -70,6 +72,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (model.simulationType == SimulationType._1D){
             action.setGimbleY(0.0); // prevent gimble action if 1D sim
             action.setGimbleZ(0.0);
+        } else if (model.simulationType == SimulationType._2D) {
+            action.setGimbleY(0.0);
         }
 
         episodeStateActions.add(new StateActionTuple(state, action));
@@ -125,8 +129,31 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
-        if (model.simulationType == SimulationType._1D){
+        // TODO: Code for testing the quaternion conversions.  They appear to be wrong.
+        /*
+        Quaternion originalRocketQuaternion = status.getRocketOrientationQuaternion();
+        Coordinate currDirection = convertRocketStatusQuaternionToDirection(status);
+        Quaternion reconvertedQuaternion = new Quaternion(0, currDirection.x, currDirection.y, currDirection.z);
+
+
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
+        Coordinate verticalDirection = convertRocketStatusQuaternionToDirection(status);
+
+        Quaternion newQuaternion = new Quaternion(0, currDirection.x, 0, currDirection.z);
+        Quaternion normalizedNewQuaternion = newQuaternion.normalizeIfNecessary();
+
+        status.setRocketOrientationQuaternion(normalizedNewQuaternion);
+        Coordinate newDirection = convertRocketStatusQuaternionToDirection(status);
+        assert currDirection.x == newDirection.x;
+        */
+
+        if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
+        } else if(model.simulationType == SimulationType._2D) {
+            Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
+            status.setRocketOrientationQuaternion(
+                    new Quaternion(0, rocketDirection.x, 0, rocketDirection.z).normalizeIfNecessary()
+            );
         } else if(model.simulationType == SimulationType._3D) {
             setRollToZero(status); // prevent rocket from spinning
         }
@@ -185,7 +212,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (!model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
             // remove the last state because it goes out of bounds
             episodeStateActions.remove(episodeStateActions.size() - 1);
-            model.updateTerminalStateActionValueFunction(episodeStateActions, true);
+            //model.updateTerminalStateActionValueFunction(episodeStateActions, true);
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
@@ -194,8 +221,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        if (exception == null)
-            model.updateTerminalStateActionValueFunction(episodeStateActions);
+        if (!hasCompletedTerminalUpdate) {
+            // forcedTermination will be false if exception is null
+            boolean forcedTermination = (exception != null);
+            model.updateTerminalStateActionValueFunction(episodeStateActions, forcedTermination);
+            hasCompletedTerminalUpdate = true;
+        }
     }
 
 

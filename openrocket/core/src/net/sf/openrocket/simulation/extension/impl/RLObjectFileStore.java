@@ -39,8 +39,19 @@ public class RLObjectFileStore {
         return new OptimizedMap((float[][][][][][][]) readObjects(actionValueFunctionFileName + filenameExtension));
     }
 
+    public OptimizedMap readCoupledActionValueFunction(String filenameExtension){
+        float[][][] landerActionValueFunction = (float[][][]) readObjects(actionValueFunctionFileName + "lander" + filenameExtension);
+        float[][][][][] stabilizerActionValueFunction = (float[][][][][]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
+        return new OptimizedMap(landerActionValueFunction, stabilizerActionValueFunction);
+    }
+
     public void storeActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
         storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
+    }
+
+    public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
+        storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander" + filenameExtension);
+        storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
     }
 
     /*

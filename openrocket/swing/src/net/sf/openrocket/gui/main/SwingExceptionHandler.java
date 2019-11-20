@@ -11,6 +11,9 @@ import net.sf.openrocket.startup.ExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, ExceptionHandler {
 
@@ -196,6 +199,11 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 			return;
 		}
 
+		System.out.println("ERROR!!!!!!");
+		StackTraceElement[] stackTraceElements = e.getCause().getStackTrace();
+		for (StackTraceElement stackTraceElement: stackTraceElements) {
+			System.out.println(stackTraceElement);
+		}
 
 		// Normal exception, show question dialog		
 		// MODIFIED CODE HERE log.info("Showing Exception dialog");

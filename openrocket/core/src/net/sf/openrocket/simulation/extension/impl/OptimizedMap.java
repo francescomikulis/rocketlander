@@ -24,19 +24,54 @@ import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
  */
 
 public class OptimizedMap {
+    enum MapMethod {
+        Traditional, Coupled
+    }
+    public static MapMethod mapMethod = MapMethod.Coupled;
+
     private float[][][][][][][] valueFunctionTable = null;
+    private float[][][] landerValueFunctionTable = null;
+    private float[][][][][] stabilizerValueFunctionTable = null;
     private int minAltitude, minVelocity, minThrust, minAngleX, minAngleZ, minGimbleY, minGimbleZ;
     private int maxAltitude, maxVelocity, maxThrust, maxAngleX, maxAngleZ, maxGimbleY, maxGimbleZ;
 
     public OptimizedMap() {
-        constructorCode(null);
+        if (mapMethod == MapMethod.Traditional)
+            constructorTraditional(null);
+        else if (mapMethod == MapMethod.Coupled)
+            constructorCoupled(null, null);
     }
 
-    public OptimizedMap(float[][][][][][][] valueFunctionTable) {
-        constructorCode(valueFunctionTable);
+    public OptimizedMap(float[][][][][][][] newValueFunctionTable) {
+        constructorTraditional(newValueFunctionTable);
     }
 
-    public void constructorCode(float[][][][][][][] newValueFunctionTable) {
+    private void constructorTraditional(float[][][][][][][] newValueFunctionTable) {
+        constructorCode();
+
+        // allocate new function table
+        if (newValueFunctionTable == null)
+            newValueFunctionTable = allocateNewValueFunctionTable();
+        this.valueFunctionTable = newValueFunctionTable;
+    }
+
+    public OptimizedMap(float[][][] newLanderValueFunctionTable, float[][][][][] newStabilizerValueFunctionTable) {
+        constructorCoupled(newLanderValueFunctionTable, newStabilizerValueFunctionTable);
+    }
+
+    private void constructorCoupled(float[][][] newLanderValueFunctionTable, float[][][][][] newStabilizerValueFunctionTable) {
+        constructorCode();
+
+        // allocate new function table
+        if (newLanderValueFunctionTable == null)
+            newLanderValueFunctionTable = allocateNewLanderValueFunctionTable();
+        this.landerValueFunctionTable = newLanderValueFunctionTable;
+        if (newStabilizerValueFunctionTable == null)
+            newStabilizerValueFunctionTable = allocateNewStabilizerValueFunctionTable();
+        this.stabilizerValueFunctionTable = newStabilizerValueFunctionTable;
+    }
+
+    private void constructorCode() {
         // generate low minimum values
         State lowState = new State(null);
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
@@ -55,10 +90,21 @@ public class OptimizedMap {
         maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
         maxGimbleY = highState.setGimbleY(MAX_HALF_CIRCLE).gimbleY;
         maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
-        // allocate new function table
-        if (newValueFunctionTable == null)
-            newValueFunctionTable = allocateNewValueFunctionTable();
-        this.valueFunctionTable = newValueFunctionTable;
+    }
+
+    public float getLander(StateActionTuple stateActionTuple) {
+        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
+        State state = stateActionTuple.state;
+        Action action = stateActionTuple.action;
+        return landerValueFunctionTable[state.altitude - minAltitude][state.velocity - minVelocity][action.thrust - minThrust];
+    }
+
+    public float getStabilizer(StateActionTuple stateActionTuple) {
+        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
+        State state = stateActionTuple.state;
+        Action action = stateActionTuple.action;
+        return stabilizerValueFunctionTable
+                [action.thrust - minThrust][state.angleX - minAngleX][state.angleZ - minAngleZ][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
     }
 
     public float get(StateActionTuple stateActionTuple) {
@@ -68,6 +114,25 @@ public class OptimizedMap {
         return valueFunctionTable
                 [state.altitude - minAltitude][state.velocity - minVelocity][state.angleX - minAngleX][state.angleZ - minAngleZ]
                 [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
+    }
+
+    public float putLander(StateActionTuple stateActionTuple, float newValue) {
+        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
+        State state = stateActionTuple.state;
+        Action action = stateActionTuple.action;
+        landerValueFunctionTable
+                [state.altitude - minAltitude][state.velocity - minVelocity][action.thrust - minThrust] = newValue;
+        return newValue;
+    }
+
+    public float putStabilizer(StateActionTuple stateActionTuple, float newValue) {
+        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
+        State state = stateActionTuple.state;
+        Action action = stateActionTuple.action;
+        stabilizerValueFunctionTable
+                [action.thrust - minThrust][state.angleX - minAngleX]
+                [state.angleZ - minAngleZ][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
+        return newValue;
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
@@ -115,15 +180,45 @@ public class OptimizedMap {
         int gimbleYSize = maxGimbleY - minGimbleY + 1;
         int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
         double stateSpace = altitudeSize * velocitySize * angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
-        System.out.println("SAMPLE EXAMPLE 1 HAHAHA: " + stateSpace);
-        System.out.println("SAMPLE EXAMPLE 2 HAHAHA: " + stateSpace);
-        System.out.println("SAMPLE EXAMPLE 3 HAHAHA: " + stateSpace);
+        System.out.println("Allocating stateSpace: " + stateSpace);
         return new float
                 [altitudeSize][velocitySize][angleXSize][angleZSize]
                 [thrustSize][gimbleYSize][gimbleZSize];
     }
 
+    private float[][][] allocateNewLanderValueFunctionTable() {
+        int altitudeSize = maxAltitude - minAltitude + 1;
+        int velocitySize = maxVelocity - minVelocity + 1;
+        int thrustSize = maxThrust - minThrust + 1;
+        double stateSpace = altitudeSize * velocitySize * thrustSize;
+        System.out.println("Allocating stateSpace: " + stateSpace);
+        return new float[altitudeSize][velocitySize][thrustSize];
+    }
+
+    private float[][][][][] allocateNewStabilizerValueFunctionTable() {
+        int thrustSize = maxThrust - minThrust + 1;
+        int angleXSize = maxAngleX - minAngleX + 1;
+        int angleZSize = maxAngleZ - minAngleZ + 1;
+        int gimbleYSize = maxGimbleY - minGimbleY + 1;
+        int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
+        double stateSpace = angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
+        System.out.println("Allocating stateSpace: " + stateSpace);
+        return new float[thrustSize][angleXSize][angleZSize][gimbleYSize][gimbleZSize];
+    }
+
     public float[][][][][][][] getValueFunctionArray() {
         return valueFunctionTable;
+    }
+
+    public float[][][] getLanderValueFunctionArray() {
+        return landerValueFunctionTable;
+    }
+
+    public float[][][][][] getStabilizerValueFunctionArray() {
+        return stabilizerValueFunctionTable;
+    }
+
+    public static Action combineCoupledActions(Action landerAction, Action stabilizerAction) {
+        return new Action(landerAction.getThrustDouble(), stabilizerAction.getGimbleYDouble(), stabilizerAction.getGimbleZDouble());
     }
 }

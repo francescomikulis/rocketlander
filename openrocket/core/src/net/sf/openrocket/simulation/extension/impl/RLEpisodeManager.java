@@ -53,22 +53,35 @@ public class RLEpisodeManager {
     public void storeActionValueFunction() {
         System.out.println("SAVING ACTION VALUE FUNCTION!!!");
         initializeEpisodeManager();
-        mof.storeActionValueFunction(model.getValueFunctionTable(),selectFileNameExtension());
+        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional)
+            mof.storeActionValueFunction(model.getValueFunctionTable(), selectFileNameExtension());
+        else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            mof.storeCoupledActionValueFunction(model.getValueFunctionTable(), selectFileNameExtension());
+        }
     }
 
     /* SAFE INITIALIZERS */
 
     public void safeActionValueFunctionInitialization() {
-        if (model.getValueFunctionTable() == null) {
-            model.setValueFunctionTable(mof.readActionValueFunction(selectFileNameExtension()));
+        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
+            if (model.getValueFunctionTable() == null) {
+                model.setValueFunctionTable(mof.readActionValueFunction(selectFileNameExtension()));
+            }
+        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            if (model.getValueFunctionTable() == null) {
+                model.setValueFunctionTable(mof.readCoupledActionValueFunction(selectFileNameExtension()));
+            }
         }
     }
 
     public String selectFileNameExtension() {
         String filenameExtension = "1D.txt";
-        if (model.simulationType==SimulationType._1D) {
+        if (model.simulationType == SimulationType._1D) {
             filenameExtension = "1D.txt";
-        } else if (model.simulationType==SimulationType._3D) {
+        } else if (model.simulationType == SimulationType._2D) {
+            filenameExtension = "2D.txt";
+        }
+        else if (model.simulationType == SimulationType._3D) {
             filenameExtension = "3D.txt";
         }
         return filenameExtension;
