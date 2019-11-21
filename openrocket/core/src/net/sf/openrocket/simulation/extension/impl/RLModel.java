@@ -175,7 +175,12 @@ public class RLModel {
     private float stabilizerValueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
-        return valueFunctionTable.getStabilizer(stateActionTuple);
+        float value = valueFunctionTable.getStabilizer(stateActionTuple);
+        if (value != 0.0f) {
+            //System.out.println("Already visited this state!");
+            value = value;
+        }
+        return value;
     }
 
     private float stabilizerValueFunction(State state, Action action) {
@@ -336,16 +341,16 @@ public class RLModel {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = landerValueFunction(stateActionTuple);
             valueFunctionTable.putLander(stateActionTuple, originalValue + alpha * (G - originalValue));
-            G = (discount * G) - rewardLander(stateActionTuple.state);
+            G = (discount * G) + rewardLander(stateActionTuple.state);
         }
     }
 
     private float terminalStabilizingReward(State lastState) {
-        return (float)-(Math.pow(2, 10 * (Math.abs(lastState.getAngleXDouble()) + Math.abs(lastState.getAngleZDouble()))));
+        return -(float)(Math.pow(2, (Math.abs(lastState.getAngleXDouble()) + Math.abs(lastState.getAngleZDouble()))));
     }
 
     private float rewardStabilizer(State state) {
-        return (float)-(Math.abs(state.getAngleXDouble()) + Math.abs(state.getAngleZDouble()));
+        return -(float)(Math.abs(state.getAngleXDouble()) + Math.abs(state.getAngleZDouble()));
     }
 
     private void monteCarloUpdateStabilizingStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
@@ -356,7 +361,7 @@ public class RLModel {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = stabilizerValueFunction(stateActionTuple);
             valueFunctionTable.putStabilizer(stateActionTuple, originalValue + alpha * (G - originalValue));
-            G = (discount * G) - rewardStabilizer(stateActionTuple.state);
+            G = (discount * G) + rewardStabilizer(stateActionTuple.state);
         }
     }
 

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.util.Coordinate;
+import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 
@@ -29,8 +30,8 @@ public class StateActionTuple implements Serializable {
     // thurst
     public static float MIN_THRUST = 0.0f;
     public static float MAX_THRUST = 1.0f;
-    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.1f;  // TODO: RESTORE TO 0.25!!!
-    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 0.4f;  // TODO: RESTORE TO 1.0!!!
+    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;  // TODO: RESTORE TO 0.25!!!
+    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 0.1f;  // TODO: RESTORE TO 1.0!!!
     // orientation
     public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
     public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
@@ -141,6 +142,18 @@ public class StateActionTuple implements Serializable {
             setVelocity(status.getRocketVelocity().z);
             setAngleX(Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             setAngleZ(Math.acos(rocketDirection.z));
+            /*
+            // OpenRocket traditional approach - not working
+
+            // Vertical orientation (zenith)
+            double theta = Math.atan2(rocketDirection.z, MathUtil.hypot(rocketDirection.x, rocketDirection.y)) - Math.PI /2;  // offset vertical to 0 deg
+            // Lateral orientation (azimuth)
+            double phi = Math.atan2(rocketDirection.y, rocketDirection.x);
+            if (phi < -(Math.PI - 0.0001))
+                phi = Math.PI;
+            setAngleX(phi);
+            setAngleZ(theta);
+             */
         }
 
         public State setAltitude(double altitude) {
@@ -245,7 +258,7 @@ public class StateActionTuple implements Serializable {
         return new Quaternion(quaternion.getW(), -quaternion.getX(), -quaternion.getY(), -quaternion.getZ());
     }
 
-    public static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {
+    public static Coordinate OLDconvertRocketStatusQuaternionToDirection(SimulationStatus status) {
         Quaternion q = status.getRocketOrientationQuaternion();
         Quaternion p = new Quaternion(0, 0, 0, 1);  // z direction - un-rotated
         Quaternion q_conjugate = getConjugateQuaternion(q);
@@ -253,6 +266,10 @@ public class StateActionTuple implements Serializable {
         // NOTE: This code has been verified extensively.
         // TODO: CHECK THESE / 2 BECAUSE THEY SEEM WRONG.
         return new Coordinate(p_result.getX() / 2, p_result.getY() / 2, p_result.getZ());
+    }
+
+    public static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {
+        return status.getRocketOrientationQuaternion().rotateZ();
     }
 
     public static String stringifyObject(Object object) {
