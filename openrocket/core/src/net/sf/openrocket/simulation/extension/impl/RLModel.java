@@ -290,19 +290,20 @@ public class RLModel {
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
 
         float G = terminalReward(lastStateActionTuple.state);
-        float discount = 0.999f;
-        float alpha = 0.3f;
+        int numExplorationSteps = 1;
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             try {
                 float originalValue = valueFunction(stateActionTuple);
+                if (originalValue == 0.0f) numExplorationSteps++;
                 valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
                 G = (discount * G) - reward(stateActionTuple.state);
             } catch (Exception e) {
                 System.out.println("EXCEPTION HERE WHEN EVALUATING VALUE FUNCTION");
             }
         }
+        System.out.println("Combined - Exploration ratio " + (numExplorationSteps * 100.0f)/lastTimeStep + "% out of " + lastTimeStep + " states");
     }
 
     private float terminalLandingReward(State lastState) {
@@ -320,12 +321,15 @@ public class RLModel {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
         float G = terminalLandingReward(lastStateActionTuple.state);
+        int numExplorationSteps = 1;
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = landerValueFunction(stateActionTuple);
+            if (originalValue == 0.0f) numExplorationSteps++;
             valueFunctionTable.putLander(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (discount * G) + rewardLander(stateActionTuple.state);
         }
+        System.out.println("Landing - Exploration ratio " + (numExplorationSteps * 100.0f)/lastTimeStep + "% out of " + lastTimeStep + " states");
     }
 
     private float terminalStabilizingReward(State lastState) {
@@ -340,12 +344,15 @@ public class RLModel {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
         float G = terminalStabilizingReward(lastStateActionTuple.state);
+        int numExplorationSteps = 1;
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = stabilizerValueFunction(stateActionTuple);
+            if (originalValue == 0.0f) numExplorationSteps++;
             valueFunctionTable.putStabilizer(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (discount * G) + rewardStabilizer(stateActionTuple.state);
         }
+        System.out.println("Stabilizing - Exploration ratio " + (numExplorationSteps * 100.0f)/lastTimeStep + "% out of " + lastTimeStep + " states");
     }
 
     private void TD0UpdateStateActionValueFunction(ArrayList<StateActionTuple> episodeStateActions, Function<State, Float> rewardFunction) {
