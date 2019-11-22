@@ -25,7 +25,7 @@ public class RLModel {
     private static float THRUST_ON_PENALTY = -5;
 
     private RLMethod currentMethod = RLMethod.MONTE;
-    public SimulationType simulationType = SimulationType._3D;
+    public SimulationType simulationType = SimulationType._2D;
 
     enum RLMethod {
         MONTE, TD0, SEMI_SARSA
@@ -90,6 +90,16 @@ public class RLModel {
                 (float)state.getGimbleZDouble(), MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP,
                 MIN_GIMBLE_Z, MAX_GIMBLE_Z
         );
+        if (simulationType == SimulationType._1D) {
+            possibleGimbleYValues = new ArrayList<>();
+            possibleGimbleYValues.add(0.0f);
+            possibleGimbleZValues = new ArrayList<>();
+            possibleGimbleZValues.add(0.0f);
+        } else if (simulationType == SimulationType._2D) {
+            possibleGimbleYValues = new ArrayList<>();
+            possibleGimbleYValues.add(0.0f);
+            possibleGimbleYValues.add((float)Math.PI);
+        }
         for (float possibleThrust: possibleThrustValues) {
             for (float possibleGimbleY: possibleGimbleYValues) {
                 for (float possibleGimbleZ: possibleGimbleZValues) {
@@ -136,20 +146,15 @@ public class RLModel {
     // traditional value function
 
     private float valueFunction(StateActionTuple stateActionTuple) {
-        Action action = stateActionTuple.action;
-        if (action.thrust > 0) {
-            if (stateActionTuple.state.velocity > 0) {
-                float penalty = THRUST_ON_PENALTY * action.thrust * 10;
-                if (!valueFunctionTable.containsKey(stateActionTuple))
-                    return penalty; // penalty
-                else
-                    return valueFunctionTable.get(stateActionTuple) - Math.abs(penalty);
-            }
-        }
-
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
-        return valueFunctionTable.get(stateActionTuple);
+        float value = valueFunctionTable.get(stateActionTuple);
+        if (value != 0.0f) {
+            // System.out.println("Already visited this state!");
+            value = value;
+        }
+        return value;
+
     }
 
     private float valueFunction(State state, Action action) {
@@ -254,16 +259,10 @@ public class RLModel {
     }
 
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, boolean forcedTermination) {
-        forcedTermination = forcedTermination || stateActionTuples.get(stateActionTuples.size() - 1).state.getVelocityDouble() == MIN_VELOCITY;
-        if (forcedTermination) {  // set the last 'good' state to a bad behavior
-            // bad velocity
-            stateActionTuples.get(stateActionTuples.size() - 1).state.setVelocity(MIN_VELOCITY);
-        }
-
         if(currentMethod == RLMethod.MONTE) {
-            if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional)
+            if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
                 monteCarloUpdateStateActionValueFunction(stateActionTuples);
-            else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
                 // don't learn how to land if not hitting ground WHEN NOT IN 3D
                 if ((simulationType == SimulationType._1D) || (!forcedTermination)) {
                     monteCarloUpdateLandingStateActionValueFunction(stateActionTuples);
@@ -276,34 +275,15 @@ public class RLModel {
     }
 
     private float terminalReward(State lastState) {
-        float lowSpeedLandingBonus = 0.0f;
-        if (Math.abs(lastState.getVelocityDouble()) <= 2.0) {
-            lowSpeedLandingBonus = 50;
-            if (Math.abs(lastState.getVelocityDouble()) <= 1.0)
-                lowSpeedLandingBonus = 100;
-        }
-
-        float altitudeMultiplier = (float)lastState.getAltitudeDouble();
-        if (altitudeMultiplier <= 2.0) {
-            altitudeMultiplier = 1;
-        } else {
-            lowSpeedLandingBonus = 0;
-        }
-
+        float angleFromZ = (float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
         float landingVelocity = (float)Math.abs(lastState.getVelocityDouble());
-        // this edge case will tell the system it was doing well because the multiplication wasn't penalizing enough
-        if ((landingVelocity < 100) && (altitudeMultiplier != 1)) {
-            landingVelocity = 100;
-        }
+        float altitude = (float)lastState.getAltitudeDouble();
 
-        return -(landingVelocity * altitudeMultiplier) - altitudeMultiplier + lowSpeedLandingBonus;  // landing velocity
+        return -(angleFromZ + landingVelocity) * (altitude + 1.0f);
     }
 
     private float reward(State state) {
-        float reward = 0.0f;
-
-        reward = - (float)Math.abs(state.getVelocityDouble()) / 10;
-        return reward;
+        return -(float)(Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
     }
 
     private void monteCarloUpdateStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
@@ -327,7 +307,10 @@ public class RLModel {
     }
 
     private float terminalLandingReward(State lastState) {
-        return - (float)Math.abs(lastState.getVelocityDouble()) * 100;
+        float landingVelocity = (float)Math.abs(lastState.getVelocityDouble());
+        float altitude = (float)lastState.getAltitudeDouble();
+
+        return - (landingVelocity * (altitude + 1.0f));
     }
 
     private float rewardLander(State state) {
@@ -347,11 +330,11 @@ public class RLModel {
     }
 
     private float terminalStabilizingReward(State lastState) {
-        return -(float)(Math.pow(2, (Math.abs(lastState.getAngleXDouble()) + Math.abs(lastState.getAngleZDouble()))));
+        return 20.0f * -(float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
     }
 
     private float rewardStabilizer(State state) {
-        return -(float)(Math.abs(state.getAngleXDouble()) + Math.abs(state.getAngleZDouble()));
+        return -(float)(Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
     }
 
     private void monteCarloUpdateStabilizingStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {

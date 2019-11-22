@@ -65,22 +65,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
             state.gimbleY = lastStateAction.action.gimbleY;
             state.gimbleZ = lastStateAction.action.gimbleZ;
             state.thrust = lastStateAction.action.thrust;
-        } else {
-            state.setThrust(1.0);
         }
         action = model.generateAction(state);
-        if (model.simulationType == SimulationType._1D){
-            action.setGimbleY(0.0); // prevent gimble action if 1D sim
-            action.setGimbleZ(0.0);
-        } else if (model.simulationType == SimulationType._2D) {
-            // set the Y to the correct side for the 2D case
-            if (-1 == Math.signum(state.getAngleXDouble()))
-                action.setGimbleY(0);
-            else
-                action.setGimbleY(Math.PI);
-        }
 
-        episodeStateActions.add(new StateActionTuple(state, action));
+        StateActionTuple nextStateActionTuple = new StateActionTuple(state, action);
+        if (episodeStateActions.size() == 0)
+            episodeStateActions.add(nextStateActionTuple);
+        else if (!episodeStateActions.get(episodeStateActions.size() - 1).equals(nextStateActionTuple)) {
+            episodeStateActions.add(nextStateActionTuple);
+        }
     }
 
     @Override
@@ -100,6 +93,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
         status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+
+        status.setLaunchRodCleared(true);
 
         // initialize the state and the action
         setupStateActionAndStore(status);
@@ -226,6 +221,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
+        // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
         if (!hasCompletedTerminalUpdate) {
             // forcedTermination will be false if exception is null
             boolean forcedTermination = (exception != null);
