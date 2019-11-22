@@ -264,7 +264,8 @@ public class RLModel {
             if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional)
                 monteCarloUpdateStateActionValueFunction(stateActionTuples);
             else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-                if (!forcedTermination) {
+                // don't learn how to land if not hitting ground WHEN NOT IN 3D
+                if ((simulationType == SimulationType._1D) || (!forcedTermination)) {
                     monteCarloUpdateLandingStateActionValueFunction(stateActionTuples);
                 }
                 monteCarloUpdateStabilizingStateActionValueFunction(stateActionTuples);

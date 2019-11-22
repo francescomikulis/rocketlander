@@ -74,7 +74,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             action.setGimbleZ(0.0);
         } else if (model.simulationType == SimulationType._2D) {
             // set the Y to the correct side for the 2D case
-            if (1 == Math.signum(state.getAngleXDouble()))
+            if (-1 == Math.signum(state.getAngleXDouble()))
                 action.setGimbleY(0);
             else
                 action.setGimbleY(Math.PI);
