@@ -48,10 +48,10 @@ public class StateActionTuple implements Serializable {
     public static float MAX_GIMBLE_Z = _15deg;
     public static float MAX_HALF_CIRCLE = _180deg;
 
-    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _90deg;  // TODO: RESTORE TO 45!!!
+    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;  // TODO: RESTORE TO 45!!!
     //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
     public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg; // TODO: RESTORE TO 1!!!
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _0_5deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _6deg; // TODO: RESTORE TO 15!!!
 

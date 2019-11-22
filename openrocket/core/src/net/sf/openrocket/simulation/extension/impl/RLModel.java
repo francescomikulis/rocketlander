@@ -20,12 +20,11 @@ public class RLModel {
     private RLEpisodeManager episodeManager = null;
     private OptimizedMap valueFunctionTable = null;
     private static boolean ONLY_GREEDY = true;
-    private Semaphore mutex = new Semaphore(1);
 
     private static float THRUST_ON_PENALTY = -5;
 
     private RLMethod currentMethod = RLMethod.MONTE;
-    public SimulationType simulationType = SimulationType._2D;
+    public SimulationType simulationType = SimulationType._1D;
 
     enum RLMethod {
         MONTE, TD0, SEMI_SARSA
@@ -314,7 +313,7 @@ public class RLModel {
     }
 
     private float rewardLander(State state) {
-        return - (float)Math.abs(state.getVelocityDouble()) / 10;
+        return 0.0f;
     }
 
     private void monteCarloUpdateLandingStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
