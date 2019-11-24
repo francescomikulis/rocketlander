@@ -85,9 +85,9 @@ public class StateActionTuple implements Serializable {
     }
 
     public static class StateActionClass implements Serializable {
-        int thrust = 0;
-        int gimbleY = 0;
-        int gimbleZ = 0;
+        public int thrust = 0;
+        public int gimbleY = 0;
+        public int gimbleZ = 0;
 
         protected static int group_by_precision(double value, double precision) {
             return (int) Math.round((double)value / (double)precision);
@@ -133,10 +133,10 @@ public class StateActionTuple implements Serializable {
     // Required data structures.
 
     public static class State extends StateActionClass {
-        int altitude = 0;
-        int velocity = 0;
-        int angleX = 0;
-        int angleZ = 0;
+        public int altitude = 0;
+        public int velocity = 0;
+        public int angleX = 0;
+        public int angleZ = 0;
 
         public State(SimulationStatus status) {
             if (status == null) return;

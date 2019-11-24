@@ -6,6 +6,7 @@ import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
+import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
@@ -21,7 +22,6 @@ import java.util.Random;
 public class RocketLanderListener extends AbstractSimulationListener {
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
-    private RLMethod method = model.getCurrentMethod();
     private ArrayList<StateActionTuple> episodeStateActions;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
