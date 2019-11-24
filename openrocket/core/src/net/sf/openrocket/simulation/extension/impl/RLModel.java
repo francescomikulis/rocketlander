@@ -24,7 +24,7 @@ public class RLModel {
     private static float THRUST_ON_PENALTY = -5;
 
     private RLMethod currentMethod = RLMethod.MONTE;
-    public SimulationType simulationType = SimulationType._1D;
+    public SimulationType simulationType = SimulationType._3D;
 
     enum RLMethod {
         MONTE, TD0, SEMI_SARSA
@@ -33,7 +33,7 @@ public class RLModel {
         _1D, _2D, _3D
     }
 
-    float discount = 0.999f;
+    float discount = 0.99f;
     float alpha = 0.3f;
 
     private static volatile RLModel instance;
@@ -218,7 +218,8 @@ public class RLModel {
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;
-        if (randomGenerator.nextDouble() <= 0.05) {
+        double randomDouble = randomGenerator.nextDouble();
+        if (randomDouble <= 0.05) {
             greedy = false;
         }
 
@@ -254,16 +255,16 @@ public class RLModel {
     }
 
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        updateTerminalStateActionValueFunction(stateActionTuples, false);
+        updateTerminalStateActionValueFunction(stateActionTuples, new TerminationBooleanTuple(true, true));
     }
 
-    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, boolean forcedTermination) {
+    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, TerminationBooleanTuple terminationBooleanTuple) {
         if(currentMethod == RLMethod.MONTE) {
             if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
                 monteCarloUpdateStateActionValueFunction(stateActionTuples);
             } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
                 // don't learn how to land if not hitting ground WHEN NOT IN 3D
-                if ((simulationType == SimulationType._1D) || (!forcedTermination)) {
+                if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.angleSuccess)) {
                     monteCarloUpdateLandingStateActionValueFunction(stateActionTuples);
                 }
                 monteCarloUpdateStabilizingStateActionValueFunction(stateActionTuples);
@@ -290,7 +291,7 @@ public class RLModel {
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
 
         float G = terminalReward(lastStateActionTuple.state);
-        int numExplorationSteps = 1;
+        int numExplorationSteps = 0;
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
@@ -321,7 +322,7 @@ public class RLModel {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
         float G = terminalLandingReward(lastStateActionTuple.state);
-        int numExplorationSteps = 1;
+        int numExplorationSteps = 0;
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = landerValueFunction(stateActionTuple);
@@ -333,18 +334,18 @@ public class RLModel {
     }
 
     private float terminalStabilizingReward(State lastState) {
-        return 20.0f * -(float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
+        return 200.0f * -(float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
     }
 
     private float rewardStabilizer(State state) {
-        return -(float)(Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
+        return (float) (1.0 / (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI) + 1.0));  // max 1
     }
 
     private void monteCarloUpdateStabilizingStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
         float G = terminalStabilizingReward(lastStateActionTuple.state);
-        int numExplorationSteps = 1;
+        int numExplorationSteps = 0;
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
             float originalValue = stabilizerValueFunction(stateActionTuple);

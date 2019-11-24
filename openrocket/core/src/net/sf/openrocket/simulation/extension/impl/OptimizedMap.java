@@ -1,7 +1,5 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import java.lang.reflect.Type;
-
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 /**
@@ -163,13 +161,33 @@ public class OptimizedMap {
         if ((state.velocity < minVelocity) || (state.velocity > maxVelocity)) return false;
         if ((state.angleX < minAngleX) || (state.angleX > maxAngleX)) return false;
         // actionCheck
-        if ((action.thrust < minThrust) || (action.thrust > maxThrust)) return false;
+        if ((action.thrust < minThrust) || (action.thrust > maxThrust)) {
+            System.out.println("THIS SHOULD NEVER EVER HAPPEN");
+            return false;
+        }
         if ((action.gimbleY < minGimbleY) || (action.gimbleY > maxGimbleY)) return false;
         if ((action.gimbleZ < minGimbleZ) || (action.gimbleZ > maxGimbleZ)) return false;
 
         return true;
     }
 
+    public TerminationBooleanTuple alterTerminalStateIfFailure(State state) {
+        boolean verticalSuccess = true;
+        boolean angleSuccess = true;
+
+        if (state.altitude < minAltitude) { verticalSuccess = false; state.altitude = minAltitude; }
+        if (state.altitude > maxAltitude) { verticalSuccess = false; state.altitude = maxAltitude; }
+        if (state.velocity < minVelocity) { verticalSuccess = false; state.velocity = minVelocity; }
+        if (state.velocity > maxVelocity) { verticalSuccess = false; state.velocity = maxVelocity; }
+        if (state.angleZ < minAngleZ) { angleSuccess = false; state.angleZ = minAngleZ; }
+        if (state.angleZ > maxAngleZ) { angleSuccess = false; state.angleZ = maxAngleZ; }
+        if (state.angleX < minAngleX) { angleSuccess = false; state.angleX = minAngleX; }
+        if (state.angleX > maxAngleX) { angleSuccess = false; state.angleX = maxAngleX; }
+        // angle stabilization for the last meter appears impossible.  Force allow success if within rounded range.
+        if (state.altitude == minAltitude) { verticalSuccess = true; angleSuccess = true; }
+
+        return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
+    }
 
     private float[][][][][][][] allocateNewValueFunctionTable() {
         int altitudeSize = maxAltitude - minAltitude + 1;

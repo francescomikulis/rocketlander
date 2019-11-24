@@ -2,17 +2,11 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.aerodynamics.AerodynamicForces;
 import net.sf.openrocket.aerodynamics.FlightConditions;
-import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
-import net.sf.openrocket.simulation.RK4SimulationStatus;
-import net.sf.openrocket.simulation.RK4SimulationStepper;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
-import net.sf.openrocket.simulation.listeners.SimulationListenerHelper;
-import net.sf.openrocket.startup.Application;
-import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
@@ -20,7 +14,6 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
-import net.sf.openrocket.util.Rotation2D;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -35,7 +28,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private Random random;
     private State state;
     private Action action;
-    private Boolean forcingFailure = false;
+    TerminationBooleanTuple terminationBooleanTuple;
     private static double variation = 5;
     private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
@@ -74,6 +67,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         else if (!episodeStateActions.get(episodeStateActions.size() - 1).equals(nextStateActionTuple)) {
             episodeStateActions.add(nextStateActionTuple);
         }
+        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
     }
 
     @Override
@@ -191,10 +185,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         setupStateActionAndStore(status);
 
-        if (!model.getValueFunctionTable().checkBounds(state) || (status.getSimulationTime() > 15.0)) {
-            // remove the last state because it goes out of bounds
-            episodeStateActions.remove(episodeStateActions.size() - 1);
-            //model.updateTerminalStateActionValueFunction(episodeStateActions, true);
+        if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > 15.0)) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
@@ -205,9 +196,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
         if (!hasCompletedTerminalUpdate) {
-            // forcedTermination will be false if exception is null
-            boolean forcedTermination = (exception != null);
-            model.updateTerminalStateActionValueFunction(episodeStateActions, forcedTermination);
+            model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleanTuple);
             hasCompletedTerminalUpdate = true;
         }
     }
