@@ -3,11 +3,16 @@ package net.sf.openrocket.simulation.extension.impl.methods;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 
 import java.util.ArrayList;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class Sarsa extends ModelBaseImplementation implements ModelInterface {
-    public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
-    public float reward(StateActionTuple.State state) { return 0.0f; }
-    public void updateStepFunction(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateStepCommon(
+        ArrayList<StateActionTuple> stateActionTuples,
+        Function<StateActionTuple, Float> valueFunction,
+        BiFunction<StateActionTuple, Float, Float> putFunction,
+        Function<StateActionTuple.State, Float> reward
+    ) {
         double[] weight = new double[]{1.0,1.0};
         double discount = 0.999;
         double alpha = 0.3;
@@ -37,15 +42,13 @@ public class Sarsa extends ModelBaseImplementation implements ModelInterface {
         //return valueFunction(episodeStateActions, stateActionTuple);
         //return 0.0f;
     }
-    public void updateTerminalFunction(ArrayList<StateActionTuple> stateActionTuples) {}
+
+    public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
+    public float reward(StateActionTuple.State state) { return 0.0f; }
 
     public float terminalLandingReward(StateActionTuple.State lastState) { return 0.0f; }
     public float rewardLanding(StateActionTuple.State state) { return 0.0f; }
-    public void updateStepLandingFunction(ArrayList<StateActionTuple> stateActionTuples) {}
-    public void updateTerminalLandingFunction(ArrayList<StateActionTuple> stateActionTuples) {}
 
     public float terminalStabilizingReward(StateActionTuple.State lastState) { return 0.0f; }
     public float rewardStabilizing(StateActionTuple.State state) { return 0.0f; }
-    public void updateStepStabilizingFunction(ArrayList<StateActionTuple> stateActionTuples) {}
-    public void updateTerminalStabilizingFunction(ArrayList<StateActionTuple> stateActionTuples) {}
 }

@@ -29,8 +29,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private State state;
     private Action action;
     TerminationBooleanTuple terminationBooleanTuple;
-    private static double variation = 5;
-    private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double variation = 0;
+    private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;

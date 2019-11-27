@@ -1,8 +1,8 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
-import net.sf.openrocket.simulation.extension.impl.methods.MonteCarlo;
+
+import net.sf.openrocket.simulation.extension.impl.methods.*;
 import net.sf.openrocket.util.Quaternion;
 
 import java.io.Serializable;
@@ -26,8 +26,9 @@ public class RLModel {
     private static float THRUST_ON_PENALTY = -5;
 
     // MonteCarlo or TD0
-    private ModelBaseImplementation currentMethod = new MonteCarlo();
-    public SimulationType simulationType = SimulationType._1D;
+    private ModelBaseImplementation primaryMethod = new MonteCarlo();
+    private ModelBaseImplementation secondaryMethod = new TD0();
+    public SimulationType simulationType = SimulationType._3D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -117,10 +118,10 @@ public class RLModel {
         Action action = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
 
-            action = policy(state, possibleActions, currentMethod::valueFunction);
+            action = policy(state, possibleActions, primaryMethod::valueFunction);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            Action bestLanderAction = policy(state, possibleActions, currentMethod::landingValueFunction);
-            Action bestStabilizerAction = policy(state, possibleActions, currentMethod::stabilizingValueFunction);
+            Action bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction);
+            Action bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction);
             action = OptimizedMap.combineCoupledActions(bestLanderAction, bestStabilizerAction);
         }
         return action;
@@ -167,23 +168,24 @@ public class RLModel {
 
     public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            currentMethod.updateStepFunction(stateActionTuples);
+            primaryMethod.updateStepFunction(stateActionTuples);
 
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            currentMethod.updateStepLandingFunction(stateActionTuples);
-            currentMethod.updateStepStabilizingFunction(stateActionTuples);
+            primaryMethod.updateStepLandingFunction(stateActionTuples);
+            secondaryMethod.updateStepStabilizingFunction(stateActionTuples);
         }
     }
 
     public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, TerminationBooleanTuple terminationBooleanTuple) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            currentMethod.updateTerminalFunction(stateActionTuples);
+            primaryMethod.updateTerminalFunction(stateActionTuples);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             // don't learn how to land if not hitting ground WHEN NOT IN 3D
-            if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.angleSuccess)) {
-                currentMethod.updateTerminalLandingFunction(stateActionTuples);
+            if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landingSucceeded())) {
+                primaryMethod.updateTerminalLandingFunction(stateActionTuples);
             }
-            currentMethod.updateTerminalStabilizingFunction(stateActionTuples);
+            if ((simulationType != SimulationType._1D) && (terminationBooleanTuple.verticalSuccess))
+                secondaryMethod.updateTerminalStabilizingFunction(stateActionTuples);
         }
     }
 
@@ -192,21 +194,23 @@ public class RLModel {
     }
 
     public OptimizedMap getValueFunctionTable() {
-        return currentMethod.getValueFunctionTable();
+        return primaryMethod.getValueFunctionTable();
     }
 
     public void setValueFunctionTable(OptimizedMap valueFunctionTable) {
-        currentMethod.setValueFunctionTable(valueFunctionTable);
+        primaryMethod.setValueFunctionTable(valueFunctionTable);
+        secondaryMethod.setValueFunctionTable(valueFunctionTable);
     }
 
-    public ModelBaseImplementation getCurrentMethod() {
-        return currentMethod;
+    public ModelBaseImplementation getPrimaryMethod() {
+        return primaryMethod;
     }
 
-    public void setCurrentMethod(ModelBaseImplementation method) {
+    public void setPrimaryMethod(ModelBaseImplementation method) {
         // conserve the instance of the OptimizedMap
-        OptimizedMap valueFunctionTable = currentMethod.getValueFunctionTable();
-        currentMethod = method;
+        OptimizedMap valueFunctionTable = primaryMethod.getValueFunctionTable();
+        primaryMethod = method;
+        secondaryMethod = primaryMethod;
         method.setValueFunctionTable(valueFunctionTable);
     }
 

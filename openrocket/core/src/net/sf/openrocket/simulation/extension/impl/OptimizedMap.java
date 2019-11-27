@@ -1,5 +1,7 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import java.util.function.Function;
+
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 /**
