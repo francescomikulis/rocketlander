@@ -84,22 +84,19 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				break;
 			}
 			currentStatus = toSimulate.pop();
-			log.info(">>Starting simulation of branch: "+currentStatus.getFlightData().getBranchName());
+			// MODIFIED CODE HERE log.info(">>Starting simulation of branch: "+currentStatus.getFlightData().getBranchName());
 			
 			FlightDataBranch dataBranch = simulateLoop();
 			flightData.addBranch(dataBranch);
 			flightData.getWarningSet().addAll(currentStatus.getWarnings());
 			
-			log.info(String.format("<<Finished simulating branch: %s    curTime:%s    finTime:%s", 
-							dataBranch.getBranchName(),
-							currentStatus.getSimulationTime(),
-							dataBranch.getLast(FlightDataType.TYPE_TIME)));
+			// MODIFIED CODE HERE log.info(String.format("<<Finished simulating branch: %s    curTime:%s    finTime:%s", dataBranch.getBranchName(), currentStatus.getSimulationTime(), dataBranch.getLast(FlightDataType.TYPE_TIME)));
 		}while( ! toSimulate.isEmpty());
 		
 		SimulationListenerHelper.fireEndSimulation(currentStatus, null);
 		
 		if (!flightData.getWarningSet().isEmpty()) {
-			log.info("Warnings at the end of simulation:  " + flightData.getWarningSet());
+			// MODIFIED CODE HERE log.info("Warnings at the end of simulation:  " + flightData.getWarningSet());
 		}
 
 		return flightData;
@@ -129,7 +126,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 					if (nextEvent != null) {
 						maxStepTime = MathUtil.max(nextEvent.getTime() - currentStatus.getSimulationTime(), 0.001);
 					}
-					log.trace("Taking simulation step at t=" + currentStatus.getSimulationTime() + " altitude " + oldAlt);
+					// MODIFIED CODE HERE log.trace("Taking simulation step at t=" + currentStatus.getSimulationTime() + " altitude " + oldAlt);
 					currentStepper.step(currentStatus, maxStepTime);
 				}
 				SimulationListenerHelper.firePostStep(currentStatus);
@@ -153,21 +150,20 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				
 				// Add appropriate events
 				if (!currentStatus.isLiftoff()) {
-
 					/*
 					MODIFIED CODE HERE
+					*/
+
+					// Verify air-start | current rocket position not 'very close' to origin
+					boolean usingAirstart = (currentStatus.getRocketPosition().z > 1.0);
+
 					// Avoid sinking into ground before liftoff
-					if (relativePosition.z < 0) {
+					if ((relativePosition.z < 0) && (!usingAirstart)) {
 						currentStatus.setRocketPosition(origin);
 						currentStatus.setRocketVelocity(originVelocity);
 					}
-					// Detect lift-off
-					if (relativePosition.z > 0.02) {
-						addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
-					}
-					*/
+
 					addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
-					
 				} else {
 					
 					// Check ground hit after liftoff
@@ -254,10 +250,10 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 		boolean ret = true;
 		FlightEvent event;
 		
-		log.trace("HandleEvents: current branch = " + currentStatus.getFlightData().getBranchName());
+		// MODIFIED CODE HERE log.trace("HandleEvents: current branch = " + currentStatus.getFlightData().getBranchName());
 		for (event = nextEvent(); event != null; event = nextEvent()) {
-			log.trace("Obtained event from queue:  " + event.toString());
-			log.trace("Remaining EventQueue = " + currentStatus.getEventQueue().toString());
+			// MODIFIED CODE HERE log.trace("Obtained event from queue:  " + event.toString());
+			// MODIFIED CODE HERE log.trace("Remaining EventQueue = " + currentStatus.getEventQueue().toString());
 			
 			// Check for motor ignition events, add ignition events to queue
 			for (MotorClusterState state : currentStatus.getActiveMotors() ){
@@ -278,8 +274,8 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 					final double ignitionTime = currentStatus.getSimulationTime() + ignitionDelay; 
 					
 					// TODO:  this event seems to get enqueue'd multiple times ... 
-					log.info("Queueing Ignition Event for: "+state.toDescription()+" @: "+ignitionTime);
-					//log.info("     Because of "+event.getType().name()+" @"+event.getTime()+" from: "+event.getSource().getName());
+					// MODIFIED CODE HERE log.info("Queueing Ignition Event for: "+state.toDescription()+" @: "+ignitionTime);
+					//// MODIFIED CODE HERE log.info("     Because of "+event.getType().name()+" @"+event.getTime()+" from: "+event.getSource().getName());
 					
 					addEvent(new FlightEvent(FlightEvent.Type.IGNITION, ignitionTime, (RocketComponent) mount, state ));
 				}
@@ -288,7 +284,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 			// Ignore events for components that are no longer attached to the rocket
 			if (event.getSource() != null && event.getSource().getParent() != null &&
 					!currentStatus.getConfiguration().isComponentActive(event.getSource())) {
-				log.trace("Ignoring event from unattached componenent");
+				// MODIFIED CODE HERE log.trace("Ignoring event from unattached componenent");
 				continue;
 			}
 			
@@ -332,7 +328,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 			}
 			
 			// Handle event
-			log.trace("Handling event " + event);			
+			// MODIFIED CODE HERE log.trace("Handling event " + event);
 			switch (event.getType()) {
 			
 			case LAUNCH: {
@@ -343,7 +339,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 			case IGNITION: {
 				MotorClusterState motorState = (MotorClusterState) event.getData();
 				
-				log.info("  Igniting motor: "+motorState.toDescription()+" @"+currentStatus.getSimulationTime());
+				// MODIFIED CODE HERE log.info("  Igniting motor: "+motorState.toDescription()+" @"+currentStatus.getSimulationTime());
 				motorState.ignite( event.getTime());
 
 				// Ignite the motor
@@ -381,7 +377,6 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				break;
 			}
 
-			/* MODIFIED CODE HERE
 			case BURNOUT: {
 				// If motor burnout occurs without lift-off, abort
 				if (!currentStatus.isLiftoff()) {
@@ -393,8 +388,8 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				motorState.burnOut( event.getTime() );
 				
 				AxialStage stage = motorState.getMount().getStage();
-				//log.debug( " adding EJECTION_CHARGE event for motor "+motorState.getMotor().getDesignation()+" on stage "+stage.getStageNumber()+": "+stage.getName());
-				log.debug( " detected Motor Burnout for motor "+motorState.getMotor().getDesignation()+"@ "+event.getTime()+"  on stage "+stage.getStageNumber()+": "+stage.getName());
+				//// MODIFIED CODE HERE log.debug( " adding EJECTION_CHARGE event for motor "+motorState.getMotor().getDesignation()+" on stage "+stage.getStageNumber()+": "+stage.getName());
+				// MODIFIED CODE HERE log.debug( " detected Motor Burnout for motor "+motorState.getMotor().getDesignation()+"@ "+event.getTime()+"  on stage "+stage.getStageNumber()+": "+stage.getName());
 				
 				
 				double delay = motorState.getEjectionDelay();
@@ -405,7 +400,6 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				currentStatus.getFlightData().addEvent(event);
 				break;
 			}
-			 */
 			
 			case EJECTION_CHARGE: {
 				MotorClusterState motorState = (MotorClusterState) event.getData();
@@ -430,9 +424,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 				// Mark the booster status as only having the booster.
 				boosterStatus.getConfiguration().setOnlyStage(stageNumber);
 				toSimulate.push(boosterStatus);
-				log.info(String.format("==>> @ %g; from Branch: %s ---- Branching: %s ---- \n",
-						currentStatus.getSimulationTime(), 
-						currentStatus.getFlightData().getBranchName(), boosterStatus.getFlightData().getBranchName()));
+				// MODIFIED CODE HERE log.info(String.format("==>> @ %g; from Branch: %s ---- Branching: %s ---- \n", currentStatus.getSimulationTime(), currentStatus.getFlightData().getBranchName(), boosterStatus.getFlightData().getBranchName()));
 				
 				break;
 			}
@@ -516,7 +508,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 		
 		if( 1200 < currentStatus.getSimulationTime() ){
 			ret = false;
-			log.error("Simulation hit max time (1200s): aborting.");
+			// MODIFIED CODE HERE log.error("Simulation hit max time (1200s): aborting.");
 			currentStatus.getFlightData().addEvent(new FlightEvent( FlightEvent.Type.SIMULATION_END, currentStatus.getSimulationTime()));
 		}
 		
@@ -580,7 +572,8 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 		d += currentStatus.getEffectiveLaunchRodLength();
 		
 		if (Double.isNaN(d) || b) {
-			log.error("Simulation resulted in NaN value:" +
+			// MODIFIED CODE HERE log.error("Simulation resulted in NaN value:" +
+			/*
 					" simulationTime=" + currentStatus.getSimulationTime() +
 					" previousTimeStep=" + currentStatus.getPreviousTimeStep() +
 					" rocketPosition=" + currentStatus.getRocketPosition() +
@@ -588,6 +581,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 					" rocketOrientationQuaternion=" + currentStatus.getRocketOrientationQuaternion() +
 					" rocketRotationVelocity=" + currentStatus.getRocketRotationVelocity() +
 					" effectiveLaunchRodLength=" + currentStatus.getEffectiveLaunchRodLength());
+			 */
 			throw new SimulationException(trans.get("BasicEventSimulationEngine.error.NaNResult"));
 		}
 	}
@@ -601,7 +595,7 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 			FlightData d = e.simulate(conds);
 			return d;
 		} catch (Exception e) {
-			log.warn("Exception computing coast time: ", e);
+			// MODIFIED CODE HERE log.warn("Exception computing coast time: ", e);
 			return null;
 		}
 	}

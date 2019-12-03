@@ -56,7 +56,7 @@ public class SlideShowDialog extends JDialog {
 		prevButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Clicked previous button");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Clicked previous button");
 				setPosition(position - 1);
 			}
 		});
@@ -68,7 +68,7 @@ public class SlideShowDialog extends JDialog {
 		nextButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Clicked next button");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Clicked next button");
 				setPosition(position + 1);
 			}
 		});
@@ -142,7 +142,7 @@ public class SlideShowDialog extends JDialog {
 		Action next = new AbstractAction() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				log.info(Markers.USER_MARKER, "Key action for next slide");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Key action for next slide");
 				if (position < slideSet.getSlideCount() - 1) {
 					setPosition(position + 1);
 				}
@@ -152,7 +152,7 @@ public class SlideShowDialog extends JDialog {
 		Action previous = new AbstractAction() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				log.info(Markers.USER_MARKER, "Key action for previous slide");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Key action for previous slide");
 				if (position > 0) {
 					setPosition(position - 1);
 				}

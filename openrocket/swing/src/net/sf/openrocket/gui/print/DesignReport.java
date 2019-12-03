@@ -248,7 +248,7 @@ public class DesignReport {
 				motorNumber++;
 			}
 		} catch (DocumentException e) {
-			log.error("Could not modify document.", e);
+			// MODIFIED CODE HERE log.error("Could not modify document.", e);
 		}
 	}
 	
@@ -500,7 +500,7 @@ public class DesignReport {
 				c.setTop(0);
 				parent.addCell(c);
 			} catch (DocumentException e) {
-				log.error("Could not add flight data to document.", e);
+				// MODIFIED CODE HERE log.error("Could not add flight data to document.", e);
 			}
 		}
 	}

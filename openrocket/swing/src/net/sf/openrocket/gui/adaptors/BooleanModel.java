@@ -169,7 +169,7 @@ public class BooleanModel extends AbstractAction implements StateChangeListener,
 	
 	public void setValue(boolean b) {
 		checkState(true);
-		log.debug("Setting value of " + this + " to " + b);
+		// MODIFIED CODE HERE log.debug("Setting value of " + this + " to " + b);
 		
 		if (setMethod != null) {
 			try {
@@ -243,14 +243,14 @@ public class BooleanModel extends AbstractAction implements StateChangeListener,
 		checkState(true);
 		
 		if (firing > 0) {
-			log.debug("Ignoring stateChanged of " + this + ", currently firing events");
+			// MODIFIED CODE HERE log.debug("Ignoring stateChanged of " + this + ", currently firing events");
 			return;
 		}
 		
 		boolean v = getValue();
 		boolean e = getIsEnabled();
 		if (oldValue != v) {
-			log.debug("Value of " + this + " has changed to " + v + " oldValue=" + oldValue);
+			// MODIFIED CODE HERE log.debug("Value of " + this + " has changed to " + v + " oldValue=" + oldValue);
 			oldValue = v;
 			firing++;
 			this.putValue(SELECTED_KEY, getValue());
@@ -259,7 +259,7 @@ public class BooleanModel extends AbstractAction implements StateChangeListener,
 			firing--;
 		}
 		if (oldEnabled != e) {
-			log.debug("Enabled status of " + this + " has changed to " + e + " oldEnabled=" + oldEnabled);
+			// MODIFIED CODE HERE log.debug("Enabled status of " + this + " has changed to " + e + " oldEnabled=" + oldEnabled);
 			oldEnabled = e;
 			setEnabled(e);
 		}
@@ -269,12 +269,12 @@ public class BooleanModel extends AbstractAction implements StateChangeListener,
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (firing > 0) {
-			log.debug("Ignoring actionPerformed of " + this + ", currently firing events");
+			// MODIFIED CODE HERE log.debug("Ignoring actionPerformed of " + this + ", currently firing events");
 			return;
 		}
 		
 		boolean v = (Boolean) this.getValue(SELECTED_KEY);
-		log.info(Markers.USER_MARKER, "Value of " + this + " changed to " + v + " oldValue=" + oldValue);
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Value of " + this + " changed to " + v + " oldValue=" + oldValue);
 		if (v != oldValue) {
 			firing++;
 			setValue(v);
@@ -306,7 +306,7 @@ public class BooleanModel extends AbstractAction implements StateChangeListener,
 		
 		PropertyChangeListener[] listeners = this.getPropertyChangeListeners();
 		if (listeners.length > 0) {
-			log.warn("Invalidating " + this + " while still having listeners " + listeners);
+			// MODIFIED CODE HERE log.warn("Invalidating " + this + " while still having listeners " + listeners);
 			for (PropertyChangeListener l : listeners) {
 				this.removePropertyChangeListener(l);
 			}

@@ -57,7 +57,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 		FunctionCacheComparator comparator = new FunctionCacheComparator(functionExecutor);
 		
 		final List<Point> pattern = SearchPattern.square(initial.dim());
-		log.info("Starting optimization at " + initial + " with pattern " + pattern);
+		// MODIFIED CODE HERE log.info("Starting optimization at " + initial + " with pattern " + pattern);
 		
 		try {
 			
@@ -80,8 +80,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 			boolean continueOptimization = true;
 			while (continueOptimization) {
 				
-				log.debug("Starting optimization step with simplex " + simplex +
-						(simplexComputed ? "" : " (not computed)"));
+				// MODIFIED CODE HERE log.debug("Starting optimization step with simplex " + simplex + (simplexComputed ? "" : " (not computed)"));
 				stepCount++;
 				
 				if (!simplexComputed) {
@@ -112,13 +111,12 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 					functionExecutor.compute(expansion);
 				
 				// Check reflection acceptance
-				log.debug("Computing reflection");
+				// MODIFIED CODE HERE log.debug("Computing reflection");
 				functionExecutor.waitFor(reflection);
 				
 				if (accept(reflection, currentValue)) {
 					
-					log.debug("Reflection was successful, aborting coordinate search, " +
-							(useExpansion ? "computing" : "skipping") + " expansion");
+					// MODIFIED CODE HERE log.debug("Reflection was successful, aborting coordinate search, " + (useExpansion ? "computing" : "skipping") + " expansion");
 					
 					if (useCoordinateSearch)
 						functionExecutor.abort(coordinateSearch);
@@ -139,7 +137,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 						functionExecutor.waitFor(expansion);
 						
 						if (accept(expansion, currentValue)) {
-							log.debug("Expansion was successful, aborting reflection");
+							// MODIFIED CODE HERE log.debug("Expansion was successful, aborting reflection");
 							functionExecutor.abort(reflection);
 							
 							simplex.clear();
@@ -149,7 +147,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 							Collections.sort(simplex, comparator);
 							expansionAcceptance++;
 						} else {
-							log.debug("Expansion failed");
+							// MODIFIED CODE HERE log.debug("Expansion failed");
 							reflectionAcceptance++;
 						}
 						
@@ -159,7 +157,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 					
 				} else {
 					
-					log.debug("Reflection was unsuccessful, aborting expansion, computing coordinate search");
+					// MODIFIED CODE HERE log.debug("Reflection was unsuccessful, aborting expansion, computing coordinate search");
 					
 					functionExecutor.abort(expansion);
 					
@@ -174,7 +172,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 						
 						if (accept(coordinateSearch, currentValue)) {
 							
-							log.debug("Coordinate search successful, reseting simplex");
+							// MODIFIED CODE HERE log.debug("Coordinate search successful, reseting simplex");
 							List<Point> toAbort = new LinkedList<Point>(simplex);
 							simplex.clear();
 							simplex.add(current);
@@ -187,13 +185,13 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 							coordinateAcceptance++;
 							
 						} else {
-							log.debug("Coordinate search unsuccessful, halving step.");
+							// MODIFIED CODE HERE log.debug("Coordinate search unsuccessful, halving step.");
 							step /= 2;
 							simplexComputed = false;
 							reductionFallback++;
 						}
 					} else {
-						log.debug("Coordinate search not used, halving step.");
+						// MODIFIED CODE HERE log.debug("Coordinate search not used, halving step.");
 						step /= 2;
 						simplexComputed = false;
 						reductionFallback++;
@@ -201,7 +199,7 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 					
 				}
 				
-				log.debug("Ending optimization step with simplex " + simplex);
+				// MODIFIED CODE HERE log.debug("Ending optimization step with simplex " + simplex);
 				
 				continueOptimization = control.stepTaken(current, currentValue, simplex.get(0),
 						functionExecutor.getValue(simplex.get(0)), step);
@@ -213,12 +211,11 @@ public class MultidirectionalSearchOptimizer implements FunctionOptimizer, Stati
 			}
 			
 		} catch (InterruptedException e) {
-			log.info("Optimization was interrupted with InterruptedException");
+			// MODIFIED CODE HERE log.info("Optimization was interrupted with InterruptedException");
 		}
 		
-		log.info("Finishing optimization at point " + simplex.get(0) + " value = " +
-				functionExecutor.getValue(simplex.get(0)));
-		log.info("Optimization statistics: " + getStatistics());
+		// MODIFIED CODE HERE log.info("Finishing optimization at point " + simplex.get(0) + " value = " + functionExecutor.getValue(simplex.get(0)));
+		// MODIFIED CODE HERE log.info("Optimization statistics: " + getStatistics());
 	}
 	
 	

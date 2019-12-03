@@ -42,7 +42,7 @@ public class RangeExpression extends CustomExpression {
 		this.setExpressions(startTime, endTime);
 		this.expression = variableType+startTime+endTime; // this is used just for generating the hash
 		
-		log.info("New range expression, "+startTime + " to "+endTime);
+		// MODIFIED CODE HERE log.info("New range expression, "+startTime + " to "+endTime);
 	}
 	
 	/*
@@ -93,7 +93,7 @@ public class RangeExpression extends CustomExpression {
 			endTime = MathUtil.clamp(endTime, 0, time.get(time.size()-1));
 		}
 		catch (java.util.EmptyStackException e){
-			log.info(Markers.USER_MARKER, "Unable to calculate time index for range expression "+getSymbol()+" due to empty stack exception");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Unable to calculate time index for range expression "+getSymbol()+" due to empty stack exception");
 			return new Variable("Unknown");
 		}
 		

@@ -374,10 +374,7 @@ public class RockSimMotorLoader extends AbstractMotorLoader {
 					t = m.getMotorType();
 				} else {
 					if (m.getMotorType() != Motor.Type.UNKNOWN && m.getMotorType() != t) {
-						log.warn("Loaded motor type inconsistent with manufacturer," +
-								" loaded type=" + t + " manufacturer=" + m +
-								" manufacturer type=" + m.getMotorType() +
-								" designation=" + designation);
+						// MODIFIED CODE HERE log.warn("Loaded motor type inconsistent with manufacturer," + " loaded type=" + t + " manufacturer=" + m + " manufacturer type=" + m.getMotorType() + " designation=" + designation);
 					}
 				}
 				

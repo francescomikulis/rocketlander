@@ -39,7 +39,7 @@ public class OpenRocketLoader extends AbstractRocketLoader {
 	@Override
 	public void loadFromStream(DocumentLoadingContext context, InputStream source) throws RocketLoadException,
 			IOException {
-		log.info("Loading .ork file");
+		// MODIFIED CODE HERE log.info("Loading .ork file");
 		
 		InputSource xmlSource = new InputSource(source);
 		OpenRocketHandler handler = new OpenRocketHandler(context);
@@ -49,7 +49,7 @@ public class OpenRocketLoader extends AbstractRocketLoader {
 		try {
 			SimpleSAX.readXML(xmlSource, handler, warnings);
 		} catch (SAXException e) {
-			log.warn("Malformed XML in input");
+			// MODIFIED CODE HERE log.warn("Malformed XML in input");
 			throw new RocketLoadException("Malformed XML in input.", e);
 		}
 		
@@ -93,7 +93,7 @@ public class OpenRocketLoader extends AbstractRocketLoader {
 		
 		
 		doc.clearUndo();
-		log.info("Loading done");
+		// MODIFIED CODE HERE log.info("Loading done");
 	}
 	
 }

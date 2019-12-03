@@ -173,7 +173,7 @@ public class GUIUtil {
 
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				log.info(Markers.USER_MARKER, "Closing dialog " + dialog);
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Closing dialog " + dialog);
 				dialog.dispatchEvent(new WindowEvent(dialog, WindowEvent.WINDOW_CLOSING));
 			}
 		};
@@ -237,7 +237,7 @@ public class GUIUtil {
 		window.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				log.debug("Clearing all models of window " + window);
+				// MODIFIED CODE HERE log.debug("Clearing all models of window " + window);
 				setNullModels(window);
 				MemoryManagement.collectable(window);
 			}
@@ -285,7 +285,7 @@ public class GUIUtil {
 				}
 			}
 		} catch (Exception e) {
-			log.warn("Error setting LAF: " + e);
+			// MODIFIED CODE HERE log.warn("Error setting LAF: " + e);
 		}
 	}
 	
@@ -312,11 +312,11 @@ public class GUIUtil {
 		window.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				log.debug("Storing size of " + window.getClass().getName() + ": " + window.getSize());
+				// MODIFIED CODE HERE log.debug("Storing size of " + window.getClass().getName() + ": " + window.getSize());
 				((SwingPreferences) Application.getPreferences()).setWindowSize(window.getClass(), window.getSize());
 				if (window instanceof JFrame) {
 					if ((((JFrame) window).getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH) {
-						log.debug("Storing maximized state of " + window.getClass().getName());
+						// MODIFIED CODE HERE log.debug("Storing maximized state of " + window.getClass().getName());
 						((SwingPreferences) Application.getPreferences()).setWindowMaximized(window.getClass());
 					}
 				}
@@ -391,10 +391,10 @@ public class GUIUtil {
 		 */
 		Font font = border.getTitleFont();
 		if (font == null) {
-			log.warn("JRE bug workaround : Border font is null, reverting to JLabel font");
+			// MODIFIED CODE HERE log.warn("JRE bug workaround : Border font is null, reverting to JLabel font");
 			font = new JLabel().getFont();
 			if (font == null) {
-				log.warn("JRE bug workaround : JLabel font is null, not modifying font");
+				// MODIFIED CODE HERE log.warn("JRE bug workaround : JLabel font is null, not modifying font");
 				return;
 			}
 		}

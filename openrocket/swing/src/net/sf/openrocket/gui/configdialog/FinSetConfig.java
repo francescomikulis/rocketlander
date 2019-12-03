@@ -71,7 +71,7 @@ public abstract class FinSetConfig extends RocketComponentConfig {
 			convert.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					log.info(Markers.USER_MARKER, "Converting " + component.getComponentName() + " into freeform fin set");
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Converting " + component.getComponentName() + " into freeform fin set");
 					
 					// Do change in future for overall safety
 					SwingUtilities.invokeLater(new Runnable() {
@@ -97,8 +97,7 @@ public abstract class FinSetConfig extends RocketComponentConfig {
 		split.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Splitting " + component.getComponentName() + " into separate fins, fin count=" +
-						((FinSet) component).getFinCount());
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Splitting " + component.getComponentName() + " into separate fins, fin count=" + ((FinSet) component).getFinCount());
 				
 				// Do change in future for overall safety
 				SwingUtilities.invokeLater(new Runnable() {
@@ -227,7 +226,7 @@ public abstract class FinSetConfig extends RocketComponentConfig {
 		autoCalc.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Computing " + component.getComponentName() + " tab height.");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Computing " + component.getComponentName() + " tab height.");
 				
 				RocketComponent parent = component.getParent();
 				if (parent instanceof Coaxial) {

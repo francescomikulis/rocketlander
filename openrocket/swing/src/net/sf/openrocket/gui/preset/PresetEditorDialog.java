@@ -2096,7 +2096,7 @@ public class PresetEditorDialog extends JDialog implements ItemListener {
 			imageInByte = baos.toByteArray();
 			baos.close();
 		} catch (IOException e) {
-			log.error("Could not read image.");
+			// MODIFIED CODE HERE log.error("Could not read image.");
 		}
 		return imageInByte;
 	}
@@ -2115,7 +2115,7 @@ public class PresetEditorDialog extends JDialog implements ItemListener {
 		try {
 			return ImageIO.read(in);
 		} catch (IOException e) {
-			log.error("Could not convert image.");
+			// MODIFIED CODE HERE log.error("Could not convert image.");
 		}
 		return null;
 	}

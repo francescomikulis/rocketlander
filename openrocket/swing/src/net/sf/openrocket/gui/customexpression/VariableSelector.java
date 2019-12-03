@@ -70,7 +70,7 @@ public class VariableSelector extends JDialog {
 			@Override
 			public void mouseClicked(MouseEvent e){
 				if (e.getClickCount() == 2){
-					log.debug("Selected variable by double clicking.");
+					// MODIFIED CODE HERE log.debug("Selected variable by double clicking.");
 					selectVariable();
 				}
 			}
@@ -91,7 +91,7 @@ public class VariableSelector extends JDialog {
 		actionMap.put("select", new AbstractAction(){
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				log.debug("Selected variable by enter key");
+				// MODIFIED CODE HERE log.debug("Selected variable by enter key");
 				selectVariable();
 			}
 		});

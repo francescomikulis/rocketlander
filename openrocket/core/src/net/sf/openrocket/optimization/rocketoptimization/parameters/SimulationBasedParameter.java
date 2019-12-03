@@ -30,7 +30,7 @@ public abstract class SimulationBasedParameter implements OptimizableParameter {
 	@Override
 	public double computeValue(Simulation simulation) throws OptimizationException, InterruptedException {
 		try {
-			log.debug("Running simulation for " + getName());
+			// MODIFIED CODE HERE log.debug("Running simulation for " + getName());
 			
 			SimulationListener[] listeners = getSimulationListeners();
 			listeners = Arrays.copyOf(listeners, listeners.length + 1);
@@ -38,7 +38,7 @@ public abstract class SimulationBasedParameter implements OptimizableParameter {
 			simulation.simulate(listeners);
 			
 			double value = getResultValue(simulation.getSimulatedData());
-			log.debug("Parameter '" + getName() + " was " + value);
+			// MODIFIED CODE HERE log.debug("Parameter '" + getName() + " was " + value);
 			return value;
 		} catch (MotorIgnitionException e) {
 			// A problem with motor ignition will cause optimization to fail

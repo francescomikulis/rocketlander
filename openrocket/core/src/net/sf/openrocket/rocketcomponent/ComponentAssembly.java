@@ -144,7 +144,7 @@ public abstract class ComponentAssembly extends RocketComponent implements  Axia
 		}
 		if ((this instanceof ParallelStage ) || ( this instanceof PodSet )){
 			if (AxialMethod.AFTER == newMethod) {
-				log.warn("Stages (or Pods) cannot be relative to other stages via AFTER! Ignoring.");
+				// MODIFIED CODE HERE log.warn("Stages (or Pods) cannot be relative to other stages via AFTER! Ignoring.");
 				super.setAxialMethod(AxialMethod.TOP);
 			} else {
 				super.setAxialMethod(newMethod);

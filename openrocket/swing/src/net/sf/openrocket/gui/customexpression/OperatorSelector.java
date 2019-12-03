@@ -82,7 +82,7 @@ public class OperatorSelector extends JDialog {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2) {
-					log.debug("Selected operator by double clicking.");
+					// MODIFIED CODE HERE log.debug("Selected operator by double clicking.");
 					selectOperator();
 				}
 			}
@@ -111,7 +111,7 @@ public class OperatorSelector extends JDialog {
 		actionMap.put("select", new AbstractAction() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				log.debug("Selected operator by enter key");
+				// MODIFIED CODE HERE log.debug("Selected operator by enter key");
 				selectOperator();
 			}
 		});

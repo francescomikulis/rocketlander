@@ -103,7 +103,7 @@ public class CustomExpression implements Cloneable {
 		}
 		
 		builder.withCustomFunctions(Functions.getInstance().getAllFunction());
-		log.info("Built expression " + expression);
+		// MODIFIED CODE HERE log.info("Built expression " + expression);
 	}
 	
 	/*
@@ -246,7 +246,7 @@ public class CustomExpression implements Cloneable {
 		ArrayList<String> symbols = getAllSymbols().clone();
 		if (symbols.contains(symbol.trim())) {
 			int index = symbols.indexOf(symbol.trim());
-			log.info(Markers.USER_MARKER, "Symbol " + symbol + " already exists, found " + symbols.get(index));
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Symbol " + symbol + " already exists, found " + symbols.get(index));
 			return false;
 		}
 		
@@ -266,7 +266,7 @@ public class CustomExpression implements Cloneable {
 		ArrayList<String> names = getAllNames().clone();
 		if (names.contains(name.trim())) {
 			int index = names.indexOf(name.trim());
-			log.info(Markers.USER_MARKER, "Name " + name + " already exists, found " + names.get(index));
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Name " + name + " already exists, found " + names.get(index));
 			return false;
 		}
 		
@@ -325,7 +325,7 @@ public class CustomExpression implements Cloneable {
 				break;
 			case ':':
 				if (square <= 0) {
-					log.info(Markers.USER_MARKER, ": found outside range expression");
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, ": found outside range expression");
 					return false;
 				}
 				else
@@ -339,7 +339,7 @@ public class CustomExpression implements Cloneable {
 			}
 		}
 		if (round != 0 || square != 0) {
-			log.info(Markers.USER_MARKER, "Expression has unballanced brackets");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Expression has unballanced brackets");
 			return false;
 		}
 		
@@ -363,7 +363,7 @@ public class CustomExpression implements Cloneable {
 		try {
 			builder.build();
 		} catch (Exception e) {
-			log.info(Markers.USER_MARKER, "Custom expression " + this.toString() + " invalid : " + e.toString());
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Custom expression " + this.toString() + " invalid : " + e.toString());
 			return false;
 		}
 		
@@ -394,10 +394,10 @@ public class CustomExpression implements Cloneable {
 		try {
 			calc = b.build();
 		} catch (UnknownFunctionException e1) {
-			log.info(Markers.USER_MARKER, "Unknown function. Could not build custom expression " + this.toString());
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Unknown function. Could not build custom expression " + this.toString());
 			return null;
 		} catch (UnparsableExpressionException e1) {
-			log.info(Markers.USER_MARKER, "Unparsable expression. Could not build custom expression " + this.toString() + ". " + e1.getMessage());
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Unparsable expression. Could not build custom expression " + this.toString() + ". " + e1.getMessage());
 			return null;
 		}
 		
@@ -431,7 +431,7 @@ public class CustomExpression implements Cloneable {
 		try {
 			result = calc.calculate().getDoubleValue();
 		} catch (java.util.EmptyStackException e) {
-			log.info(Markers.USER_MARKER, "Unable to calculate expression " + this.expression + " due to empty stack exception");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Unable to calculate expression " + this.expression + " due to empty stack exception");
 		}
 		
 		return new Variable(name, result);
@@ -447,14 +447,14 @@ public class CustomExpression implements Cloneable {
 		
 		UnitGroup ug = UnitGroup.SIUNITS.get(unit);
 		if (ug == null) {
-			log.debug("SI unit not found for " + unit + " in expression " + toString() + ". Making a new fixed unit.");
+			// MODIFIED CODE HERE log.debug("SI unit not found for " + unit + " in expression " + toString() + ". Making a new fixed unit.");
 			ug = new FixedUnitGroup(unit);
 		}
 		//UnitGroup ug = new FixedUnitGroup(unit);
 		
 		FlightDataType type = FlightDataType.getType(name, symbol, ug);
 		
-		//log.debug(this.getClass().getSimpleName()+" returned type "+type.getName()+" (" + type.getSymbol() + ")" );		
+		//// MODIFIED CODE HERE log.debug(this.getClass().getSimpleName()+" returned type "+type.getName()+" (" + type.getSymbol() + ")" );
 		
 		return type;
 	}
@@ -468,13 +468,13 @@ public class CustomExpression implements Cloneable {
 		if (!expressions.isEmpty()) {
 			// check if expression already exists
 			if (expressions.contains(this)) {
-				log.info(Markers.USER_MARKER, "Expression already in document. This unit : " + this.getUnit() + ", existing unit : " + expressions.get(0).getUnit());
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Expression already in document. This unit : " + this.getUnit() + ", existing unit : " + expressions.get(0).getUnit());
 				return;
 			}
 		}
 		
 		if (this.checkAll()) {
-			log.info(Markers.USER_MARKER, "Custom expression added to rocket document");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Custom expression added to rocket document");
 			doc.addCustomExpression(this);
 		}
 	}
@@ -488,7 +488,7 @@ public class CustomExpression implements Cloneable {
 		else {
 			int index = doc.getCustomExpressions().indexOf(this);
 			doc.getCustomExpressions().set(index, newExpression);
-			log.debug("Overwriting custom expression already in document");
+			// MODIFIED CODE HERE log.debug("Overwriting custom expression already in document");
 		}
 	}
 	

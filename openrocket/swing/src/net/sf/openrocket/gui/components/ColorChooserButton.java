@@ -37,7 +37,7 @@ public class ColorChooserButton extends JButton {
 		this.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Activating color chooser");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Activating color chooser");
 				final JColorChooser chooser = new JColorChooser(getSelectedColor());
 				chooser.setPreviewPanel(new JPanel());
 				final JDialog dialog = JColorChooser.createDialog(ColorChooserButton.this, "Select color", true,
@@ -45,11 +45,11 @@ public class ColorChooserButton extends JButton {
 							@Override
 							public void actionPerformed(ActionEvent e2) {
 								Color c = chooser.getColor();
-								log.info(Markers.USER_MARKER, "User selected color " + c);
+								// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User selected color " + c);
 								setSelectedColor(chooser.getColor());
 							}
 						}, null);
-				log.info("Closing color chooser");
+				// MODIFIED CODE HERE log.info("Closing color chooser");
 				dialog.setVisible(true);
 			}
 		});
@@ -62,7 +62,7 @@ public class ColorChooserButton extends JButton {
 	}
 	
 	public void setSelectedColor(Color c) {
-		log.debug("Selecting color " + c);
+		// MODIFIED CODE HERE log.debug("Selecting color " + c);
 		this.setIcon(new ColorIcon(c));
 		this.putClientProperty(COLOR_KEY, c);
 	}

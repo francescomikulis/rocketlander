@@ -142,9 +142,7 @@ public class InnerTube extends ThicknessRingComponent implements AxialPositionab
 	
 	@Override
 	public void setInstanceCount( final int newCount ){
-		log.error("Programmer Error:  cannot set the instance count of an InnerTube directly."+
-				"  Please set setClusterConfiguration(ClusterConfiguration) instead.",
-				new UnsupportedOperationException("InnerTube.setInstanceCount(..) on an"+this.getClass().getSimpleName()));
+		// MODIFIED CODE HERE log.error("Programmer Error:  cannot set the instance count of an InnerTube directly."+ "  Please set setClusterConfiguration(ClusterConfiguration) instead.", new UnsupportedOperationException("InnerTube.setInstanceCount(..) on an"+this.getClass().getSimpleName()));
 	}
 	
 	/**

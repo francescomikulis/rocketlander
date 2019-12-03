@@ -73,9 +73,9 @@ public class ZipFileMotorLoader implements MotorLoader {
 			try {
 				List<ThrustCurveMotor.Builder> m = loader.load(uncloseable, entry.getName());
 				motors.addAll(m);
-				log.info("Loaded " + m.size() + " motors from ZIP entry " + entry.getName());
+				// MODIFIED CODE HERE log.info("Loaded " + m.size() + " motors from ZIP entry " + entry.getName());
 			} catch (UnknownFileTypeException e) {
-				log.info("Could not read ZIP entry " + entry.getName() + ": " + e.getMessage());
+				// MODIFIED CODE HERE log.info("Could not read ZIP entry " + entry.getName() + ": " + e.getMessage());
 			}
 			
 		}

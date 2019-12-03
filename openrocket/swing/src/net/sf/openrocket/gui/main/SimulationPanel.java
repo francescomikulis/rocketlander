@@ -25,6 +25,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.DefaultEditorKit;
 
+import net.sf.openrocket.simulation.extension.impl.RLEpisodeManager;
 import net.sf.openrocket.simulation.extension.impl.RLModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.AlphanumComparator;
 
+import static net.sf.openrocket.gui.util.SwingPreferences.getMaxThreadCount;
+
 @SuppressWarnings("serial")
 public class SimulationPanel extends JPanel {
 
@@ -85,6 +88,7 @@ public class SimulationPanel extends JPanel {
 	private final JButton editButton;
 	private final JButton runButton;
 	private final JButton runMultipleButton;
+	private final JButton runMultipleExtremeButton;
 	private final JButton resetModelButton;
 	private final JButton deleteButton;
 	private final JButton plotButton;
@@ -164,7 +168,7 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
-				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
 		});
@@ -193,26 +197,103 @@ public class SimulationPanel extends JPanel {
 				} catch (Exception exc) {
 					return;
 				}
+
 				Simulation[] sims = new Simulation[selection.length * multiplier];
+
 				for (int i = 0; i < selection.length; i++) {
 					selection[i] = simulationTable.convertRowIndexToModel(selection[i]);
 					Simulation baseSimulation = document.getSimulation(selection[i]);
 					// first one needs to be kept same object to preserve panel UI update
 					sims[i * multiplier] = baseSimulation;
-					// if multiplier > 1 this duplicates the simulations
-					for (int rep = 1; rep < multiplier; rep++) {
-						sims[i * multiplier + rep] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+					for (int mult = 1; mult < multiplier; mult++) {
+						sims[i * multiplier + mult] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
 
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
-				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
 		});
 		this.add(runMultipleButton, "gapright para");
+
+		//// Run Multiple Extreme simulations
+		runMultipleExtremeButton = new JButton("Extreme time training");
+		//// Re-run the selected simulations
+		runMultipleExtremeButton.setToolTipText("Be careful with this multiplier!");
+		runMultipleExtremeButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int[] selection = simulationTable.getSelectedRows();
+				if (selection.length == 0) {
+					return;
+				}
+				int multiplier = 1;
+				JPanel panel = new JPanel(new MigLayout());
+				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"Number of duplicates for the current selection?", "", panel}, 1);
+				try {
+					if (multiplierFromPanel == null)
+						return;
+					multiplier = Integer.parseInt(multiplierFromPanel);
+				} catch (Exception exc) {
+					return;
+				}
+
+				int trainMinutes = 1;
+				JPanel repPanel = new JPanel(new MigLayout());
+				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, 1);
+				try {
+					if (trainMinutesFromPanel == null)
+						return;
+					trainMinutes = Integer.parseInt(trainMinutesFromPanel);
+				} catch (Exception exc) {
+					return;
+				}
+
+				Simulation[] baseSims = new Simulation[selection.length];
+
+				for (int i = 0; i < selection.length; i++) {
+					selection[i] = simulationTable.convertRowIndexToModel(selection[i]);
+					Simulation baseSimulation = document.getSimulation(selection[i]);
+					// first one needs to be kept same object to preserve panel UI update
+					baseSims[i] = baseSimulation;
+				}
+
+				long startTime = System.currentTimeMillis();
+				long startSaveTime = startTime;
+
+				while ((((System.currentTimeMillis() - startTime) / 1000.0) / 60.0) < trainMinutes) {
+					Simulation[] copiedSims = new Simulation[selection.length * multiplier];
+
+					for (int i = 0; i < selection.length; i++) {
+						Simulation baseSim = baseSims[i];
+						for (int mult = 0; mult < multiplier; mult++) {
+							copiedSims[i * multiplier + mult] = baseSim.duplicateSimulation(baseSim.getRocket());
+						}
+					}
+					long t = System.currentTimeMillis();
+					//System.out.println("Scheduled " + copiedSims.length + "(" + outSizeMultiplier + " out of " + repeatCounter + ")");
+					new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+							SimulationPanel.this), document, copiedSims).setVisible(true);
+					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+					fireMaintainSelection();
+
+					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
+						RLEpisodeManager.getInstance().storeActionValueFunction();
+						startSaveTime = System.currentTimeMillis();
+					}
+				}
+
+				long t = System.currentTimeMillis();
+				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+						SimulationPanel.this), document, baseSims).setVisible(true);
+				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+				fireMaintainSelection();
+			}
+		});
+		this.add(runMultipleExtremeButton, "gapright para");
 
 		// MODIFIED CODE HERE
 
@@ -728,7 +809,7 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
-				log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
+				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
 		}

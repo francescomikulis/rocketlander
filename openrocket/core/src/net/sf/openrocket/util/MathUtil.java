@@ -242,7 +242,7 @@ public class MathUtil {
 	public static double safeSqrt(double d) {
 		if (d < 0) {
 			if (d < 0.01) {
-				log.warn("Attempting to compute sqrt(" + d + ")");
+				// MODIFIED CODE HERE log.warn("Attempting to compute sqrt(" + d + ")");
 			}
 			return 0;
 		}

@@ -44,7 +44,7 @@ public class Quaternion {
 			synchronized (Quaternion.class) {
 				count++;
 				if ((count % COUNT_DIFF) == 0) {
-					log.debug("Quaternion instantiated " + count + " times.");
+					// MODIFIED CODE HERE log.debug("Quaternion instantiated " + count + " times.");
 				}
 			}
 		}

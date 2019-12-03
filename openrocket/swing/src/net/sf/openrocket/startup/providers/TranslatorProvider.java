@@ -35,7 +35,7 @@ public class TranslatorProvider implements Provider<Translator> {
 		if (langcode != null) {
 			
 			Locale l = L10N.toLocale(langcode);
-			log.info("Setting custom locale " + l);
+			// MODIFIED CODE HERE log.info("Setting custom locale " + l);
 			Locale.setDefault(l);
 			
 		} else {
@@ -43,10 +43,10 @@ public class TranslatorProvider implements Provider<Translator> {
 			// Check user-configured locale
 			Locale l = getUserLocale();
 			if (l != null) {
-				log.info("Setting user-selected locale " + l);
+				// MODIFIED CODE HERE log.info("Setting user-selected locale " + l);
 				Locale.setDefault(l);
 			} else {
-				log.info("Using default locale " + Locale.getDefault());
+				// MODIFIED CODE HERE log.info("Using default locale " + Locale.getDefault());
 			}
 			
 		}
@@ -58,8 +58,7 @@ public class TranslatorProvider implements Provider<Translator> {
 			newTranslator = new DebugTranslator(newTranslator);
 		}
 		
-		log.info("Set up translation for locale " + Locale.getDefault() +
-				", debug.currentFile=" + newTranslator.get("debug.currentFile"));
+		// MODIFIED CODE HERE log.info("Set up translation for locale " + Locale.getDefault() + ", debug.currentFile=" + newTranslator.get("debug.currentFile"));
 		
 		if (translator.compareAndSet(null, newTranslator)) {
 			return newTranslator;

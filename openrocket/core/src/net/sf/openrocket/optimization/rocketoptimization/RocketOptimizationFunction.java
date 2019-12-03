@@ -74,7 +74,7 @@ public class RocketOptimizationFunction implements Function {
 		 */
 		double goalValue, parameterValue;
 		
-		log.debug("Computing optimization function value at point " + point);
+		// MODIFIED CODE HERE log.debug("Computing optimization function value at point " + point);
 		
 		// Create the new simulation based on the point
 		double[] p = point.asArray();
@@ -99,7 +99,7 @@ public class RocketOptimizationFunction implements Function {
 			} else {
 				goalValue = (distance + 1) * OUTSIDE_DOMAIN_SCALE;
 			}
-			log.debug("Optimization point is outside of domain, distance=" + distance + " goal function value=" + goalValue);
+			// MODIFIED CODE HERE log.debug("Optimization point is outside of domain, distance=" + distance + " goal function value=" + goalValue);
 			
 			fireEvent(simulation, point, referenceValue, null, goalValue);
 			
@@ -112,13 +112,11 @@ public class RocketOptimizationFunction implements Function {
 		goalValue = goal.getMinimizationParameter(parameterValue);
 		
 		if (Double.isNaN(goalValue)) {
-			log.warn("Computed goal value was NaN, baseSimulation=" + baseSimulation + " parameter=" + parameter +
-					" goal=" + goal + " modifiers=" + Arrays.toString(modifiers) + " simulation=" + simulation +
-					" parameter value=" + parameterValue);
+			// MODIFIED CODE HERE log.warn("Computed goal value was NaN, baseSimulation=" + baseSimulation + " parameter=" + parameter + " goal=" + goal + " modifiers=" + Arrays.toString(modifiers) + " simulation=" + simulation + " parameter value=" + parameterValue);
 			goalValue = Double.MAX_VALUE;
 		}
 		
-		log.trace("Parameter value at point " + point + " is " + parameterValue + ", goal function value=" + goalValue);
+		// MODIFIED CODE HERE log.trace("Parameter value at point " + point + " is " + parameterValue + ", goal function value=" + goalValue);
 		
 		fireEvent(simulation, point, referenceValue, new Value(parameterValue, parameter.getUnitGroup().getDefaultUnit()),
 				goalValue);

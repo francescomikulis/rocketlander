@@ -307,7 +307,7 @@ public final class FlameRenderer {
 
 	public static void init(GL2 gl) {
 		try {
-			log.debug("Loading Textures");
+			// MODIFIED CODE HERE log.debug("Loading Textures");
 			TextureData data = TextureIO.newTextureData(GLProfile.getDefault(),
 					FlameRenderer.class.getResourceAsStream("/datafiles/flame/c-color.png"), GL.GL_RGBA, GL.GL_RGBA,
 					true, null);
@@ -321,7 +321,7 @@ public final class FlameRenderer {
 					true, null);
 			flameT = TextureIO.newTexture(data);
 
-			log.debug("Loading Shader");
+			// MODIFIED CODE HERE log.debug("Loading Shader");
 			String line;
 			shaderprogram = gl.glCreateProgram();
 
@@ -369,14 +369,14 @@ public final class FlameRenderer {
 	}
 	
 	public static void dispose(GL2 gl) {
-		log.debug("Destroying Textures");
+		// MODIFIED CODE HERE log.debug("Destroying Textures");
 		smokeT.destroy(gl);
 		smokeN.destroy(gl);
 		flameT.destroy(gl);
 		smokeT = null;
 		smokeN = null;
 		flameT = null;
-		log.debug("Deleting Shader {}", shaderprogram);
+		// MODIFIED CODE HERE log.debug("Deleting Shader {}", shaderprogram);
 		//gl.glDeleteShader(shaderprogram); TODO Why is this broken?
 		shaderprogram = 0;
 	}
@@ -477,7 +477,7 @@ public final class FlameRenderer {
 		if (tUniformLocation != -1) {
 			inGL.glUniform1i(tUniformLocation, inValue);
 		} else {
-			log.warn("UNIFORM COULD NOT BE FOUND! NAME={}", inName);
+			// MODIFIED CODE HERE log.warn("UNIFORM COULD NOT BE FOUND! NAME={}", inName);
 		}
 	}
 	
@@ -486,7 +486,7 @@ public final class FlameRenderer {
 		if (tUniformLocation != -1) {
 			inGL.glUniform1f(tUniformLocation, inValue);
 		} else {
-			log.warn("UNIFORM COULD NOT BE FOUND! NAME={}", inName);
+			// MODIFIED CODE HERE log.warn("UNIFORM COULD NOT BE FOUND! NAME={}", inName);
 		}
 	}
 

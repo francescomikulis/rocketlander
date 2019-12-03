@@ -52,34 +52,34 @@ public enum PaperSize {
 			// Test environment variable "PAPERSIZE" (Unix)
 			defaultSize = getDefaultFromEnvironmentVariable();
 			if (defaultSize != null) {
-				log.info("Selecting default paper size from PAPERSIZE environment variable: " + defaultSize);
+				// MODIFIED CODE HERE log.info("Selecting default paper size from PAPERSIZE environment variable: " + defaultSize);
 				return defaultSize;
 			}
 			
 			// Test /etc/papersize (Unix)
 			defaultSize = getDefaultFromEtcPapersize();
 			if (defaultSize != null) {
-				log.info("Selecting default paper size from /etc/papersize: " + defaultSize);
+				// MODIFIED CODE HERE log.info("Selecting default paper size from /etc/papersize: " + defaultSize);
 				return defaultSize;
 			}
 			
 			// Test user.country
 			defaultSize = getDefaultForCountry(System.getProperty("user.country"));
 			if (defaultSize != null) {
-				log.info("Selecting default paper size based on user.country: " + defaultSize);
+				// MODIFIED CODE HERE log.info("Selecting default paper size based on user.country: " + defaultSize);
 				return defaultSize;
 			}
 			
 			// Test locale country
 			defaultSize = getDefaultForCountry(Locale.getDefault().getCountry());
 			if (defaultSize != null) {
-				log.info("Selecting default paper size based on locale country: " + defaultSize);
+				// MODIFIED CODE HERE log.info("Selecting default paper size based on locale country: " + defaultSize);
 				return defaultSize;
 			}
 			
 			// Fallback to A4
 			defaultSize = A4;
-			log.info("Selecting default paper size fallback: " + defaultSize);
+			// MODIFIED CODE HERE log.info("Selecting default paper size fallback: " + defaultSize);
 		}
 		
 		return defaultSize;

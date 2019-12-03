@@ -90,7 +90,7 @@ public abstract class AbstractAerodynamicCalculator implements AerodynamicCalcul
 		if (rocketAeroModID != configuration.getRocket().getAerodynamicModID() ||
 				rocketTreeModID != configuration.getRocket().getTreeModID()) {
 			// // vvvv DEVEL vvvv
-			// log.error("Voiding the aerodynamic cache because modIDs changed...", new BugException(" unsure why modID has changed..."));
+			// // MODIFIED CODE HERE log.error("Voiding the aerodynamic cache because modIDs changed...", new BugException(" unsure why modID has changed..."));
 			// // ^^^^ DEVEL ^^^^
 			
 			rocketAeroModID = configuration.getRocket().getAerodynamicModID();

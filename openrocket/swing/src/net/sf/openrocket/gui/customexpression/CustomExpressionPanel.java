@@ -68,7 +68,7 @@ public class CustomExpressionPanel extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// Open window to configure expression
-				log.info("Opening window to configure new expression");
+				// MODIFIED CODE HERE log.info("Opening window to configure new expression");
 				Window parent = SwingUtilities.getWindowAncestor(CustomExpressionPanel.this);
 				new ExpressionBuilderDialog(parent, doc).setVisible(true);
 				updateExpressions();
@@ -94,7 +94,7 @@ public class CustomExpressionPanel extends JPanel {
 				int returnVal = fc.showOpenDialog(CustomExpressionPanel.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					File importFile = fc.getSelectedFile();
-					log.info("User selected a file to import expressions from " + fc.getSelectedFile().toString());
+					// MODIFIED CODE HERE log.info("User selected a file to import expressions from " + fc.getSelectedFile().toString());
 					
 					//TODO: This should probably be somewhere else and ideally we would use an alternative minimal rocket loader. Still, it doesn't seem particularly slow this way.
 					
@@ -106,7 +106,7 @@ public class CustomExpressionPanel extends JPanel {
 							doc.addCustomExpression(exp);
 						}
 					} catch (RocketLoadException e1) {
-						log.info(Markers.USER_MARKER, "Error opening document to import expressions from.");
+						// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Error opening document to import expressions from.");
 					}
 					updateExpressions();
 				}

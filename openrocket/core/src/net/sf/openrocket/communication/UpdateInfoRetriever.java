@@ -166,7 +166,7 @@ public class UpdateInfoRetriever {
 			try {
 				doConnection();
 			} catch (IOException e) {
-				log.info("Fetching update failed: " + e);
+				// MODIFIED CODE HERE log.info("Fetching update failed: " + e);
 				return;
 			}
 		}
@@ -219,12 +219,12 @@ public class UpdateInfoRetriever {
 			}
 			
 			if (isInvalidVersion(version)) {
-				log.warn("Invalid version received, ignoring.");
+				// MODIFIED CODE HERE log.warn("Invalid version received, ignoring.");
 				return;
 			}
 			
 			info = new UpdateInfo(version, updates);
-			log.info("Found update: " + info);
+			// MODIFIED CODE HERE log.info("Found update: " + info);
 		}
 
 		/**
@@ -300,7 +300,7 @@ public class UpdateInfoRetriever {
 			if (contentType == null ||
 					contentType.toLowerCase(Locale.ENGLISH).indexOf(Communicator.UPDATE_INFO_CONTENT_TYPE) < 0) {
 				// Unknown response type
-				log.warn("Unknown Content-type received:" + contentType);
+				// MODIFIED CODE HERE log.warn("Unknown Content-type received:" + contentType);
 				return false;
 			}
 			return true;
@@ -313,17 +313,17 @@ public class UpdateInfoRetriever {
 		 * @throws IOException
 		 */
 		private boolean checkConnection(HttpURLConnection connection) throws IOException{
-			log.debug("Update response code: " + connection.getResponseCode());
+			// MODIFIED CODE HERE log.debug("Update response code: " + connection.getResponseCode());
 			
 			if (noUpdatesAvailable(connection)) {
-				log.info("No updates available");
+				// MODIFIED CODE HERE log.info("No updates available");
 				info = new UpdateInfo();
 				return false;
 			}
 			
 			if (!updateAvailable(connection)) {
 				// Error communicating with server
-				log.warn("Unknown server response code: " + connection.getResponseCode());
+				// MODIFIED CODE HERE log.warn("Unknown server response code: " + connection.getResponseCode());
 				return false;
 			}
 			return true;

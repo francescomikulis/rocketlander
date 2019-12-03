@@ -106,7 +106,7 @@ public class Databases {
 				break;
 			
 			default:
-				log.warn("ERROR: Unknown material type " + m);
+				// MODIFIED CODE HERE log.warn("ERROR: Unknown material type " + m);
 			}
 		}
 		

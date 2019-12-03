@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /*
 https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
@@ -17,7 +18,7 @@ https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
 
 public class RLObjectFileStore {
     private static String episodeDataFileName = "episodesData.txt";
-    private static String actionValueFunctionFileName = "actionValue.txt";
+    private static String actionValueFunctionFileName = "actionValue";
 
     private static class InstanceHolder {
         private static final RLObjectFileStore instance = new RLObjectFileStore();
@@ -34,61 +35,59 @@ public class RLObjectFileStore {
         return (ArrayList) readObjects(episodeDataFileName);
     }
 
-    public void storeEpisodesData(ArrayList episodesData){
-        storeObject(episodeDataFileName, episodesData);
+    public OptimizedMap readActionValueFunction(String filenameExtension){
+        return new OptimizedMap((float[][][][][][][]) readObjects(actionValueFunctionFileName + filenameExtension));
     }
 
-    public HashMap readActionValueFunction(){
-        return (HashMap) readObjects(actionValueFunctionFileName);
+    public OptimizedMap readCoupledActionValueFunction(String filenameExtension){
+        float[][][] landerActionValueFunction = (float[][][]) readObjects(actionValueFunctionFileName + "lander.txt");
+        float[][][][][] stabilizerActionValueFunction = (float[][][][][]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
+        return new OptimizedMap(landerActionValueFunction, stabilizerActionValueFunction);
     }
 
-    public void storeActionValueFunction(HashMap actionValueFunction){
-        storeObject(actionValueFunctionFileName, actionValueFunction);
+    public void storeActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
+        storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
+    }
+
+    public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
+        storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander.txt");
+        storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
     }
 
     /*
     Private implementation.  Details.
      */
 
-    private void storeObject(String fileName, Object data) {
+    private void storeObject(Object data, String fileName) {
         OutputStream ops = null;
         ObjectOutputStream objOps = null;
         try {
             ops = new FileOutputStream(fileName);
             objOps = new ObjectOutputStream(ops);
             objOps.writeObject(data);
-            objOps.flush();
+            objOps.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (objOps != null) objOps.close();
-            } catch (Exception ex) {
-            }
         }
     }
 
     private Object readObjects(String fileName) {
         InputStream fileIs = null;
         ObjectInputStream objIs = null;
-        Object data = new Object();
+        Object data = null;
         try {
             fileIs = new FileInputStream(fileName);
             objIs = new ObjectInputStream(fileIs);
             data = objIs.readObject();
+            objIs.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (objIs != null) objIs.close();
-            } catch (Exception ex) {
-            }
         }
         return data;
     }

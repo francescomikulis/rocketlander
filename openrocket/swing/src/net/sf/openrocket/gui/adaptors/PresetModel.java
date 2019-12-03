@@ -65,7 +65,7 @@ public class PresetModel extends AbstractListModel implements ComboBoxModel, Com
 	
 	@Override
 	public void setSelectedItem(Object item) {
-		log.info(Markers.USER_MARKER, "User selected preset item '" + item + "' for component " + component);
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User selected preset item '" + item + "' for component " + component);
 		
 		if (item == null) {
 			throw new BugException("item is null");

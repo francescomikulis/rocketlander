@@ -11,6 +11,9 @@ import net.sf.openrocket.startup.ExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, ExceptionHandler {
 
@@ -37,19 +40,19 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 		if (isOutOfMemoryError(throwable)) {
 			memoryReserve = null;
 			handling = false;
-			log.error("Out of memory error detected", throwable);
+			// MODIFIED CODE HERE log.error("Out of memory error detected", throwable);
 		}
 
 		if (isNonFatalJREBug(throwable)) {
-			log.warn("Ignoring non-fatal JRE bug", throwable);
+			// MODIFIED CODE HERE log.warn("Ignoring non-fatal JRE bug", throwable);
 			return;
 		}
 
-		log.error("Handling uncaught exception on thread=" + thread, throwable);
+		// MODIFIED CODE HERE log.error("Handling uncaught exception on thread=" + thread, throwable);
 		throwable.printStackTrace();
 
 		if (handling) {
-			log.warn("Exception is currently being handled, ignoring");
+			// MODIFIED CODE HERE log.warn("Exception is currently being handled, ignoring");
 			return;
 		}
 
@@ -58,10 +61,10 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 			// Show on the EDT
 			if (SwingUtilities.isEventDispatchThread()) {
-				log.info("Exception handler running on EDT, showing dialog");
+				// MODIFIED CODE HERE log.info("Exception handler running on EDT, showing dialog");
 				showDialog(thread, throwable);
 			} else {
-				log.info("Exception handler not on EDT, invoking dialog on EDT");
+				// MODIFIED CODE HERE log.info("Exception handler not on EDT, invoking dialog on EDT");
 				SwingUtilities.invokeAndWait(new Runnable() {
 					@Override
 					public void run() {
@@ -74,7 +77,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 			// Make sure the handler does not throw any exceptions
 			try {
-				log.error("Caught exception while handling exception", ex);
+				// MODIFIED CODE HERE log.error("Caught exception while handling exception", ex);
 				System.err.println("Exception in exception handler, dumping exception:");
 				ex.printStackTrace();
 			} catch (Exception ignore) {
@@ -99,7 +102,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 	 */
 	@Override
 	public void handleErrorCondition(String message) {
-		log.error(message, new Throwable());
+		// MODIFIED CODE HERE log.error(message, new Throwable());
 		handleErrorCondition(new InternalException(message));
 	}
 
@@ -116,7 +119,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 	 */
 	@Override
 	public void handleErrorCondition(String message, Throwable exception) {
-		log.error(message, exception);
+		// MODIFIED CODE HERE log.error(message, exception);
 		handleErrorCondition(new InternalException(message, exception));
 	}
 
@@ -134,15 +137,15 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 	public void handleErrorCondition(final Throwable exception) {
 		try {
 			if (!(exception instanceof InternalException)) {
-				log.error("Error occurred", exception);
+				// MODIFIED CODE HERE log.error("Error occurred", exception);
 			}
 			final Thread thread = Thread.currentThread();
 
 			if (SwingUtilities.isEventDispatchThread()) {
-				log.info("Running in EDT, showing dialog");
+				// MODIFIED CODE HERE log.info("Running in EDT, showing dialog");
 				this.showDialog(thread, exception);
 			} else {
-				log.info("Not in EDT, invoking dialog later");
+				// MODIFIED CODE HERE log.info("Not in EDT, invoking dialog later");
 				final SwingExceptionHandler instance = this;
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
@@ -152,7 +155,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 				});
 			}
 		} catch (Exception e) {
-			log.error("Exception occurred in error handler", e);
+			// MODIFIED CODE HERE log.error("Exception occurred in error handler", e);
 		}
 	}
 
@@ -167,7 +170,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 		// Out of memory
 		if (isOutOfMemoryError(e)) {
-			log.info("Showing out-of-memory dialog");
+			// MODIFIED CODE HERE log.info("Showing out-of-memory dialog");
 			JOptionPane.showMessageDialog(null,
 					new Object[] {
 					"OpenRocket is out of available memory!",
@@ -185,7 +188,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 		// Unknown Error
 		if (!(e instanceof Exception) && !(e instanceof LinkageError)) {
-			log.info("Showing Error dialog");
+			// MODIFIED CODE HERE log.info("Showing Error dialog");
 			JOptionPane.showMessageDialog(null,
 					new Object[] {
 					"An unknown Java error occurred:",
@@ -196,9 +199,14 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 			return;
 		}
 
+		System.out.println("ERROR!!!!!!");
+		StackTraceElement[] stackTraceElements = e.getCause().getStackTrace();
+		for (StackTraceElement stackTraceElement: stackTraceElements) {
+			System.out.println(stackTraceElement);
+		}
 
 		// Normal exception, show question dialog		
-		log.info("Showing Exception dialog");
+		// MODIFIED CODE HERE log.info("Showing Exception dialog");
 		int selection = JOptionPane.showOptionDialog(null, new Object[] {
 				"OpenRocket encountered an uncaught exception.  This typically signifies " +
 						"a bug in the software.",
@@ -212,12 +220,12 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 		if (selection != 0) {
 			// User cancelled
-			log.info(Markers.USER_MARKER, "User chose not to fill bug report");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User chose not to fill bug report");
 			return;
 		}
 
 		// Show bug report dialog
-		log.info(Markers.USER_MARKER, "User requested sending bug report");
+		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User requested sending bug report");
 		BugReportDialog.showExceptionDialog(null, t, e);
 	}
 
@@ -310,7 +318,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 					trace[2].getClassName().equals("sun.awt.X11.XWindowPeer") &&
 					trace[2].getMethodName().equals("setModalBlocked")) {
-				log.warn("Ignoring Sun JRE bug (6826104): http://bugs.sun.com/view_bug.do?bug_id=6826104" + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug (6826104): http://bugs.sun.com/view_bug.do?bug_id=6826104" + t);
 				return true;
 			}
 
@@ -327,8 +335,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 					(buggyClass.equals(elements[0].getClassName()) ||
 							buggyClass.equals(elements[1].getClassName()) ||
 							buggyClass.equals(elements[2].getClassName()))) {
-				log.warn("Ignoring Sun JRE bug 6828938:  " +
-						"(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6828938): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug 6828938:  " + "(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6828938): " + t);
 				return true;
 			}
 		}
@@ -348,8 +355,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 					trace[2].getClassName().equals("sun.swing.FilePane$2") &&
 					trace[2].getMethodName().equals("repaintSelection")) {
-				log.warn("Ignoring Sun JRE bug 6561072 " +
-						"(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6561072): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug 6561072 " + "(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6561072): " + t);
 				return true;
 			}
 		}
@@ -364,8 +370,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 			if (trace.length > 1 &&
 					trace[0].getClassName().equals("sun.awt.windows.WComponentPeer") &&
 					trace[0].getMethodName().equals("getBackBuffer")) {
-				log.warn("Ignoring Sun JRE bug 6933331 " +
-						"(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6933331): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug 6933331 " + "(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6933331): " + t);
 				return true;
 			}
 		}
@@ -385,8 +390,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 					trace[2].getClassName().equals("sun.awt.shell.Win32ShellFolderManager2") &&
 					trace[2].getMethodName().equals("isFileSystemRoot")) {
-				log.warn("Ignoring Sun JRE bug " +
-						"(see http://forums.sun.com/thread.jspa?threadID=5435324): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug " + "(see http://forums.sun.com/thread.jspa?threadID=5435324): " + t);
 				return true;
 			}
 		}
@@ -396,8 +400,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 		 */
 		if (t instanceof ClassCastException) {
 			if (t.getMessage().equals("sun.awt.Win32GraphicsConfig cannot be cast to sun.java2d.d3d.D3DGraphicsConfig")) {
-				log.warn("Ignoring Sun JRE bug " +
-						"(see http://forums.sun.com/thread.jspa?threadID=5440525): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug " + "(see http://forums.sun.com/thread.jspa?threadID=5440525): " + t);
 				return true;
 			}
 		}
@@ -415,8 +418,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 					trace[1].getClassName().equals("javax.swing.plaf.basic.BasicTreeUI") &&
 					trace[1].getMethodName().equals("getDropLineRect")) {
 
-				log.warn("Ignoring Sun JRE bug updating drop location " +
-						"(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6560955): " + t);
+				// MODIFIED CODE HERE log.warn("Ignoring Sun JRE bug updating drop location " + "(see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6560955): " + t);
 				return true;
 			}
 		}

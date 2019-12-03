@@ -128,7 +128,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 */
 	public void addCustomExpression(CustomExpression expression) {
 		if (customExpressions.contains(expression)) {
-			log.info(Markers.USER_MARKER, "Could not add custom expression " + expression.getName() + " to document as document alerady has a matching expression.");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Could not add custom expression " + expression.getName() + " to document as document alerady has a matching expression.");
 		} 
 		customExpressions.add(expression);
 	}
@@ -458,7 +458,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 		// Check whether modifications have been done since last call
 		if(isCheckNoModification(description))
 			return;
-		log.info("Adding undo position '" + description + "' to " + this + ", document is in unclean state");
+		// MODIFIED CODE HERE log.info("Adding undo position '" + description + "' to " + this + ", document is in unclean state");
 		checkUndoPositionConsistency();
 		addStateToUndoHistory(description);
 		
@@ -498,7 +498,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	private boolean isCheckNoModification(String description){
 		if (isCleanState()) {
 			// No modifications
-			log.info("Adding undo position '" + description + "' to " + this + ", document was in clean state");
+			// MODIFIED CODE HERE log.info("Adding undo position '" + description + "' to " + this + ", document was in clean state");
 			nextDescription = description;
 			return true;
 		}
@@ -544,7 +544,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 			logUndoError("startUndo called while storedDescription=" + storedDescription +
 					" description=" + description);
 		}
-		log.info("Starting time-limited undoable operation '" + description + "' for " + this);
+		// MODIFIED CODE HERE log.info("Starting time-limited undoable operation '" + description + "' for " + this);
 		String store = nextDescription;
 		addUndoPosition(description);
 		storedDescription = store;
@@ -556,8 +556,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 * performed.
 	 */
 	public void stopUndo() {
-		log.info("Ending time-limited undoable operation for " + this + " nextDescription=" +
-				nextDescription + "	storedDescription=" + storedDescription);
+		// MODIFIED CODE HERE log.info("Ending time-limited undoable operation for " + this + " nextDescription=" + nextDescription + "	storedDescription=" + storedDescription);
 		String stored = storedDescription;
 		storedDescription = null;
 		addUndoPosition(stored);
@@ -568,7 +567,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 * Clear the undo history.
 	 */
 	public void clearUndo() {
-		//log.info("Clearing undo history of " + this);
+		//// MODIFIED CODE HERE log.info("Clearing undo history of " + this);
 		undoHistory.clear();
 		undoDescription.clear();
 		
@@ -585,9 +584,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 		
 		if (!e.isUndoChange()) {
 			if (undoPosition < undoHistory.size() - 1) {
-				log.info("Rocket changed while in undo history, removing redo information for " + this +
-						" undoPosition=" + undoPosition + " undoHistory.size=" + undoHistory.size() +
-						" isClean=" + isCleanState());
+				// MODIFIED CODE HERE log.info("Rocket changed while in undo history, removing redo information for " + this + " undoPosition=" + undoPosition + " undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState());
 			}
 			removeRedoInfo();
 			setLatestDescription();
@@ -665,8 +662,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 * Perform undo operation on the rocket.
 	 */
 	public void undo() {
-		log.info("Performing undo for " + this + " undoPosition=" + undoPosition +
-				" undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState());
+		// MODIFIED CODE HERE log.info("Performing undo for " + this + " undoPosition=" + undoPosition + " undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState());
 		if (!isUndoAvailable()) {
 			logUndoError("Undo not available");
 			fireUndoRedoChangeEvent();
@@ -702,8 +698,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 * Perform redo operation on the rocket.
 	 */
 	public void redo() {
-		log.info("Performing redo for " + this + " undoPosition=" + undoPosition +
-				" undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState());
+		// MODIFIED CODE HERE log.info("Performing redo for " + this + " undoPosition=" + undoPosition + " undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState());
 		if (!isRedoAvailable()) {
 			logUndoError("Redo not available");
 			fireUndoRedoChangeEvent();
@@ -729,10 +724,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	 * time it occurs, but not on subsequent times.  Logs automatically the undo system state.
 	 */
 	private void logUndoError(String error) {
-		log.error(error + ": this=" + this + " undoPosition=" + undoPosition +
-				" undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState() +
-				" nextDescription=" + nextDescription + " storedDescription=" + storedDescription,
-				new Throwable());
+		// MODIFIED CODE HERE log.error(error + ": this=" + this + " undoPosition=" + undoPosition + " undoHistory.size=" + undoHistory.size() + " isClean=" + isCleanState() + " nextDescription=" + nextDescription + " storedDescription=" + storedDescription, new Throwable());
 		
 		if (!undoErrorReported) {
 			undoErrorReported = true;

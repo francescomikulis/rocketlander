@@ -426,7 +426,7 @@ public class ComponentAddButtons extends JPanel implements Scrollable {
 		@Override
 		protected void fireActionPerformed(ActionEvent event) {
 			super.fireActionPerformed(event);
-			log.info(Markers.USER_MARKER, "Adding component of type " + componentClass.getSimpleName());
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Adding component of type " + componentClass.getSimpleName());
 			RocketComponent c = null;
 			Integer position = null;
 			
@@ -437,7 +437,7 @@ public class ComponentAddButtons extends JPanel implements Scrollable {
 			Pair<RocketComponent, Integer> pos = getAdditionPosition(c);
 			if (pos == null) {
 				// Cancel addition
-				log.info("No position to add component");
+				// MODIFIED CODE HERE log.info("No position to add component");
 				return;
 			}
 			c = pos.getU();
@@ -470,8 +470,7 @@ public class ComponentAddButtons extends JPanel implements Scrollable {
 			// Next undo position is set by opening the configuration dialog
 			document.addUndoPosition("Add " + component.getComponentName());
 			
-			log.info("Adding component " + component.getComponentName() + " to component " + c.getComponentName() +
-					" position=" + position);
+			// MODIFIED CODE HERE log.info("Adding component " + component.getComponentName() + " to component " + c.getComponentName() + " position=" + position);
 			
 			if (position == null)
 				c.addChild(component);

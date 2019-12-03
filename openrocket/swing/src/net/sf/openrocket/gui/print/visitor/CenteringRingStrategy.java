@@ -114,7 +114,7 @@ public class CenteringRingStrategy extends AbstractPrintStrategy<Void> {
             render(pfs);
         }
         catch (DocumentException e) {
-            log.error("Could not render the centering ring.", e);
+            // MODIFIED CODE HERE log.error("Could not render the centering ring.", e);
         }
     }
 

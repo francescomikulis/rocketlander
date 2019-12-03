@@ -101,7 +101,7 @@ public abstract class AbstractScaleFigure extends JPanel {
         if (Double.isInfinite(newScaleRequest) || Double.isNaN(newScaleRequest)) {
 		    return;}
 		
-        log.warn(String.format("scaling Request from %g => %g  @%s\n", this.userScale, newScaleRequest, this.getClass().getSimpleName()), new Throwable());
+        // MODIFIED CODE HERE log.warn(String.format("scaling Request from %g => %g  @%s\n", this.userScale, newScaleRequest, this.getClass().getSimpleName()), new Throwable());
         
         this.userScale = MathUtil.clamp( newScaleRequest, MINIMUM_ZOOM, MAXIMUM_ZOOM);
 	    this.scale = baseScale * userScale;
@@ -173,7 +173,7 @@ public abstract class AbstractScaleFigure extends JPanel {
      * Updates the figure shapes and figure size.
      */
     public void updateFigure() {
-        log.debug(String.format("____ Updating %s to: %g user scale, %g overall scale", this.getClass().getSimpleName(), this.getAbsoluteScale(), this.scale));
+        // MODIFIED CODE HERE log.debug(String.format("____ Updating %s to: %g user scale, %g overall scale", this.getClass().getSimpleName(), this.getAbsoluteScale(), this.scale));
         
         updateSubjectDimensions();
         updateCanvasSize();

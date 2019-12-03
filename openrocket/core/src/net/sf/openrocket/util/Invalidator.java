@@ -43,8 +43,7 @@ public class Invalidator implements Invalidatable {
 			if (throwException) {
 				throw new BugException(monitorable + ": This object has been invalidated", invalidated);
 			} else {
-				log.warn(monitorable + ": This object has been invalidated",
-						new Throwable("Usage was attempted here", invalidated));
+				// MODIFIED CODE HERE log.warn(monitorable + ": This object has been invalidated", new Throwable("Usage was attempted here", invalidated));
 			}
 			return false;
 		}
@@ -65,7 +64,7 @@ public class Invalidator implements Invalidatable {
 	public void invalidate() {
 		if (USE_CHECKS) {
 			if (invalidated != null) {
-				log.warn(monitorable + ": This object has already been invalidated, ignoring", invalidated);
+				// MODIFIED CODE HERE log.warn(monitorable + ": This object has already been invalidated, ignoring", invalidated);
 			}
 			invalidated = new Throwable("Invalidation occurred here");
 		}

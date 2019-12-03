@@ -75,7 +75,7 @@ public class SwingWorkerDialog extends JDialog implements PropertyChangeListener
 		cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "User cancelled SwingWorker operation");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User cancelled SwingWorker operation");
 				cancel();
 			}
 		});
@@ -129,7 +129,7 @@ public class SwingWorkerDialog extends JDialog implements PropertyChangeListener
 	public static boolean runWorker(Window parent, String title, String label,
 			SwingWorker<?, ?> worker) {
 		
-		log.info("Running SwingWorker " + worker);
+		// MODIFIED CODE HERE log.info("Running SwingWorker " + worker);
 		
 		// Start timing the worker
 		final long startTime = System.currentTimeMillis();
@@ -142,12 +142,12 @@ public class SwingWorkerDialog extends JDialog implements PropertyChangeListener
 				Thread.sleep(DELAY);
 			} catch (InterruptedException e) {
 				// Should never occur
-				log.error("EDT was interrupted", e);
+				// MODIFIED CODE HERE log.error("EDT was interrupted", e);
 			}
 			
 			if (worker.isDone()) {
 				// Worker has completed within time limits
-				log.info("Worker completed before opening dialog");
+				// MODIFIED CODE HERE log.info("Worker completed before opening dialog");
 				return true;
 			}
 			
@@ -162,7 +162,7 @@ public class SwingWorkerDialog extends JDialog implements PropertyChangeListener
 			long estimate = elapsed * 100 / progress;
 			long remaining = estimate - elapsed;
 			
-			log.debug("Estimated run time, estimate=" + estimate + " remaining=" + remaining);
+			// MODIFIED CODE HERE log.debug("Estimated run time, estimate=" + estimate + " remaining=" + remaining);
 			
 			if (estimate >= TOTAL_TIME_FOR_DIALOG)
 				break;
@@ -174,10 +174,10 @@ public class SwingWorkerDialog extends JDialog implements PropertyChangeListener
 
 		// Dialog is required
 		
-		log.info("Opening dialog for SwingWorker " + worker);
+		// MODIFIED CODE HERE log.info("Opening dialog for SwingWorker " + worker);
 		SwingWorkerDialog dialog = new SwingWorkerDialog(parent, title, label, worker);
 		dialog.setVisible(true);
-		log.info("Worker done, cancelled=" + dialog.cancelled);
+		// MODIFIED CODE HERE log.info("Worker done, cancelled=" + dialog.cancelled);
 		
 		return !dialog.cancelled;
 	}

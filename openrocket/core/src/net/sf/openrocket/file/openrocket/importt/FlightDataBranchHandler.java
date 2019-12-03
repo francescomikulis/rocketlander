@@ -88,7 +88,7 @@ class FlightDataBranchHandler extends AbstractElementHandler {
 			}
 		}
 		
-		log.warn("Could not find the flight data type '" + name + "' used in the XML file. Substituted type with unknown symbol and units.");
+		// MODIFIED CODE HERE log.warn("Could not find the flight data type '" + name + "' used in the XML file. Substituted type with unknown symbol and units.");
 		return FlightDataType.getType(name, "Unknown", UnitGroup.UNITS_NONE);
 	}
 	

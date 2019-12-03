@@ -152,7 +152,7 @@ public class GeneralPreferencesPanel extends PreferencesPanel {
 				//// Add
 				int returnVal = chooser.showDialog(GeneralPreferencesPanel.this, trans.get("pref.dlg.Add"));
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					log.info(Markers.USER_MARKER, "Adding user thrust curve: " + chooser.getSelectedFile());
+					// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Adding user thrust curve: " + chooser.getSelectedFile());
 					defaultDirectory = chooser.getCurrentDirectory();
 					String text = field.getText().trim();
 					if (text.length() > 0) {

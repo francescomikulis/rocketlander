@@ -115,12 +115,12 @@ public class DebugLogDialog extends JDialog {
 		
 		LogHelper applicationLog = LoggingSystemSetup.getInstance();
 		if (applicationLog instanceof DelegatorLogger) {
-			log.info("Adding log listener");
+			// MODIFIED CODE HERE log.info("Adding log listener");
 			delegator = (DelegatorLogger) applicationLog;
 			logListener = new LogListener();
 			delegator.addLogger(logListener);
 		} else {
-			log.warn("Application log is not a DelegatorLogger");
+			// MODIFIED CODE HERE log.warn("Application log is not a DelegatorLogger");
 			delegator = null;
 			logListener = null;
 		}
@@ -130,7 +130,7 @@ public class DebugLogDialog extends JDialog {
 		if (bufferLogger != null) {
 			buffer.addAll(bufferLogger.getLogs());
 		} else {
-			log.warn("Application does not have a log buffer");
+			// MODIFIED CODE HERE log.warn("Application does not have a log buffer");
 		}
 		
 		
@@ -183,7 +183,7 @@ public class DebugLogDialog extends JDialog {
 		clear.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				log.info(Markers.USER_MARKER, "Clearing log buffer");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Clearing log buffer");
 				buffer.clear();
 				queue.clear();
 				model.fireTableDataChanged();
@@ -370,10 +370,10 @@ public class DebugLogDialog extends JDialog {
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				log.info(Markers.USER_MARKER, "Closing debug log dialog");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "Closing debug log dialog");
 				timer.stop();
 				if (delegator != null) {
-					log.info("Removing log listener");
+					// MODIFIED CODE HERE log.info("Removing log listener");
 					delegator.removeLogger(logListener);
 				}
 			}

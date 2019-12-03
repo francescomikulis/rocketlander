@@ -48,9 +48,9 @@ public class TextureCache {
 		if (texCache == null)
 			throw new IllegalStateException(this + " not initialized.");
 		
-		log.debug("ClearCaches");
+		// MODIFIED CODE HERE log.debug("ClearCaches");
 		for (Map.Entry<String, Texture> e : oldTexCache.entrySet()) {
-			log.debug("Destroying Texture for " + e.getKey());
+			// MODIFIED CODE HERE log.debug("Destroying Texture for " + e.getKey());
 			if (e.getValue() != null)
 				e.getValue().destroy(drawable.getGL().getGL2());
 		}
@@ -81,12 +81,12 @@ public class TextureCache {
 		// Otherwise load it.
 		Texture tex = null;
 		try {
-			log.debug("Loading texture " + uri);
+			// MODIFIED CODE HERE log.debug("Loading texture " + uri);
 			InputStream is = uri.openStream();
 			TextureData data = TextureIO.newTextureData(GLProfile.getDefault(), is, GL.GL_RGBA, GL.GL_RGBA, true, null);
 			tex = TextureIO.newTexture(data);
 		} catch (Throwable e) {
-			log.error("Error loading Texture", e);
+			// MODIFIED CODE HERE log.error("Error loading Texture", e);
 		}
 		texCache.put(imageName, tex);
 		
@@ -116,12 +116,12 @@ public class TextureCache {
 		// Otherwise load it.
 		Texture tex = null;
 		try {
-			log.debug("Loading texture " + decal);
+			// MODIFIED CODE HERE log.debug("Loading texture " + decal);
 			InputStream is = decal.getImage().getBytes();
 			TextureData data = TextureIO.newTextureData(GLProfile.getDefault(), is, GL.GL_RGBA, GL.GL_RGBA, true, null);
 			tex = TextureIO.newTexture(data);
 		} catch (Throwable e) {
-			log.error("Error loading Texture", e);
+			// MODIFIED CODE HERE log.error("Error loading Texture", e);
 		}
 		texCache.put(imageName, tex);
 		

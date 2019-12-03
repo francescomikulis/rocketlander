@@ -220,7 +220,7 @@ public abstract class OptimizationWorker extends Thread implements OptimizationC
 		publish(null, new OptimizationStepData(oldPoint, oldValue, newPoint, newValue, stepSize));
 		
 		if (stepSize < STEP_SIZE_LIMIT) {
-			log.info("stepSize=" + stepSize + " is below limit, ending optimization");
+			// MODIFIED CODE HERE log.info("stepSize=" + stepSize + " is below limit, ending optimization");
 			return false;
 		} else {
 			return true;

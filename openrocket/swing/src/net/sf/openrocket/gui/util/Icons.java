@@ -21,7 +21,7 @@ public class Icons {
 	private static final Translator trans = Application.getTranslator();
 	
 	static {
-		log.debug("Starting to load icons");
+		// MODIFIED CODE HERE log.debug("Starting to load icons");
 	}
 	
 	/**
@@ -91,7 +91,7 @@ public class Icons {
 	
 	
 	static {
-		log.debug("Icons loaded");
+		// MODIFIED CODE HERE log.debug("Icons loaded");
 	}
 	
 	/**

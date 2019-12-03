@@ -175,7 +175,7 @@ public abstract class FlightConfigurablePanel<T extends FlightConfigurableCompon
 			// this assignment is technically redundant, but useful to point out that the new value here is often null, 
 			// while the old value seems to always be valid.
 			if( null == newValue ){
-				log.warn("Detected null newValue to render... (oldValue: "+oldValue+")");
+				// MODIFIED CODE HERE log.warn("Detected null newValue to render... (oldValue: "+oldValue+")");
 				newValue = oldValue;
 			}
 			

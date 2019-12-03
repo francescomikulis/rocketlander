@@ -153,7 +153,7 @@ public class PrintDialog extends JDialog implements TreeSelectionListener {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				PrintSettings settings = getPrintSettings();
-				log.debug("settings=" + settings);
+				// MODIFIED CODE HERE log.debug("settings=" + settings);
 				PrintSettingsDialog settingsDialog = new PrintSettingsDialog(PrintDialog.this, settings);
 				settingsDialog.setVisible(true);
 				setPrintSettings(settings);
@@ -303,7 +303,7 @@ public class PrintDialog extends JDialog implements TreeSelectionListener {
 				File f = generateReport(settings);
 				desktop.open(f);
 			} catch (IOException e) {
-				log.error("Could not open preview.", e);
+				// MODIFIED CODE HERE log.error("Could not open preview.", e);
 				JOptionPane.showMessageDialog(this, new String[] {
 						trans.get("error.preview.desc1"),
 						trans.get("error.preview.desc2") },

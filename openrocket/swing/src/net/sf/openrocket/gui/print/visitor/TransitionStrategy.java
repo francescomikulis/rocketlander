@@ -86,7 +86,7 @@ public class TransitionStrategy extends AbstractPrintStrategy <Boolean> {
             render(pfs);
         }
         catch (DocumentException e) {
-            log.error("Could not render the transition.", e);
+            // MODIFIED CODE HERE log.error("Could not render the transition.", e);
         }
         return true;
     }

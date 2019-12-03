@@ -98,7 +98,7 @@ public final class FileHelper {
 	public static File ensureExtension(File original, String extension) {
 
 		if (original.getName().indexOf('.') < 0) {
-			log.debug("File name does not contain extension, adding '" + extension + "'");
+			// MODIFIED CODE HERE log.debug("File name does not contain extension, adding '" + extension + "'");
 			String name = original.getAbsolutePath();
 			name = name + "." + extension;
 			return new File(name);
@@ -121,7 +121,7 @@ public final class FileHelper {
 			return null;
 		}
 		if (!original.getName().toLowerCase(Locale.ENGLISH).endsWith(extension.toLowerCase(Locale.ENGLISH))) {
-			log.debug("File name does not contain extension, adding '" + extension + "'");
+			// MODIFIED CODE HERE log.debug("File name does not contain extension, adding '" + extension + "'");
 			String name = original.getAbsolutePath();
 			if (extension.startsWith(".")) {
 				name = name + extension;
@@ -146,15 +146,15 @@ public final class FileHelper {
 	 */
 	public static boolean confirmWrite(File file, Component parent) {
 		if (file.exists()) {
-			log.info(Markers.USER_MARKER, "File " + file + " exists, confirming overwrite from user");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "File " + file + " exists, confirming overwrite from user");
 			int result = JOptionPane.showConfirmDialog(parent,
 					L10N.replace(trans.get("error.fileExists.desc"), "{filename}", file.getName()),
 					trans.get("error.fileExists.title"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 			if (result != JOptionPane.YES_OPTION) {
-				log.info(Markers.USER_MARKER, "User decided not to overwrite the file");
+				// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided not to overwrite the file");
 				return false;
 			}
-			log.info(Markers.USER_MARKER, "User decided to overwrite the file");
+			// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User decided to overwrite the file");
 		}
 		return true;
 	}
@@ -168,7 +168,7 @@ public final class FileHelper {
 	 */
 	public static void errorWriting(IOException e, Component parent) {
 
-		log.warn("Error writing to file", e);
+		// MODIFIED CODE HERE log.warn("Error writing to file", e);
 		JOptionPane.showMessageDialog(parent,
 				new Object[] {
 						trans.get("error.writing.desc"),
