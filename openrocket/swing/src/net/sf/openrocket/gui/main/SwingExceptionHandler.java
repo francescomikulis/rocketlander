@@ -207,6 +207,8 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 
 		// Normal exception, show question dialog		
 		// MODIFIED CODE HERE log.info("Showing Exception dialog");
+
+		/*
 		int selection = JOptionPane.showOptionDialog(null, new Object[] {
 				"OpenRocket encountered an uncaught exception.  This typically signifies " +
 						"a bug in the software.",
@@ -227,6 +229,7 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 		// Show bug report dialog
 		// MODIFIED CODE HERE log.info(Markers.USER_MARKER, "User requested sending bug report");
 		BugReportDialog.showExceptionDialog(null, t, e);
+		 */
 	}
 
 

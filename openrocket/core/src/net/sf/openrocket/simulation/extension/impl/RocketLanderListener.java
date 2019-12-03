@@ -57,8 +57,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return startNumber - variation / 2 + variation * random.nextDouble();
     }
 
-    private void setupStateActionAndStore(SimulationStatus status) {
+    private boolean setupStateActionAndStore(SimulationStatus status) {
+        State oldState = state;
         state = new State(status);
+        if (oldState != null && oldState.equals(state)) {  // don't add the stateActionTuple because avoiding the duplicate
+            state = oldState;
+            return false;  // no update
+        }
+
         if (episodeStateActions.size() != 0) {
             StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
             state.gimbleY = lastStateAction.action.gimbleY;
@@ -74,6 +80,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             episodeStateActions.add(nextStateActionTuple);
         }
         terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
+        return true;
     }
 
     @Override
@@ -189,13 +196,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void postStep(SimulationStatus status) throws SimulationException {
         stabilizeRocketBasedOnSimType(status);
 
-        setupStateActionAndStore(status);
+        boolean addedStateActionTuple = setupStateActionAndStore(status);
 
         if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > 15.0)) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 
-        model.updateStepStateActionValueFunction(episodeStateActions);
+        if (addedStateActionTuple)
+            model.updateStepStateActionValueFunction(episodeStateActions);
     }
 
     @Override

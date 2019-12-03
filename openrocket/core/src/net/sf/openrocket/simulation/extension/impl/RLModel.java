@@ -34,8 +34,7 @@ public class RLModel {
         _1D, _2D, _3D
     }
 
-    float discount = 0.99f;
-    float alpha = 0.3f;
+    float exploration_percentage = 0.15f;
 
     private static volatile RLModel instance;
 
@@ -138,12 +137,12 @@ public class RLModel {
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;
         double randomDouble = randomGenerator.nextDouble();
-        if (randomDouble <= 0.05) {
+        if (randomDouble <= exploration_percentage) {
             greedy = false;
         }
 
         for (Action action: possibleActions) {
-            try {
+            //try {
                 float v = func.apply(state, action);
                 if (greedy) {
                     if (v > val) {
@@ -158,9 +157,9 @@ public class RLModel {
                 } else {
                     bestActions.add(action);
                 }
-            } catch (Exception e) {
-                System.out.println("Failed to compute the value in the hashmap");
-            }
+            //} catch (Exception e) {
+            //    System.out.println("Failed to compute the value in the hashmap");
+            //}
         }
         // ties broken completely at random
         return bestActions.get(randomGenerator.nextInt(bestActions.size()));

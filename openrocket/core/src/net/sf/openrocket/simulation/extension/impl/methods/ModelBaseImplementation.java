@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
-    float stepDiscount = 0.7f;
+    float stepDiscount = 0.9f;
     float terminalDiscount = 0.99f;
     float alpha = 0.3f;
 

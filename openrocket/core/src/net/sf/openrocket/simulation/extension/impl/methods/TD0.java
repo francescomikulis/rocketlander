@@ -50,8 +50,11 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public float rewardLanding(StateActionTuple.State state) { return 0.0f; }
 
     public float terminalStabilizingReward(StateActionTuple.State lastState) {
-        // max 1000 min 1000/31=30  // note all positive!!
-        return 100.0f / (float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI) + 1.0f);
+        // max 100 min 100/31=30  // note all positive!!
+        return 10.0f * rewardStabilizing(lastState);
     }
-    public float rewardStabilizing(StateActionTuple.State state) { return -5.0f * (float) (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI)); }
+    public float rewardStabilizing(StateActionTuple.State state) {
+        // max 1 min 1/31  // note all positive
+        return 1.0f / (float) (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI) + 1.0f);
+    }
 }
