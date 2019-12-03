@@ -41,6 +41,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private boolean hasCompletedTerminalUpdate = false;
 
+    /** Used by the Visualize3DListener extension */
+    public Action getLastAction() {
+        if (episodeStateActions.size() == 0)
+            return null;
+        return episodeStateActions.get(episodeStateActions.size() - 1).action;
+    }
 
     RocketLanderListener(RocketLander rocketLander) {
         this.rocketLander = rocketLander;
