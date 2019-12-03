@@ -90,11 +90,11 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getY(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getZ(), offset);
 		// thrust may not work
-		double thrust = 0.0;
-		try {
-			thrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
-		} catch (Exception e) {}
-		offset = arrayAdd(bytes, thrust, offset);
+		//double thrust = 0.0;
+		//try {
+		//		thrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
+		//} catch (Exception e) {}
+		offset = arrayAdd(bytes, RLL.getThrust(rocketLanderListener), offset);
 		// gimble angles not yet present in the simulationStatus
 		if (rocketLanderListener == null) {
 			offset = arrayAdd(bytes, 0.0, offset);
@@ -119,6 +119,12 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 		public static float getGimbleZ(Object rocketLanderListener) {
 			Object result = callMethod(getAction(rocketLanderListener), "getGimbleZDouble");
+			if (result == null) return 0.0f;
+			return ((Double)result).floatValue();
+		}
+
+		public static float getThrust(Object rocketLanderListener) {
+			Object result = callMethod(getAction(rocketLanderListener), "getThrustDouble");
 			if (result == null) return 0.0f;
 			return ((Double)result).floatValue();
 		}
