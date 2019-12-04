@@ -12,6 +12,8 @@ import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.MAX_TIME;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
@@ -198,7 +200,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         boolean addedStateActionTuple = setupStateActionAndStore(status);
 
-        if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > 15.0)) {
+        if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
 

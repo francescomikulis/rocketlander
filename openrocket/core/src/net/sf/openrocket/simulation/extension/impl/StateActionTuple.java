@@ -56,6 +56,10 @@ public class StateActionTuple implements Serializable {
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
 
+    public static float TIME_PRECISION = 1.0f;
+    public static float MIN_TIME = 0.0f;
+    public static float MAX_TIME = 7.0f;
+
     public State state;
     public Action action;
     public StateActionTuple(State state, Action action) {
@@ -143,6 +147,7 @@ public class StateActionTuple implements Serializable {
         public int velocity = 0;
         public int angleX = 0;
         public int angleZ = 0;
+        public int time = 0;
 
         public State(SimulationStatus status) {
             if (status == null) return;
@@ -151,6 +156,7 @@ public class StateActionTuple implements Serializable {
             setVelocity(status.getRocketVelocity().z);
             setAngleX(Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             setAngleZ(Math.acos(rocketDirection.z));
+            setTime(status.getSimulationTime());
             /*
             // OpenRocket traditional approach - not working
 
@@ -201,6 +207,15 @@ public class StateActionTuple implements Serializable {
             return angleZ * ANGLE_Z_PRECISION;
         }
 
+        public State setTime(double time) {
+            this.time = group_by_precision(time, TIME_PRECISION);
+            return this;
+        }
+
+        public double getTimeDouble() {
+            return time * TIME_PRECISION;
+        }
+
         @Override
         public int hashCode() {
             return velocity * 100000 + altitude * 10000 + thrust * 100 + angleX * 10 + angleZ;
@@ -225,7 +240,7 @@ public class StateActionTuple implements Serializable {
             State other = (State) obj;
             return altitude == other.altitude && velocity == other.velocity &&
                     angleX == other.angleX && angleZ == other.angleZ &&
-                    gimbleY == other.gimbleY && gimbleZ == other.gimbleZ;
+                    gimbleY == other.gimbleY && gimbleZ == other.gimbleZ && time == other.time;
         }
 
         @Override
