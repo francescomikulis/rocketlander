@@ -31,7 +31,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private State state;
     private Action action;
     TerminationBooleanTuple terminationBooleanTuple;
-    private static double variation = 0;
+    private static double variation = 5;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
@@ -101,7 +101,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-30, variation))));
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        double dx = calculateNumberWithIntegerVariation(0, variation * 5);
+        double dy = calculateNumberWithIntegerVariation(0, variation * 5);
+        double dz = 90;
+        status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
         status.setLaunchRodCleared(true);
 
