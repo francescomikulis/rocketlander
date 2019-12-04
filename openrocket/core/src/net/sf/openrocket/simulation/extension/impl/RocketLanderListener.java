@@ -31,7 +31,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private State state;
     private Action action;
     TerminationBooleanTuple terminationBooleanTuple;
-    private static double variation = 5;
+    private static double variation = 2;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
@@ -62,9 +62,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean setupStateActionAndStore(SimulationStatus status) {
         State oldState = state;
         state = new State(status);
+
         terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
-        if ((oldState != null && oldState.equals(state)) || (action != null && !model.getValueFunctionTable().containsKey(state, action))) {  // don't add the stateActionTuple because avoiding the duplicate
-            state = oldState;
+        model.getValueFunctionTable().alterTerminalStateIfFailure(oldState);
+
+        boolean stateDidNotChange = oldState != null && oldState.equals(state);
+
+        if (stateDidNotChange) {
+            // don't add the stateActionTuple because avoiding the duplicate
             return false;  // no update
         }
 
@@ -204,9 +209,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         boolean addedStateActionTuple = setupStateActionAndStore(status);
 
+        /*
         if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
+         */
 
         if (addedStateActionTuple)
             model.updateStepStateActionValueFunction(episodeStateActions);
@@ -215,6 +222,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
+
+        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(new State(status));
         if (!hasCompletedTerminalUpdate) {
             model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleanTuple);
             hasCompletedTerminalUpdate = true;

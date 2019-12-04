@@ -57,7 +57,7 @@ public class MonteCarlo extends ModelBaseImplementation {
 
     /** Stabilizing **/
     public float terminalStabilizingReward(StateActionTuple.State lastState) {
-        return 200.0f * -(float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
+        return 10.0f * rewardStabilizing(lastState);
     }
     public float rewardStabilizing(StateActionTuple.State state) {
         return -(float) (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
