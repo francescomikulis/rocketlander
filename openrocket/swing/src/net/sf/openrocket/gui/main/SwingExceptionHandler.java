@@ -186,6 +186,12 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 			msg = msg.substring(0, 80) + "...";
 		}
 
+		System.out.println("ERROR!!!!!!");
+		StackTraceElement[] stackTraceElements = e.getCause().getStackTrace();
+		for (StackTraceElement stackTraceElement: stackTraceElements) {
+			System.out.println(stackTraceElement);
+		}
+
 		// Unknown Error
 		if (!(e instanceof Exception) && !(e instanceof LinkageError)) {
 			// MODIFIED CODE HERE log.info("Showing Error dialog");
@@ -197,12 +203,6 @@ public class SwingExceptionHandler implements Thread.UncaughtExceptionHandler, E
 							"save any unsaved designs and restart OpenRocket!"
 			}, "Unknown Java error", JOptionPane.ERROR_MESSAGE);
 			return;
-		}
-
-		System.out.println("ERROR!!!!!!");
-		StackTraceElement[] stackTraceElements = e.getCause().getStackTrace();
-		for (StackTraceElement stackTraceElement: stackTraceElements) {
-			System.out.println(stackTraceElement);
 		}
 
 		// Normal exception, show question dialog		

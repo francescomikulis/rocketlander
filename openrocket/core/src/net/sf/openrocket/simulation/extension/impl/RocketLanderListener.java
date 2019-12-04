@@ -60,7 +60,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean setupStateActionAndStore(SimulationStatus status) {
         State oldState = state;
         state = new State(status);
-        if (oldState != null && oldState.equals(state)) {  // don't add the stateActionTuple because avoiding the duplicate
+        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
+        if ((oldState != null && oldState.equals(state)) || (action != null && !model.getValueFunctionTable().containsKey(state, action))) {  // don't add the stateActionTuple because avoiding the duplicate
             state = oldState;
             return false;  // no update
         }
@@ -79,7 +80,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         else if (!episodeStateActions.get(episodeStateActions.size() - 1).equals(nextStateActionTuple)) {
             episodeStateActions.add(nextStateActionTuple);
         }
-        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
         return true;
     }
 

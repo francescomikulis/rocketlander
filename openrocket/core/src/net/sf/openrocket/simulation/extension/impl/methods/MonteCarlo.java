@@ -8,6 +8,7 @@ import java.util.function.Function;
 import java.util.function.BiFunction;
 
 public class MonteCarlo extends ModelBaseImplementation {
+    public float getExplorationPercentage() { return 0.05f; }
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> stateActionTuples,
             Function<State, Float> terminalReward,

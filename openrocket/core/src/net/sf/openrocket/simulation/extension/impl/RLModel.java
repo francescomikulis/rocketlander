@@ -34,8 +34,6 @@ public class RLModel {
         _1D, _2D, _3D
     }
 
-    float exploration_percentage = 0.15f;
-
     private static volatile RLModel instance;
 
     private RLModel(){}
@@ -117,10 +115,10 @@ public class RLModel {
         Action action = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
 
-            action = policy(state, possibleActions, primaryMethod::valueFunction);
+            action = policy(state, possibleActions, primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            Action bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction);
-            Action bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction);
+            Action bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
+            Action bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
             action = OptimizedMap.combineCoupledActions(bestLanderAction, bestStabilizerAction);
         }
         return action;
@@ -130,14 +128,14 @@ public class RLModel {
         return run_policy(state);
     }
 
-    private Action policy(State state, ArrayList<Action> possibleActions, BiFunction<State, Action, Float> func) {
+    private Action policy(State state, ArrayList<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
         ArrayList<Action> bestActions = new ArrayList<>();
         bestActions.add(new Action(state.getThrustDouble(), state.getGimbleYDouble(), state.getGimbleZDouble()));
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;
         double randomDouble = randomGenerator.nextDouble();
-        if (randomDouble <= exploration_percentage) {
+        if (randomDouble <= explorationPercentage) {
             greedy = false;
         }
 

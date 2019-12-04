@@ -77,18 +77,18 @@ public class OptimizedMap {
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
         minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
         minThrust = lowState.setThrust(MIN_THRUST).thrust;
-        minAngleX = lowState.setAngleX(- MAX_HALF_CIRCLE).angleX;
+        minAngleX = lowState.setAngleX(0).angleX;
         minAngleZ = lowState.setAngleZ(MIN_TERMINAL_ORIENTATION_Z).angleZ;
-        minGimbleY = lowState.setGimbleY(- MAX_HALF_CIRCLE).gimbleY;
+        minGimbleY = lowState.setGimbleY(0).gimbleY;
         minGimbleZ = lowState.setGimbleZ(MIN_GIMBLE_Z).gimbleZ;
         // generate high maximum values
         State highState = new State(null);
         maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
         maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
         maxThrust = highState.setThrust(MAX_THRUST).thrust;
-        maxAngleX = highState.setAngleX(MAX_HALF_CIRCLE).angleX;
+        maxAngleX = highState.setAngleX(2 * MAX_HALF_CIRCLE - 0.00001).angleX;
         maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
-        maxGimbleY = highState.setGimbleY(MAX_HALF_CIRCLE).gimbleY;
+        maxGimbleY = highState.setGimbleY(2 * MAX_HALF_CIRCLE - 0.00001).gimbleY;
         maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
     }
 
@@ -143,6 +143,10 @@ public class OptimizedMap {
                 [state.altitude - minAltitude][state.velocity - minVelocity][state.angleX - minAngleX][state.angleZ - minAngleZ]
                 [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
         return newValue;
+    }
+
+    public boolean containsKey(State state, Action action) {
+        return checkBounds(new StateActionTuple(state, action));
     }
 
     public boolean containsKey(StateActionTuple stateActionTuple) {

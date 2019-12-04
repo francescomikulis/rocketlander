@@ -7,6 +7,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class Sarsa extends ModelBaseImplementation implements ModelInterface {
+    public float getExplorationPercentage() { return 0.05f; }
     public void updateStepCommon(
         ArrayList<StateActionTuple> stateActionTuples,
         Function<StateActionTuple, Float> valueFunction,
