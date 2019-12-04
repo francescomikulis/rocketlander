@@ -34,6 +34,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
             BiFunction<StateActionTuple, Float, Float> putFunction,
             Function<StateActionTuple.State, Float> reward
     ) {
+        /*
         if (stateActionTuples.get(stateActionTuples.size() - 1).state.getAltitudeDouble() <= ALTITUDE_PRECISION) {
             // positively reward the system
             ModelBaseImplementation mc = new MonteCarlo();
@@ -42,6 +43,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
             mc.setTerminalDiscount(0.99f);
             mc.updateTerminalCommon(stateActionTuples, terminalReward, valueFunction, putFunction, reward);
         }
+         */
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
@@ -52,10 +54,14 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
 
     public float terminalStabilizingReward(StateActionTuple.State lastState) {
         // max 100 min 100/31=30  // note all positive!!
-        return 10.0f * rewardStabilizing(lastState);
+        // return 1000.0f * 1.0f / (Math.abs(rewardStabilizing(lastState)) + 1.0f);
+        System.out.println("NOT CALLED.");
+        return 100.0f * rewardStabilizing(lastState);
     }
+
     public float rewardStabilizing(StateActionTuple.State state) {
         // max 1 min 1/31  // note all positive
-        return 1.0f / (float) (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI) + 1.0f);
+        return 1.0f / (float) ((state.getAngleZDouble() * state.getAngleZDouble()) * (180.0f / Math.PI) + 1.0f);
+        // return - (float) (state.getAngleZDouble() * (180.0f / Math.PI));
     }
 }

@@ -185,6 +185,7 @@ public class OptimizedMap {
         boolean verticalSuccess = true;
         boolean angleSuccess = true;
 
+        if (state == null) return new TerminationBooleanTuple(true, true);
         if (state.altitude < minAltitude) { verticalSuccess = false; state.altitude = minAltitude; }
         if (state.altitude > maxAltitude) { verticalSuccess = false; state.altitude = maxAltitude; }
         if (state.velocity < minVelocity) { verticalSuccess = false; state.velocity = minVelocity; }
@@ -194,7 +195,7 @@ public class OptimizedMap {
         if (state.angleX < minAngleX) { angleSuccess = false; state.angleX = minAngleX; }
         if (state.angleX > maxAngleX) { angleSuccess = false; state.angleX = maxAngleX; }
         // angle stabilization for the last meter appears impossible.  Force allow success if within rounded range.
-        if (state.altitude == minAltitude) { verticalSuccess = true; angleSuccess = true; }
+        // if (state.altitude == minAltitude) { verticalSuccess = true; angleSuccess = true; }
 
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }

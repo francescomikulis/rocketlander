@@ -13,6 +13,7 @@ import java.lang.reflect.Field;
 public class StateActionTuple implements Serializable {
     public static float _1deg = (float)Math.PI / 180;
     public static float _30deg = (float)Math.PI / 6;
+    public static float _60deg = (float)Math.PI / 3;
     public static float _45deg = (float)Math.PI / 4;
     public static float _2deg = (float)Math.PI / 90;
     public static float _20deg = (float)Math.PI / 9;
@@ -34,14 +35,14 @@ public class StateActionTuple implements Serializable {
     // thurst
     public static float MIN_THRUST = 0.0f;
     public static float MAX_THRUST = 1.0f;
-    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.5f;  // TODO: RESTORE TO 0.25!!!
+    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;  // TODO: RESTORE TO 0.25!!!
     public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 1.0!!!
     // orientation
     public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
-    public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
+    public static float MAX_TERMINAL_ORIENTATION_Z = _60deg; // 30deg
     // orientation angles
     public static float ANGLE_X_PRECISION = _45deg;  // TODO: RESTORE TO _45deg!!!
-    public static float ANGLE_Z_PRECISION = _5deg;  // TODO: RESTORE TO _2deg!!!
+    public static float ANGLE_Z_PRECISION = _2deg;  // TODO: RESTORE TO _2deg!!!
     // gimble angles
     public static float MIN_GIMBLE_Y = -_720deg;
     public static float MAX_GIMBLE_Y = _720deg;
@@ -52,11 +53,11 @@ public class StateActionTuple implements Serializable {
     public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;  // TODO: RESTORE TO 45!!!
     //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
     public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg; // TODO: RESTORE TO 1!!!
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _0_5deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
 
-    public static float TIME_PRECISION = 1.0f;
+    public static float TIME_PRECISION = 0.5f;
     public static float MIN_TIME = 0.0f;
     public static float MAX_TIME = 7.0f;
 
