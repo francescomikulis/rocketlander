@@ -9,7 +9,7 @@ import java.util.function.Function;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.ALTITUDE_PRECISION;
 
 public class TD0 extends ModelBaseImplementation implements ModelInterface {
-    public float getExplorationPercentage() { return 0.05f; }
+    public float getExplorationPercentage() { return 0.00f; }
     public void updateStepCommon(ArrayList<StateActionTuple> stateActionTuples,
          Function<StateActionTuple, Float> valueFunction,
          BiFunction<StateActionTuple, Float, Float> putFunction,
