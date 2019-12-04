@@ -34,7 +34,7 @@ public class StateActionTuple implements Serializable {
     // thurst
     public static float MIN_THRUST = 0.0f;
     public static float MAX_THRUST = 1.0f;
-    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 0.25!!!
+    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.5f;  // TODO: RESTORE TO 0.25!!!
     public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 1.0!!!
     // orientation
     public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
@@ -46,13 +46,13 @@ public class StateActionTuple implements Serializable {
     public static float MIN_GIMBLE_Y = -_720deg;
     public static float MAX_GIMBLE_Y = _720deg;
     public static float MIN_GIMBLE_Z = 0.0f;
-    public static float MAX_GIMBLE_Z = _30deg;  // TODO: RESTORE TO _15deg!!!
+    public static float MAX_GIMBLE_Z = _5deg;  // TODO: RESTORE TO _15deg!!!
     public static float MAX_HALF_CIRCLE = _180deg;
 
     public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;  // TODO: RESTORE TO 45!!!
     //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
     public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _5deg; // TODO: RESTORE TO 1!!!
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
 
