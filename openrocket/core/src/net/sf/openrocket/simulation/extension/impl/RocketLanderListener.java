@@ -13,13 +13,13 @@ import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.MAX_TIME;
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 import java.util.ArrayList;
 import java.util.Random;
+
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
@@ -31,7 +31,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private State state;
     private Action action;
     TerminationBooleanTuple terminationBooleanTuple;
-    private static double variation = 2;
+    private static double variation = 3;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
@@ -99,11 +99,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.getSimulationConditions().setTimeStep(timeStep);
 
         // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(50, variation)));
+        status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation)));
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(-30, variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + Math.abs(variation), variation))));
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
         double dx = calculateNumberWithIntegerVariation(0, variation * 5);

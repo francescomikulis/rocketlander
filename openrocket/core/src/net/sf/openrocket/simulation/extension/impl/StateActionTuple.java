@@ -57,7 +57,7 @@ public class StateActionTuple implements Serializable {
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
 
-    public static float TIME_PRECISION = 0.5f;
+    public static float TIME_PRECISION = 1.0f;
     public static float MIN_TIME = 0.0f;
     public static float MAX_TIME = 7.0f;
 
@@ -154,7 +154,8 @@ public class StateActionTuple implements Serializable {
             if (status == null) return;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
             setAltitude(status.getRocketPosition().z);
-            setVelocity(status.getRocketVelocity().z);
+            // setVelocity(status.getRocketVelocity().z);
+            setVelocity(status.getRocketVelocity().length());
             setAngleX(Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             setAngleZ(Math.acos(rocketDirection.z));
             setTime(status.getSimulationTime());
@@ -279,16 +280,6 @@ public class StateActionTuple implements Serializable {
 
     public static Quaternion getConjugateQuaternion(Quaternion quaternion) {
         return new Quaternion(quaternion.getW(), -quaternion.getX(), -quaternion.getY(), -quaternion.getZ());
-    }
-
-    public static Coordinate OLDconvertRocketStatusQuaternionToDirection(SimulationStatus status) {
-        Quaternion q = status.getRocketOrientationQuaternion();
-        Quaternion p = new Quaternion(0, 0, 0, 1);  // z direction - un-rotated
-        Quaternion q_conjugate = getConjugateQuaternion(q);
-        Quaternion p_result = q.multiplyRight(p).multiplyRight(q_conjugate);
-        // NOTE: This code has been verified extensively.
-        // TODO: CHECK THESE / 2 BECAUSE THEY SEEM WRONG.
-        return new Coordinate(p_result.getX() / 2, p_result.getY() / 2, p_result.getZ());
     }
 
     public static Coordinate convertRocketStatusQuaternionToDirection(SimulationStatus status) {

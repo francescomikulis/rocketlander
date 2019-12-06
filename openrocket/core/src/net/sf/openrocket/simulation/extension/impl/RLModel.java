@@ -28,7 +28,7 @@ public class RLModel {
     // MonteCarlo or TD0
     private ModelBaseImplementation primaryMethod = new MonteCarlo();
     private ModelBaseImplementation secondaryMethod = new TD0();
-    public SimulationType simulationType = SimulationType._3D;
+    public SimulationType simulationType = SimulationType._1D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -74,19 +74,34 @@ public class RLModel {
     In the future need to also consider the state and the velocity we are currently at.
      ***/
     public ArrayList<Action> generatePossibleActions(State state) {
+        return generatePossibleActions(state, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+    }
+
+    public ArrayList<Action> generatePossibleActions(State state, ArrayList<Float> overrideThrustValues) {
+        return generatePossibleActions(state, overrideThrustValues, new ArrayList<>(), new ArrayList<>());
+    }
+
+    public ArrayList<Action> generatePossibleActions(State state, ArrayList<Float> possibleGimbleYValues, ArrayList<Float> possibleGimbleZValues) {
+        return generatePossibleActions(state, new ArrayList<>(), possibleGimbleYValues, possibleGimbleZValues);
+    }
+
+    public ArrayList<Action> generatePossibleActions(State state, ArrayList<Float> overrideThrustValues, ArrayList<Float> overrideGimbleYValues, ArrayList<Float> overrideGimbleZValues) {
         float currentThrust = (float)state.getThrustDouble();
         ArrayList<Action> possibleActions = new ArrayList<>();
 
         ArrayList<Float> possibleThrustValues = generatePossibleActionValues(
                 currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
+        if (overrideThrustValues.size() > 0) possibleThrustValues = overrideThrustValues;
         ArrayList<Float> possibleGimbleYValues = generatePossibleActionValues(
                 (float)state.getGimbleYDouble(), MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP,
                 MIN_GIMBLE_Y, MAX_GIMBLE_Y
         );
+        if (overrideGimbleYValues.size() > 0) possibleGimbleYValues = overrideGimbleYValues;
         ArrayList<Float> possibleGimbleZValues = generatePossibleActionValues(
                 (float)state.getGimbleZDouble(), MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP,
                 MIN_GIMBLE_Z, MAX_GIMBLE_Z
         );
+        if (overrideGimbleZValues.size() > 0) possibleGimbleZValues = overrideGimbleZValues;
         if (simulationType == SimulationType._1D) {
             possibleGimbleYValues = new ArrayList<>();
             possibleGimbleYValues.add(0.0f);
@@ -114,10 +129,10 @@ public class RLModel {
         ArrayList<Action> possibleActions = generatePossibleActions(state);
         Action action = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-
             action = policy(state, possibleActions, primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             Action bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
+            possibleActions = generatePossibleActions(state, new ArrayList<Float>(Arrays.<Float>asList((float) state.getThrustDouble())));
             Action bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
             action = OptimizedMap.combineCoupledActions(bestLanderAction, bestStabilizerAction);
         }
@@ -177,11 +192,8 @@ public class RLModel {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             primaryMethod.updateTerminalFunction(stateActionTuples);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            // don't learn how to land if not hitting ground WHEN NOT IN 3D
-            if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landingSucceeded())) {
-                primaryMethod.updateTerminalLandingFunction(stateActionTuples);
-            }
-            if ((simulationType != SimulationType._1D) && (terminationBooleanTuple.verticalSuccess))
+            primaryMethod.updateTerminalLandingFunction(stateActionTuples);
+            if (simulationType != SimulationType._1D)
                 secondaryMethod.updateTerminalStabilizingFunction(stateActionTuples);
         }
     }

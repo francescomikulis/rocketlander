@@ -9,7 +9,7 @@ import java.util.function.Function;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.ALTITUDE_PRECISION;
 
 public class TD0 extends ModelBaseImplementation implements ModelInterface {
-    public float getExplorationPercentage() { return 0.05f; }
+    public float getExplorationPercentage() { return 0.02f; }
     public void updateStepCommon(ArrayList<StateActionTuple> stateActionTuples,
          Function<StateActionTuple, Float> valueFunction,
          BiFunction<StateActionTuple, Float, Float> putFunction,
@@ -23,8 +23,12 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         if (!valueFunctionTable.containsKey(old)) putFunction.apply(old, 0.0f);
         if (!valueFunctionTable.containsKey(current)) putFunction.apply(current, 0.0f);
 
-        putFunction.apply(old, valueFunction.apply(old) +
-                alpha * (reward.apply(current.state) + stepDiscount * valueFunction.apply(current) - valueFunction.apply(old)));
+        float oldValue = valueFunction.apply(old);
+        float currentValue = valueFunction.apply(current);
+        float rewardValue = reward.apply(current.state);
+
+        putFunction.apply(old,
+                oldValue +  alpha * rewardValue + stepDiscount * currentValue - oldValue);
     }
 
     public void updateTerminalCommon(
@@ -40,10 +44,10 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
             ModelBaseImplementation mc = new MonteCarlo();
             mc.setValueFunctionTable(this.valueFunctionTable);
             mc.setAlpha(0.1f);
-            mc.setTerminalDiscount(0.99f);
+            mc.setTerminalDiscount(0.999f);
             mc.updateTerminalCommon(stateActionTuples, terminalReward, valueFunction, putFunction, reward);
         }
-         */
+        */
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
@@ -61,7 +65,8 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
 
     public float rewardStabilizing(StateActionTuple.State state) {
         // max 1 min 1/31  // note all positive
-        return 1.0f / (float) ((state.getAngleZDouble() * state.getAngleZDouble()) * (180.0f / Math.PI) + 1.0f);
+        double angle_in_degrees = state.getAngleZDouble() * (180.0f / Math.PI);
+        return 1.0f / (float) (angle_in_degrees * angle_in_degrees + 1.0f);
         // return - (float) (state.getAngleZDouble() * (180.0f / Math.PI));
     }
 }

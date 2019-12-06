@@ -11,7 +11,7 @@ import java.util.function.Function;
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
     float stepDiscount = 0.9f;
-    float terminalDiscount = 0.99f;
+    float terminalDiscount = 1f;
     float alpha = 0.3f;
 
     public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
