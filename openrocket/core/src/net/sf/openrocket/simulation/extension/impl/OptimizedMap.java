@@ -1,5 +1,10 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
@@ -29,11 +34,11 @@ public class OptimizedMap {
     }
     public static MapMethod mapMethod = MapMethod.Coupled;
 
-    private float[][][][][][][][] valueFunctionTable = null;
+    private float[][][][][][][][][][] valueFunctionTable = null;
     private float[][][][] landerValueFunctionTable = null;
-    private float[][][][][] stabilizerValueFunctionTable = null;
-    private int minAltitude, minVelocity, minTime, minThrust, minAngleX, minAngleZ, minGimbleY, minGimbleZ;
-    private int maxAltitude, maxVelocity, maxTime, maxThrust, maxAngleX, maxAngleZ, maxGimbleY, maxGimbleZ;
+    private float[][][][][][][] stabilizerValueFunctionTable = null;
+    private int minAltitude, minPositionX, minPositionY, minVelocity, minTime, minThrust, minAngleX, minAngleZ, minGimbleY, minGimbleZ;
+    private int maxAltitude, maxPositionX, maxPositionY, maxVelocity, maxTime, maxThrust, maxAngleX, maxAngleZ, maxGimbleY, maxGimbleZ;
 
     public OptimizedMap() {
         if (mapMethod == MapMethod.Traditional)
@@ -42,11 +47,11 @@ public class OptimizedMap {
             constructorCoupled(null, null);
     }
 
-    public OptimizedMap(float[][][][][][][][] newValueFunctionTable) {
+    public OptimizedMap(float[][][][][][][][][][] newValueFunctionTable) {
         constructorTraditional(newValueFunctionTable);
     }
 
-    private void constructorTraditional(float[][][][][][][][] newValueFunctionTable) {
+    private void constructorTraditional(float[][][][][][][][][][] newValueFunctionTable) {
         constructorCode();
 
         // allocate new function table
@@ -55,11 +60,11 @@ public class OptimizedMap {
         this.valueFunctionTable = newValueFunctionTable;
     }
 
-    public OptimizedMap(float[][][][] newLanderValueFunctionTable, float[][][][][] newStabilizerValueFunctionTable) {
+    public OptimizedMap(float[][][][] newLanderValueFunctionTable, float[][][][][][][] newStabilizerValueFunctionTable) {
         constructorCoupled(newLanderValueFunctionTable, newStabilizerValueFunctionTable);
     }
 
-    private void constructorCoupled(float[][][][] newLanderValueFunctionTable, float[][][][][] newStabilizerValueFunctionTable) {
+    private void constructorCoupled(float[][][][] newLanderValueFunctionTable, float[][][][][][][] newStabilizerValueFunctionTable) {
         constructorCode();
 
         // allocate new function table
@@ -75,6 +80,8 @@ public class OptimizedMap {
         // generate low minimum values
         State lowState = new State(null);
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
+        minPositionX = lowState.setAltitude(MIN_POSITION).positionX;
+        minPositionY = lowState.setAltitude(MIN_POSITION).positionY;
         minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
         minTime = lowState.setTime(MIN_TIME).time;
         minThrust = lowState.setThrust(MIN_THRUST).thrust;
@@ -85,6 +92,8 @@ public class OptimizedMap {
         // generate high maximum values
         State highState = new State(null);
         maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
+        maxPositionX = lowState.setAltitude(MAX_POSITION).positionX;
+        maxPositionY = lowState.setAltitude(MAX_POSITION).positionY;
         maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
         maxTime = highState.setTime(MAX_TIME).time;
         maxThrust = highState.setThrust(MAX_THRUST).thrust;
@@ -98,15 +107,31 @@ public class OptimizedMap {
         if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-        return landerValueFunctionTable[state.altitude - minAltitude][state.velocity - minVelocity][state.time - minTime][action.thrust - minThrust];
+
+        return DynamicValueFunctionTable.get(
+                this,
+                landerValueFunctionTable, state, action,
+                ModelBaseImplementation.stateDefinitionLanding, ModelBaseImplementation.actionDefinitionLanding
+        );
     }
 
     public float getStabilizer(StateActionTuple stateActionTuple) {
         if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-        return stabilizerValueFunctionTable
-                [action.thrust - minThrust][state.angleX - minAngleX][state.angleZ - minAngleZ][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
+
+        float newValue = DynamicValueFunctionTable.get(
+                this,
+                stabilizerValueFunctionTable, state, action,
+                ModelBaseImplementation.stateDefinitionStabilizing, ModelBaseImplementation.actionDefinitionStabilizing
+        );
+
+        float realValue = stabilizerValueFunctionTable
+                [state.positionX - minPositionX][state.positionY - minPositionY]
+                [action.thrust - minThrust][state.angleX - minAngleX][state.angleZ - minAngleZ]
+                [action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
+
+        return realValue;
     }
 
     public float get(StateActionTuple stateActionTuple) {
@@ -114,7 +139,8 @@ public class OptimizedMap {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         return valueFunctionTable
-                [state.altitude - minAltitude][state.velocity - minVelocity][state.time - minTime][state.angleX - minAngleX][state.angleZ - minAngleZ]
+                [state.altitude - minAltitude][state.positionX - minPositionX][state.positionY - minPositionY]
+                [state.velocity - minVelocity][state.time - minTime][state.angleX - minAngleX][state.angleZ - minAngleZ]
                 [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
     }
 
@@ -132,6 +158,7 @@ public class OptimizedMap {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         stabilizerValueFunctionTable
+                [state.positionX - minPositionX][state.positionY - minPositionY]
                 [action.thrust - minThrust][state.angleX - minAngleX]
                 [state.angleZ - minAngleZ][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
         return newValue;
@@ -142,11 +169,35 @@ public class OptimizedMap {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         valueFunctionTable
-                [state.altitude - minAltitude][state.velocity - minVelocity][state.time - minTime]
-                [state.angleX - minAngleX][state.angleZ - minAngleZ]
+                [state.altitude - minAltitude][state.positionX - minPositionX][state.positionY - minPositionY]
+                [state.velocity - minVelocity][state.time - minTime][state.angleX - minAngleX][state.angleZ - minAngleZ]
                 [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
         return newValue;
     }
+
+    public static boolean equivalentStateLander(State state_a, State state_b) {
+        if (state_a == null || state_b == null) return false;
+        boolean equivalent = state_a.altitude == state_b.altitude &&
+                state_a.velocity == state_b.velocity &&
+                state_a.time == state_b.time;
+        return equivalent;
+    }
+
+    public static boolean equivalentStateStabilizer(State state_a, State state_b) {
+        if (state_a == null || state_b == null) return false;
+        boolean equivalent =
+                state_a.positionX == state_b.positionX && state_a.positionY == state_b.positionY &&
+                state_a.thrust == state_b.thrust &&
+                state_a.angleX == state_b.angleX && state_a.angleZ == state_b.angleZ;
+        return equivalent;
+    }
+
+    public static boolean equivalentState(State state_a, State state_b) {
+        if (state_a == null || state_b == null) return false;
+        boolean equivalent = state_a.equals(state_b);
+        return equivalent;
+    }
+
 
     public boolean containsKey(State state, Action action) {
         return checkBounds(new StateActionTuple(state, action));
@@ -166,6 +217,8 @@ public class OptimizedMap {
 
         // stateCheck
         if ((state.angleZ < minAngleZ) || (state.angleZ > maxAngleZ)) return false;
+        if ((state.positionX < minPositionX) || (state.positionX > maxPositionX)) return false;
+        if ((state.positionY < minPositionY) || (state.positionY > maxPositionY)) return false;
         if ((state.altitude < minAltitude) || (state.altitude > maxAltitude)) return false;
         if ((state.velocity < minVelocity) || (state.velocity > maxVelocity)) return false;
         if ((state.angleX < minAngleX) || (state.angleX > maxAngleX)) return false;
@@ -190,6 +243,10 @@ public class OptimizedMap {
         if (state.altitude > maxAltitude) { verticalSuccess = false; state.altitude = maxAltitude; }
         if (state.velocity < minVelocity) { verticalSuccess = false; state.velocity = minVelocity; }
         if (state.velocity > maxVelocity) { verticalSuccess = false; state.velocity = maxVelocity; }
+        if (state.positionX < minPositionX) { angleSuccess = false; state.positionX = minPositionX; }
+        if (state.positionX > maxPositionX) { angleSuccess = false; state.positionX = maxPositionX; }
+        if (state.positionY < minPositionY) { angleSuccess = false; state.positionY = minPositionY; }
+        if (state.positionY > maxPositionY) { angleSuccess = false; state.positionY = maxPositionY; }
         if (state.angleZ < minAngleZ) { angleSuccess = false; state.angleZ = minAngleZ; }
         if (state.angleZ > maxAngleZ) { angleSuccess = false; state.angleZ = maxAngleZ; }
         if (state.angleX < minAngleX) { angleSuccess = false; state.angleX = minAngleX; }
@@ -200,8 +257,10 @@ public class OptimizedMap {
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
 
-    private float[][][][][][][][] allocateNewValueFunctionTable() {
+    private float[][][][][][][][][][] allocateNewValueFunctionTable() {
         int altitudeSize = maxAltitude - minAltitude + 1;
+        int positionXSize = maxPositionX - minPositionX + 1;
+        int positionYSize = maxPositionY - minPositionY + 1;
         int velocitySize = maxVelocity - minVelocity + 1;
         int timeSize = maxTime - minTime + 1;
         int thrustSize = maxThrust - minThrust + 1;
@@ -209,10 +268,10 @@ public class OptimizedMap {
         int angleZSize = maxAngleZ - minAngleZ + 1;
         int gimbleYSize = maxGimbleY - minGimbleY + 1;
         int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
-        double stateSpace = altitudeSize * velocitySize * timeSize * angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
+        double stateSpace = altitudeSize * positionXSize * positionYSize * velocitySize * timeSize * angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
         System.out.println("Allocating stateSpace: " + stateSpace);
         return new float
-                [altitudeSize][velocitySize][timeSize][angleXSize][angleZSize]
+                [altitudeSize][positionXSize][positionYSize][velocitySize][timeSize][angleXSize][angleZSize]
                 [thrustSize][gimbleYSize][gimbleZSize];
     }
 
@@ -226,18 +285,20 @@ public class OptimizedMap {
         return new float[altitudeSize][velocitySize][timeSize][thrustSize];
     }
 
-    private float[][][][][] allocateNewStabilizerValueFunctionTable() {
+    private float[][][][][][][] allocateNewStabilizerValueFunctionTable() {
         int thrustSize = maxThrust - minThrust + 1;
+        int positionXSize = maxPositionX - minPositionX + 1;
+        int positionYSize = maxPositionY - minPositionY + 1;
         int angleXSize = maxAngleX - minAngleX + 1;
         int angleZSize = maxAngleZ - minAngleZ + 1;
         int gimbleYSize = maxGimbleY - minGimbleY + 1;
         int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
         double stateSpace = angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
         System.out.println("Allocating stateSpace: " + stateSpace);
-        return new float[thrustSize][angleXSize][angleZSize][gimbleYSize][gimbleZSize];
+        return new float[positionXSize][positionYSize][thrustSize][angleXSize][angleZSize][gimbleYSize][gimbleZSize];
     }
 
-    public float[][][][][][][][] getValueFunctionArray() {
+    public float[][][][][][][][][][] getValueFunctionArray() {
         return valueFunctionTable;
     }
 
@@ -245,7 +306,7 @@ public class OptimizedMap {
         return landerValueFunctionTable;
     }
 
-    public float[][][][][] getStabilizerValueFunctionArray() {
+    public float[][][][][][][] getStabilizerValueFunctionArray() {
         return stabilizerValueFunctionTable;
     }
 

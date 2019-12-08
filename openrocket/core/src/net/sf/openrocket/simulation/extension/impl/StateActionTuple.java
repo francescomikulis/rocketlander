@@ -25,13 +25,18 @@ public class StateActionTuple implements Serializable {
     public static float _720deg = (float)Math.PI * 4;
     public static float _4deg = (float)Math.PI / 90;
 
-    // altitude & velocity
+    // altitude, positionX, positionY & velocity
     public static float MIN_ALTITUDE = 0.0f;
-    public static float MAX_ALTITUDE = 56.0f;
+    public static float MAX_ALTITUDE = 36.0f;
     public static float ALTITUDE_PRECISION = 1.0f;
-    public static float MIN_VELOCITY = -35.0f;
+
+    public static float MIN_VELOCITY = -15.0f;
     public static float MAX_VELOCITY = 5.0f;
     public static float VELOCITY_PRECISION = 1.0f;
+
+    public static float MIN_POSITION = -8.0f;
+    public static float MAX_POSITION = 8.0f;
+    public static float POSITION_PRECISION = 100.0f;
     // thurst
     public static float MIN_THRUST = 0.0f;
     public static float MAX_THRUST = 1.0f;
@@ -39,7 +44,7 @@ public class StateActionTuple implements Serializable {
     public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 1.0!!!
     // orientation
     public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
-    public static float MAX_TERMINAL_ORIENTATION_Z = _60deg; // 30deg
+    public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
     // orientation angles
     public static float ANGLE_X_PRECISION = _45deg;  // TODO: RESTORE TO _45deg!!!
     public static float ANGLE_Z_PRECISION = _2deg;  // TODO: RESTORE TO _2deg!!!
@@ -53,7 +58,7 @@ public class StateActionTuple implements Serializable {
     public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;  // TODO: RESTORE TO 45!!!
     //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
     public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _0_5deg; // TODO: RESTORE TO 1!!!
+    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
     public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
 
@@ -97,6 +102,28 @@ public class StateActionTuple implements Serializable {
 
         protected static int group_by_precision(double value, double precision) {
             return (int) Math.floor((double)value / (double)precision);
+        }
+
+        /**
+         * e.g. symmetric values around 0 [-10, 10]
+         *
+         * Without symmetric grouping:
+         *  (-10, -5) --> -2
+         *  ( -5, -0) --> -1
+         *  ( 0,   5) --> 0
+         *  ( 5,  10) --> 1
+         *
+         * With symmetric grouping [if (result < 0) result += 1;]
+         *  (-10, -5) --> -2 + 1 = -1
+         *  ( -5, -0) --> -1 + 1 = 0
+         *  ( 0,   5) --> 0
+         *  ( 5,  10) --> 1
+         */
+        protected static int group_by_precision_symmetric(double value, double precision) {
+            int result = (int) Math.floor((double)value / (double)precision);
+            if (result < 0)
+                result += 1;
+            return result;
         }
 
         // Thrust
@@ -145,6 +172,8 @@ public class StateActionTuple implements Serializable {
 
     public static class State extends StateActionClass {
         public int altitude = 0;
+        public int positionX = 0;
+        public int positionY = 0;
         public int velocity = 0;
         public int angleX = 0;
         public int angleZ = 0;
@@ -154,8 +183,10 @@ public class StateActionTuple implements Serializable {
             if (status == null) return;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
             setAltitude(status.getRocketPosition().z);
-            // setVelocity(status.getRocketVelocity().z);
-            setVelocity(status.getRocketVelocity().length());
+            setPositionX(status.getRocketPosition().x);
+            setPositionY(status.getRocketPosition().y);
+            setVelocity(status.getRocketVelocity().z);
+            //setVelocity(Math.signum(status.getRocketVelocity().z) * status.getRocketVelocity().length());
             setAngleX(Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             setAngleZ(Math.acos(rocketDirection.z));
             setTime(status.getSimulationTime());
@@ -180,6 +211,24 @@ public class StateActionTuple implements Serializable {
 
         public double getAltitudeDouble() {
             return altitude * ALTITUDE_PRECISION;
+        }
+
+        public State setPositionX(double positionX) {
+            this.positionX = group_by_precision_symmetric(positionX, POSITION_PRECISION);
+            return this;
+        }
+
+        public double getPositionXDouble() {
+            return positionX * POSITION_PRECISION;
+        }
+
+        public State setPositionY(double positionY) {
+            this.positionY = group_by_precision_symmetric(positionY, POSITION_PRECISION);
+            return this;
+        }
+
+        public double getPositionYDouble() {
+            return positionY * POSITION_PRECISION;
         }
 
         public State setVelocity(double velocity) {

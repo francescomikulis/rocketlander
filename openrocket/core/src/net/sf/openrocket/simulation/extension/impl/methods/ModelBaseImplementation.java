@@ -5,14 +5,15 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
-    float stepDiscount = 0.9f;
-    float terminalDiscount = 1f;
-    float alpha = 0.3f;
+    float stepDiscount = 0.7f;
+    float terminalDiscount = 0.999f;
+    float alpha = 0.2f;
 
     public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
@@ -50,7 +51,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             ArrayList<StateActionTuple> stateActionTuples,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward
+            Function<State, Float> reward,
+            BiFunction<State, State, Boolean> equivalentState
     ) {}
 
     public void updateTerminalCommon(
@@ -58,7 +60,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             Function<State, Float> terminalReward,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<StateActionTuple.State, Float> reward
+            Function<StateActionTuple.State, Float> reward,
+            BiFunction<State, State, Boolean> equivalentState
     ) {}
 
     /**
@@ -74,7 +77,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             stateActionTuples,
             this::valueFunction,
             valueFunctionTable::put,
-            this::reward
+            this::reward,
+            OptimizedMap::equivalentState
         );
     }
     public void updateTerminalFunction(ArrayList<StateActionTuple> stateActionTuples) {
@@ -84,7 +88,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             this::terminalReward,
             this::valueFunction,
             valueFunctionTable::put,
-            this::reward
+            this::reward,
+            OptimizedMap::equivalentState
         );
     }
 
@@ -96,7 +101,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             stateActionTuples,
             this::landingValueFunction,
             valueFunctionTable::putLander,
-            this::rewardLanding
+            this::rewardLanding,
+            OptimizedMap::equivalentStateLander
         );
     }
 
@@ -107,7 +113,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             this::terminalLandingReward,
             this::landingValueFunction,
             valueFunctionTable::putLander,
-            this::rewardLanding
+            this::rewardLanding,
+            OptimizedMap::equivalentStateLander
         );
     }
 
@@ -119,7 +126,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             stateActionTuples,
             this::stabilizingValueFunction,
             valueFunctionTable::putStabilizer,
-            this::rewardStabilizing
+            this::rewardStabilizing,
+            OptimizedMap::equivalentStateStabilizer
         );
     }
 
@@ -130,7 +138,14 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             this::terminalStabilizingReward,
             this::stabilizingValueFunction,
             valueFunctionTable::putStabilizer,
-            this::rewardStabilizing
+            this::rewardStabilizing,
+            OptimizedMap::equivalentStateStabilizer
         );
     }
+
+    public static ArrayList<String> stateDefinitionLanding = new ArrayList<>(Arrays.asList("altitude", "velocity", "time"));
+    public static ArrayList<String> actionDefinitionLanding = new ArrayList<>(Arrays.asList("thrust"));
+
+    public static ArrayList<String> stateDefinitionStabilizing = new ArrayList<>(Arrays.asList("positionX", "positionY", "angleX", "angleZ"));
+    public static ArrayList<String> actionDefinitionStabilizing = new ArrayList<>(Arrays.asList("thrust", "gimbleY", "gimbleZ"));
 }

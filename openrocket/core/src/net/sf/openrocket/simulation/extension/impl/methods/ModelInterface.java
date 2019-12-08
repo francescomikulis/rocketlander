@@ -13,7 +13,8 @@ public interface ModelInterface {
             ArrayList<StateActionTuple> stateActionTuples,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward
+            Function<State, Float> reward,
+            BiFunction<State, State, Boolean> equivalentState
     );
 
     void updateTerminalCommon(
@@ -21,7 +22,8 @@ public interface ModelInterface {
             Function<State, Float> terminalReward,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward
+            Function<State, Float> reward,
+            BiFunction<State, State, Boolean> equivalentState
     );
 
     float terminalReward(State lastState);

@@ -31,7 +31,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private State state;
     private Action action;
     TerminationBooleanTuple terminationBooleanTuple;
-    private static double variation = 3;
+    private static double variation = 2;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
@@ -56,7 +56,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private double calculateNumberWithIntegerVariation(double startNumber, double variation) {
-        return startNumber - variation / 2 + variation * random.nextDouble();
+        return startNumber - (variation) + 2 * variation * random.nextDouble();
     }
 
     private boolean setupStateActionAndStore(SimulationStatus status) {
@@ -79,7 +79,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             state.gimbleZ = lastStateAction.action.gimbleZ;
             state.thrust = lastStateAction.action.thrust;
         }
-        action = model.generateAction(state);
+        action = model.generateAction(state, episodeStateActions);
 
         StateActionTuple nextStateActionTuple = new StateActionTuple(state, action);
         if (episodeStateActions.size() == 0)
@@ -103,11 +103,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + Math.abs(variation), variation))));
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + variation, variation))));
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
-        double dx = calculateNumberWithIntegerVariation(0, variation * 5);
-        double dy = calculateNumberWithIntegerVariation(0, variation * 5);
+        double dx = calculateNumberWithIntegerVariation(0, variation * 3);
+        double dy = calculateNumberWithIntegerVariation(0, variation * 3);
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));

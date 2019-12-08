@@ -8,27 +8,35 @@ import java.util.function.Function;
 import java.util.function.BiFunction;
 
 public class MonteCarlo extends ModelBaseImplementation {
-    public float getExplorationPercentage() { return 0.05f; }
+    public float getExplorationPercentage() { return 0.02f; }
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> stateActionTuples,
             Function<State, Float> terminalReward,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward
+            Function<State, Float> reward,
+            BiFunction<State, State, Boolean> equivalentState
     ) {
         int lastTimeStep = stateActionTuples.size() - 1;
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep);
+        int actualSteps = 0;
         float G = terminalReward.apply(lastStateActionTuple.state);
         int numExplorationSteps = 0;
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = stateActionTuples.get(timeStep);
+
+            // skip if the states are equivalent under the equivalentStateFunction
+            if (equivalentState.apply(lastStateActionTuple.state, stateActionTuple.state)) continue;
+            lastStateActionTuple = stateActionTuple;
+
+            actualSteps += 1;
             float originalValue = valueFunction.apply(stateActionTuple);
             if (originalValue == 0.0f) numExplorationSteps++;
             putFunction.apply(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (terminalDiscount * G) + reward.apply(stateActionTuple.state);
         }
-        System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/lastTimeStep + "% out of " + lastTimeStep + " states");
+        System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
     }
 
     /** Traditional Implementation **/
@@ -47,12 +55,10 @@ public class MonteCarlo extends ModelBaseImplementation {
     /** Landing **/
     public float terminalLandingReward(State lastState) {
         float landingVelocity = (float)Math.abs(lastState.getVelocityDouble());
-        float altitude = (float)lastState.getAltitudeDouble();
-
-        return - (landingVelocity * (altitude + 1.0f));
+        return - (landingVelocity);
     }
     public float rewardLanding(StateActionTuple.State state) {
-        return 0.0f;
+        return - (float)(state.getThrustDouble() / 100.0f);
     }
 
     /** Stabilizing **/

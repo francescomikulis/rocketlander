@@ -28,7 +28,7 @@ public class RLModel {
     // MonteCarlo or TD0
     private ModelBaseImplementation primaryMethod = new MonteCarlo();
     private ModelBaseImplementation secondaryMethod = new TD0();
-    public SimulationType simulationType = SimulationType._1D;
+    public SimulationType simulationType = SimulationType._3D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -125,22 +125,35 @@ public class RLModel {
 
     // policy management
 
-    private Action run_policy(State state) {
+    private Action run_policy(State state, ArrayList<StateActionTuple> stateActionTuples) {
+        State lastState = null;
+        Action lastAction = null;
+        if (stateActionTuples.size() > 0) {
+            lastState = stateActionTuples.get(stateActionTuples.size() - 1).state;
+            lastAction = stateActionTuples.get(stateActionTuples.size() - 1).action;
+        }
         ArrayList<Action> possibleActions = generatePossibleActions(state);
         Action action = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
+            if (state.equals(lastState)) {
+                System.out.println("SHOULD NEVER HAPPEN - DUPLICATE STATES with TRADITIONAL");
+            }
             action = policy(state, possibleActions, primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            Action bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
+            Action bestLanderAction = lastAction;
+            if (!OptimizedMap.equivalentStateLander(state, lastState))
+                bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
             possibleActions = generatePossibleActions(state, new ArrayList<Float>(Arrays.<Float>asList((float) state.getThrustDouble())));
-            Action bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
+            Action bestStabilizerAction = lastAction;
+            if (!OptimizedMap.equivalentStateStabilizer(state, lastState))
+                bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
             action = OptimizedMap.combineCoupledActions(bestLanderAction, bestStabilizerAction);
         }
         return action;
     }
 
-    public Action generateAction(State state) {
-        return run_policy(state);
+    public Action generateAction(State state, ArrayList<StateActionTuple> stateActionTuples) {
+        return run_policy(state, stateActionTuples);
     }
 
     private Action policy(State state, ArrayList<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
@@ -192,7 +205,8 @@ public class RLModel {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             primaryMethod.updateTerminalFunction(stateActionTuples);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            primaryMethod.updateTerminalLandingFunction(stateActionTuples);
+            if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landingSucceeded()))
+                primaryMethod.updateTerminalLandingFunction(stateActionTuples);
             if (simulationType != SimulationType._1D)
                 secondaryMethod.updateTerminalStabilizingFunction(stateActionTuples);
         }
