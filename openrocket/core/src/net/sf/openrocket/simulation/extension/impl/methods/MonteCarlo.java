@@ -36,7 +36,7 @@ public class MonteCarlo extends ModelBaseImplementation {
             putFunction.apply(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (terminalDiscount * G) + reward.apply(stateActionTuple.state);
         }
-        System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
+        // System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
     }
 
     /** Traditional Implementation **/

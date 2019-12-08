@@ -82,7 +82,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         );
     }
     public void updateTerminalFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        System.out.println("Terminal Combined method");
+        // System.out.println("Terminal Combined method");
         updateTerminalCommon(
             stateActionTuples,
             this::terminalReward,
@@ -107,7 +107,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     }
 
     public void updateTerminalLandingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        System.out.println("Terminal Landing method");
+        // System.out.println("Terminal Landing method");
         updateTerminalCommon(
             stateActionTuples,
             this::terminalLandingReward,
@@ -132,7 +132,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     }
 
     public void updateTerminalStabilizingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        System.out.println("Terminal Stabilizing method");
+        // System.out.println("Terminal Stabilizing method");
         updateTerminalCommon(
             stateActionTuples,
             this::terminalStabilizingReward,
@@ -142,6 +142,11 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             OptimizedMap::equivalentStateStabilizer
         );
     }
+
+    public static ArrayList<String> stateDefinition = new ArrayList<>(Arrays.asList(
+            "altitude", "positionX", "positionY", "velocity", "time", "angleX", "angleZ", "thrust", "gimbleY", "gimbleZ"
+    ));
+    public static ArrayList<String> actionDefinition = new ArrayList<>(Arrays.asList("thrust", "gimbleY", "gimbleZ"));
 
     public static ArrayList<String> stateDefinitionLanding = new ArrayList<>(Arrays.asList("altitude", "velocity", "time"));
     public static ArrayList<String> actionDefinitionLanding = new ArrayList<>(Arrays.asList("thrust"));

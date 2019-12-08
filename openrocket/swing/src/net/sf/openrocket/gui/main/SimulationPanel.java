@@ -213,6 +213,7 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
+				// new SimulationRunDialog(document, sims);  // without UI
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
@@ -277,6 +278,7 @@ public class SimulationPanel extends JPanel {
 					//System.out.println("Scheduled " + copiedSims.length + "(" + outSizeMultiplier + " out of " + repeatCounter + ")");
 					new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 							SimulationPanel.this), document, copiedSims).setVisible(true);
+					// new SimulationRunDialog(document, copiedSims);  // without UI
 					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 					fireMaintainSelection();
 

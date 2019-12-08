@@ -103,6 +103,42 @@ public class SimulationRunDialog extends JDialog {
 	private final double[] simulationMaxAltitude;
 	private final double[] simulationMaxVelocity;
 	private final boolean[] simulationDone;
+	private boolean updateProgessUI = true;
+
+	// MODIFIED CODE HERE
+	public SimulationRunDialog(OpenRocketDocument document, Simulation... simulations) {
+		this.document = document;
+
+		if (simulations.length == 0) {
+			throw new IllegalArgumentException("Called with no simulations to run");
+		}
+
+		this.simulations = simulations;
+
+		// Randomize the simulation random seeds
+		for (Simulation sim : simulations) {
+			sim.getOptions().randomizeSeed();
+		}
+
+		// Initialize the simulations
+		int n = simulations.length;
+		simulationNames = new String[n];
+		simulationWorkers = new SimulationWorker[n];
+		simulationStatuses = new SimulationStatus[n];
+		simulationMaxAltitude = new double[n];
+		simulationMaxVelocity = new double[n];
+		simulationDone = new boolean[n];
+
+		for (int i = 0; i < n; i++) {
+			simulationNames[i] = simulations[i].getName();
+			simulationWorkers[i] = new InteractiveSimulationWorker(document, simulations[i], i);
+			executor.execute(simulationWorkers[i]);
+		}
+
+		updateProgessUI = false;
+
+		simLabel = null; timeLabel = null; altLabel = null; velLabel = null; progressBar = null;
+	}
 
 	public SimulationRunDialog(Window window, OpenRocketDocument document, Simulation... simulations) {
 		//// Running simulations...
@@ -212,6 +248,8 @@ public class SimulationRunDialog extends JDialog {
 	}
 
 	private void updateProgress() {
+		if (!updateProgessUI) return;
+
 		int index;
 		for (index = 0; index < simulations.length; index++) {
 			if (!simulationDone[index])

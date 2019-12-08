@@ -1,13 +1,18 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Function;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
 
 /**
     valueFunctionTable
@@ -39,6 +44,10 @@ public class OptimizedMap {
     private float[][][][][][][] stabilizerValueFunctionTable = null;
     private int minAltitude, minPositionX, minPositionY, minVelocity, minTime, minThrust, minAngleX, minAngleZ, minGimbleY, minGimbleZ;
     private int maxAltitude, maxPositionX, maxPositionY, maxVelocity, maxTime, maxThrust, maxAngleX, maxAngleZ, maxGimbleY, maxGimbleZ;
+
+    public HashMap<String, Integer> boundaryMapMin = new HashMap<>();
+    public HashMap<String, Integer> boundaryMapMax = new HashMap<>();
+    public HashMap<String, Method> methodMap = new HashMap<>();
 
     public OptimizedMap() {
         if (mapMethod == MapMethod.Traditional)
@@ -80,99 +89,71 @@ public class OptimizedMap {
         // generate low minimum values
         State lowState = new State(null);
         minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
+        boundaryMapMin.put("altitude", minAltitude);
         minPositionX = lowState.setAltitude(MIN_POSITION).positionX;
+        boundaryMapMin.put("positionX", minPositionX);
         minPositionY = lowState.setAltitude(MIN_POSITION).positionY;
+        boundaryMapMin.put("positionY", minPositionY);
         minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
+        boundaryMapMin.put("velocity", minVelocity);
         minTime = lowState.setTime(MIN_TIME).time;
+        boundaryMapMin.put("time", minTime);
         minThrust = lowState.setThrust(MIN_THRUST).thrust;
+        boundaryMapMin.put("thrust", minThrust);
         minAngleX = lowState.setAngleX(0).angleX;
+        boundaryMapMin.put("angleX", minAngleX);
         minAngleZ = lowState.setAngleZ(MIN_TERMINAL_ORIENTATION_Z).angleZ;
+        boundaryMapMin.put("angleZ", minAngleZ);
         minGimbleY = lowState.setGimbleY(0).gimbleY;
+        boundaryMapMin.put("gimbleY", minGimbleY);
         minGimbleZ = lowState.setGimbleZ(MIN_GIMBLE_Z).gimbleZ;
+        boundaryMapMin.put("gimbleZ", minGimbleZ);
         // generate high maximum values
         State highState = new State(null);
         maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
+        boundaryMapMax.put("altitude", maxAltitude);
         maxPositionX = lowState.setAltitude(MAX_POSITION).positionX;
+        boundaryMapMax.put("positionX", maxPositionX);
         maxPositionY = lowState.setAltitude(MAX_POSITION).positionY;
+        boundaryMapMax.put("positionY", maxPositionY);
         maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
+        boundaryMapMax.put("velocity", maxVelocity);
         maxTime = highState.setTime(MAX_TIME).time;
+        boundaryMapMax.put("time", maxTime);
         maxThrust = highState.setThrust(MAX_THRUST).thrust;
+        boundaryMapMax.put("thrust", maxThrust);
         maxAngleX = highState.setAngleX(2 * MAX_HALF_CIRCLE - 0.00001).angleX;
+        boundaryMapMax.put("angleX", maxAngleX);
         maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
+        boundaryMapMax.put("angleZ", maxAngleZ);
         maxGimbleY = highState.setGimbleY(2 * MAX_HALF_CIRCLE - 0.00001).gimbleY;
+        boundaryMapMax.put("gimbleY", maxGimbleY);
         maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
+        boundaryMapMax.put("gimbleZ", maxGimbleZ);
     }
 
     public float getLander(StateActionTuple stateActionTuple) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-
-        return DynamicValueFunctionTable.get(
-                this,
-                landerValueFunctionTable, state, action,
-                ModelBaseImplementation.stateDefinitionLanding, ModelBaseImplementation.actionDefinitionLanding
-        );
+        return DynamicValueFunctionTable.getLanding(this, stateActionTuple.state, stateActionTuple.action);
     }
 
     public float getStabilizer(StateActionTuple stateActionTuple) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-
-        float newValue = DynamicValueFunctionTable.get(
-                this,
-                stabilizerValueFunctionTable, state, action,
-                ModelBaseImplementation.stateDefinitionStabilizing, ModelBaseImplementation.actionDefinitionStabilizing
-        );
-
-        float realValue = stabilizerValueFunctionTable
-                [state.positionX - minPositionX][state.positionY - minPositionY]
-                [action.thrust - minThrust][state.angleX - minAngleX][state.angleZ - minAngleZ]
-                [action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
-
-        return realValue;
+        return DynamicValueFunctionTable.getStabilizing(this, stateActionTuple.state, stateActionTuple.action);
     }
 
     public float get(StateActionTuple stateActionTuple) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-        return valueFunctionTable
-                [state.altitude - minAltitude][state.positionX - minPositionX][state.positionY - minPositionY]
-                [state.velocity - minVelocity][state.time - minTime][state.angleX - minAngleX][state.angleZ - minAngleZ]
-                [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ];
+        return DynamicValueFunctionTable.get(this, stateActionTuple.state, stateActionTuple.action);
     }
 
     public float putLander(StateActionTuple stateActionTuple, float newValue) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-        landerValueFunctionTable
-                [state.altitude - minAltitude][state.velocity - minVelocity][state.time - minTime][action.thrust - minThrust] = newValue;
-        return newValue;
+        return DynamicValueFunctionTable.putLanding(this, stateActionTuple.state, stateActionTuple.action, newValue);
     }
 
     public float putStabilizer(StateActionTuple stateActionTuple, float newValue) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-        stabilizerValueFunctionTable
-                [state.positionX - minPositionX][state.positionY - minPositionY]
-                [action.thrust - minThrust][state.angleX - minAngleX]
-                [state.angleZ - minAngleZ][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
-        return newValue;
+        return DynamicValueFunctionTable.putStabilizing(this, stateActionTuple.state, stateActionTuple.action, newValue);
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        if (!checkBounds(stateActionTuple)) return Float.NEGATIVE_INFINITY;
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-        valueFunctionTable
-                [state.altitude - minAltitude][state.positionX - minPositionX][state.positionY - minPositionY]
-                [state.velocity - minVelocity][state.time - minTime][state.angleX - minAngleX][state.angleZ - minAngleZ]
-                [action.thrust - minThrust][action.gimbleY - minGimbleY][action.gimbleZ - minGimbleZ] = newValue;
-        return newValue;
+        return DynamicValueFunctionTable.put(this, stateActionTuple.state, stateActionTuple.action, newValue);
     }
 
     public static boolean equivalentStateLander(State state_a, State state_b) {
@@ -200,11 +181,13 @@ public class OptimizedMap {
 
 
     public boolean containsKey(State state, Action action) {
-        return checkBounds(new StateActionTuple(state, action));
+        return true;
+        // return checkBounds(new StateActionTuple(state, action));
     }
 
     public boolean containsKey(StateActionTuple stateActionTuple) {
-        return checkBounds(stateActionTuple);
+        return true;
+        // return checkBounds(stateActionTuple);
     }
 
     public boolean checkBounds(State state) {
@@ -214,24 +197,23 @@ public class OptimizedMap {
     public boolean checkBounds(StateActionTuple stateActionTuple) {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-
-        // stateCheck
-        if ((state.angleZ < minAngleZ) || (state.angleZ > maxAngleZ)) return false;
-        if ((state.positionX < minPositionX) || (state.positionX > maxPositionX)) return false;
-        if ((state.positionY < minPositionY) || (state.positionY > maxPositionY)) return false;
-        if ((state.altitude < minAltitude) || (state.altitude > maxAltitude)) return false;
-        if ((state.velocity < minVelocity) || (state.velocity > maxVelocity)) return false;
-        if ((state.angleX < minAngleX) || (state.angleX > maxAngleX)) return false;
-        if ((state.time < minTime) || (state.time > maxTime)) return false;
-        // actionCheck
-        if ((action.thrust < minThrust) || (action.thrust > maxThrust)) {
-            System.out.println("THIS SHOULD NEVER EVER HAPPEN");
-            return false;
+        for (String stateField: ModelBaseImplementation.stateDefinition) {
+            int currentValue = state.getField(stateField);
+            if ((currentValue < getMinField(stateField)) || (currentValue > getMaxField(stateField))) return false;
         }
-        if ((action.gimbleY < minGimbleY) || (action.gimbleY > maxGimbleY)) return false;
-        if ((action.gimbleZ < minGimbleZ) || (action.gimbleZ > maxGimbleZ)) return false;
-
+        for (String actionField: ModelBaseImplementation.actionDefinition) {
+            int currentValue = action.getField(actionField);
+            if ((currentValue < getMinField(actionField)) || (currentValue > getMaxField(actionField))) return false;
+        }
         return true;
+    }
+
+    public int getMinField(String baseField) {
+        return boundaryMapMin.get(baseField);
+    }
+
+    public int getMaxField(String baseField) {
+        return boundaryMapMax.get(baseField);
     }
 
     public TerminationBooleanTuple alterTerminalStateIfFailure(State state) {
@@ -239,63 +221,61 @@ public class OptimizedMap {
         boolean angleSuccess = true;
 
         if (state == null) return new TerminationBooleanTuple(true, true);
-        if (state.altitude < minAltitude) { verticalSuccess = false; state.altitude = minAltitude; }
-        if (state.altitude > maxAltitude) { verticalSuccess = false; state.altitude = maxAltitude; }
-        if (state.velocity < minVelocity) { verticalSuccess = false; state.velocity = minVelocity; }
-        if (state.velocity > maxVelocity) { verticalSuccess = false; state.velocity = maxVelocity; }
-        if (state.positionX < minPositionX) { angleSuccess = false; state.positionX = minPositionX; }
-        if (state.positionX > maxPositionX) { angleSuccess = false; state.positionX = maxPositionX; }
-        if (state.positionY < minPositionY) { angleSuccess = false; state.positionY = minPositionY; }
-        if (state.positionY > maxPositionY) { angleSuccess = false; state.positionY = maxPositionY; }
-        if (state.angleZ < minAngleZ) { angleSuccess = false; state.angleZ = minAngleZ; }
-        if (state.angleZ > maxAngleZ) { angleSuccess = false; state.angleZ = maxAngleZ; }
-        if (state.angleX < minAngleX) { angleSuccess = false; state.angleX = minAngleX; }
-        if (state.angleX > maxAngleX) { angleSuccess = false; state.angleX = maxAngleX; }
-        // angle stabilization for the last meter appears impossible.  Force allow success if within rounded range.
-        // if (state.altitude == minAltitude) { verticalSuccess = true; angleSuccess = true; }
-
+        for (String landingField: ModelBaseImplementation.stateDefinitionLanding) {
+            int minValue = getMinField(landingField);
+            int maxValue = getMaxField(landingField);
+            int currentValue = state.getField(landingField);
+            if (currentValue < minValue) { verticalSuccess = false; state.setField(landingField, minValue); }
+            if (currentValue > maxValue) { verticalSuccess = false; state.setField(landingField, maxValue); }
+        }
+        for (String stabilizingField: ModelBaseImplementation.stateDefinitionStabilizing) {
+            int minValue = getMinField(stabilizingField);
+            int maxValue = getMaxField(stabilizingField);
+            int currentValue = state.getField(stabilizingField);
+            if (currentValue < minValue) { angleSuccess = false; state.setField(stabilizingField, minValue); }
+            if (currentValue > maxValue) { angleSuccess = false; state.setField(stabilizingField, maxValue); }
+        }
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
 
     private float[][][][][][][][][][] allocateNewValueFunctionTable() {
-        int altitudeSize = maxAltitude - minAltitude + 1;
-        int positionXSize = maxPositionX - minPositionX + 1;
-        int positionYSize = maxPositionY - minPositionY + 1;
-        int velocitySize = maxVelocity - minVelocity + 1;
-        int timeSize = maxTime - minTime + 1;
-        int thrustSize = maxThrust - minThrust + 1;
-        int angleXSize = maxAngleX - minAngleX + 1;
-        int angleZSize = maxAngleZ - minAngleZ + 1;
-        int gimbleYSize = maxGimbleY - minGimbleY + 1;
-        int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
-        double stateSpace = altitudeSize * positionXSize * positionYSize * velocitySize * timeSize * angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
-        System.out.println("Allocating stateSpace: " + stateSpace);
-        return new float
-                [altitudeSize][positionXSize][positionYSize][velocitySize][timeSize][angleXSize][angleZSize]
-                [thrustSize][gimbleYSize][gimbleZSize];
+        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinition, ModelBaseImplementation.actionDefinition);
+        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
+        return (float[][][][][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
     }
 
     private float[][][][] allocateNewLanderValueFunctionTable() {
-        int altitudeSize = maxAltitude - minAltitude + 1;
-        int velocitySize = maxVelocity - minVelocity + 1;
-        int timeSize = maxTime - minTime + 1;
-        int thrustSize = maxThrust - minThrust + 1;
-        double stateSpace = altitudeSize * velocitySize * timeSize * thrustSize;
-        System.out.println("Allocating stateSpace: " + stateSpace);
-        return new float[altitudeSize][velocitySize][timeSize][thrustSize];
+        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinitionLanding, ModelBaseImplementation.actionDefinitionLanding);
+        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
+        return (float[][][][]) DynamicValueFunctionTable.callAllocation(indeces);
     }
 
     private float[][][][][][][] allocateNewStabilizerValueFunctionTable() {
-        int thrustSize = maxThrust - minThrust + 1;
-        int positionXSize = maxPositionX - minPositionX + 1;
-        int positionYSize = maxPositionY - minPositionY + 1;
-        int angleXSize = maxAngleX - minAngleX + 1;
-        int angleZSize = maxAngleZ - minAngleZ + 1;
-        int gimbleYSize = maxGimbleY - minGimbleY + 1;
-        int gimbleZSize = maxGimbleZ - minGimbleZ + 1;
-        double stateSpace = angleXSize * angleZSize * thrustSize * gimbleYSize * gimbleZSize;
-        System.out.println("Allocating stateSpace: " + stateSpace);
-        return new float[positionXSize][positionYSize][thrustSize][angleXSize][angleZSize][gimbleYSize][gimbleZSize];
+        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinitionStabilizing, ModelBaseImplementation.actionDefinitionStabilizing);
+        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
+        return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+    }
+
+    private int[] generateIndex(ArrayList<String> stateDefinition, ArrayList<String> actionDefinition){
+        int[] indeces = new int[stateDefinition.size() + actionDefinition.size()];
+        int index = 0;
+        for (String stateField: stateDefinition) {
+            indeces[index] = (getMaxField(stateField) - getMinField(stateField) + 1);
+            index += 1;
+        }
+        for (String actionField: actionDefinition) {
+            indeces[index] = (getMaxField(actionField) - getMinField(actionField) + 1);
+            index += 1;
+        }
+        return indeces;
+    }
+
+    private int indexProduct(int[] indeces) {
+        int totalSize = 1;
+        for (int index: indeces) {
+            totalSize *= index;
+        }
+        return totalSize;
     }
 
     public float[][][][][][][][][][] getValueFunctionArray() {

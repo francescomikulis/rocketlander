@@ -166,6 +166,19 @@ public class StateActionTuple implements Serializable {
             // Radians
             return gimbleZ * MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP;
         }
+
+        public int getField(String field) {
+            if (field.equals("thrust")) return this.thrust;
+            if (field.equals("gimbleY")) return this.gimbleY;
+            if (field.equals("gimbleZ")) return this.gimbleZ;
+            return Integer.MAX_VALUE;
+        }
+
+        public void setField(String field, int value) {
+            if (field.equals("thrust")) this.thrust = value;
+            if (field.equals("gimbleY")) this.gimbleY = value;
+            if (field.equals("gimbleZ")) this.gimbleZ = value;
+        }
     }
 
     // Required data structures.
@@ -269,7 +282,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return velocity * 100000 + altitude * 10000 + thrust * 100 + angleX * 10 + angleZ;
+            return velocity * 1000000 + altitude * 100000 + thrust * 10000 + angleX * 100 + angleZ;
         }
 
         private int special_area_angle_hashcode() {
@@ -296,6 +309,30 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public String toString() { return stringifyObject(this); }
+
+        public int getField(String field) {
+            int result = super.getField(field);
+            if (result != Integer.MAX_VALUE) return result;
+            if (field.equals("altitude")) return this.altitude;
+            if (field.equals("positionX")) return this.positionX;
+            if (field.equals("positionY")) return this.positionY;
+            if (field.equals("velocity")) return this.velocity;
+            if (field.equals("angleX")) return this.angleX;
+            if (field.equals("angleZ")) return this.angleZ;
+            if (field.equals("time")) return this.time;
+            return Integer.MAX_VALUE;
+        }
+
+        public void setField(String field, int value) {
+            super.setField(field, value);
+            if (field.equals("altitude")) this.altitude = value;
+            if (field.equals("positionX")) this.positionX = value;
+            if (field.equals("positionY")) this.positionY = value;
+            if (field.equals("velocity")) this.velocity = value;
+            if (field.equals("angleX")) this.angleX = value;
+            if (field.equals("angleZ")) this.angleZ = value;
+            if (field.equals("time")) this.time = value;
+        }
     }
 
     public static class Action extends StateActionClass {
@@ -307,7 +344,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return thrust * 100 + gimbleY * 10 + gimbleZ;
+            return thrust * 10000 + gimbleY * 100 + gimbleZ;
         }
 
         @Override
