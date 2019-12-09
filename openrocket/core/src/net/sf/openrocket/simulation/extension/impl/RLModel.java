@@ -1,19 +1,12 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import net.sf.openrocket.simulation.SimulationStatus;
-
 import net.sf.openrocket.simulation.extension.impl.methods.*;
-import net.sf.openrocket.util.Quaternion;
 
-import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
@@ -55,13 +48,13 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
-    private HashSet<Float> generatePossibleActionValues(float value, float smallest_increment, float max_increment, float MIN_VAL, float MAX_VAL) {
-        HashSet<Float> possibleActionValues = new HashSet<>();
+    private HashSet<Double> generatePossibleActionValues(double value, double smallest_increment, double max_increment, double MIN_VAL, double MAX_VAL) {
+        HashSet<Double> possibleActionValues = new HashSet<>();
 
         int number_of_loops = (int) (2.0 * max_increment / smallest_increment) + 1;
-        float starting_low_value =  value - max_increment;
+        double starting_low_value =  value - max_increment;
         for (int i = 0; i < number_of_loops; i++) {
-            float possibleValue = starting_low_value + i * smallest_increment;
+            double possibleValue = starting_low_value + i * smallest_increment;
             if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL)) {
                 possibleActionValues.add(possibleValue);
             }
@@ -77,40 +70,40 @@ public class RLModel {
         return generatePossibleActions(state, new HashSet<>(), new HashSet<>(), new HashSet<>());
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Float> overrideThrustValues) {
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues) {
         return generatePossibleActions(state, overrideThrustValues, new HashSet<>(), new HashSet<>());
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Float> possibleGimbleYValues, HashSet<Float> possibleGimbleZValues) {
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbleYValues, HashSet<Double> possibleGimbleZValues) {
         return generatePossibleActions(state, new HashSet<>(), possibleGimbleYValues, possibleGimbleZValues);
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Float> overrideThrustValues, HashSet<Float> overrideGimbleYValues, HashSet<Float> overrideGimbleZValues) {
-        float currentThrust = (float)state.getThrustDouble();
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbleYValues, HashSet<Double> overrideGimbleZValues) {
+        double currentThrust = state.getDouble("thrust");
         HashSet<Action> possibleActions = new HashSet<>();
 
         if (simulationType == SimulationType._1D) {
-            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0f));
-            overrideGimbleZValues = new HashSet<>(Arrays.asList(0.0f));
+            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0));
+            overrideGimbleZValues = new HashSet<>(Arrays.asList(0.0));
         } else if (simulationType == SimulationType._2D) {
-            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0f, (float)Math.PI + 0.00001f));
+            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0, Math.PI + 0.00001f));
         }
 
-        HashSet<Float> possibleThrustValues;
+        HashSet<Double> possibleThrustValues;
         if (overrideThrustValues.size() > 0) possibleThrustValues = overrideThrustValues;
-        else possibleThrustValues = generatePossibleActionValues(currentThrust, MIN_THRUST_INCREMENT_PER_TIMESTEP, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
+        else possibleThrustValues = generatePossibleActionValues(currentThrust, THRUST_PRECISION, MAX_THRUST_INCREMENT_PER_TIMESTEP, MIN_THRUST, MAX_THRUST);
 
-        HashSet<Float> possibleGimbleYValues;
+        HashSet<Double> possibleGimbleYValues;
         if (overrideGimbleYValues.size() > 0) possibleGimbleYValues = overrideGimbleYValues;
-        else possibleGimbleYValues = generatePossibleActionValues((float)state.getGimbleYDouble(), MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP, MIN_GIMBLE_Y, MAX_GIMBLE_Y);
+        else possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbleY"), GIMBLEY_PRECISION, MAX_GIMBLEY_INCREMENT, MIN_GIMBLEY, MAX_GIMBLEY);
 
-        HashSet<Float> possibleGimbleZValues;
+        HashSet<Double> possibleGimbleZValues;
         if (overrideGimbleZValues.size() > 0) possibleGimbleZValues = overrideGimbleZValues;
-        else possibleGimbleZValues = generatePossibleActionValues((float)state.getGimbleZDouble(), MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP, MIN_GIMBLE_Z, MAX_GIMBLE_Z);
+        else possibleGimbleZValues = generatePossibleActionValues((float)state.getDouble("gimbleZ"), GIMBLEZ_PRECISION, MAX_GIMBLEZ_INCREMENT, MIN_GIMBLEZ, MAX_GIMBLEZ);
 
-        for (float possibleThrust: possibleThrustValues) {
-            for (float possibleGimbleY: possibleGimbleYValues) {
-                for (float possibleGimbleZ: possibleGimbleZValues) {
+        for (double possibleThrust: possibleThrustValues) {
+            for (double possibleGimbleY: possibleGimbleYValues) {
+                for (double possibleGimbleZ: possibleGimbleZValues) {
                     possibleActions.add(new Action(possibleThrust, possibleGimbleY, possibleGimbleZ));
                 }
             }
@@ -139,7 +132,7 @@ public class RLModel {
             Action bestLanderAction = lastAction;
             if (!OptimizedMap.equivalentStateLander(state, lastState))
                 bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
-            possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList((float) state.getThrustDouble())));
+            possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(state.getDouble("thrust"))));
             Action bestStabilizerAction = lastAction;
             if (!OptimizedMap.equivalentStateStabilizer(state, lastState))
                 bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
@@ -154,7 +147,7 @@ public class RLModel {
 
     private Action policy(State state, HashSet<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
         HashSet<Action> bestActions = new HashSet<>();
-        bestActions.add(new Action(state.getThrustDouble(), state.getGimbleYDouble(), state.getGimbleZDouble()));
+        bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbleY"), state.getDouble("gimbleZ")));
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;

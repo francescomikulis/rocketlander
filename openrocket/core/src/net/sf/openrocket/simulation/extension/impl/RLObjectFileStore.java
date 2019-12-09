@@ -36,12 +36,12 @@ public class RLObjectFileStore {
     }
 
     public OptimizedMap readActionValueFunction(String filenameExtension){
-        return new OptimizedMap((float[][][][][][][][][][]) readObjects(actionValueFunctionFileName + filenameExtension));
+        return new OptimizedMap((float[]) readObjects(actionValueFunctionFileName + filenameExtension));
     }
 
     public OptimizedMap readCoupledActionValueFunction(String filenameExtension){
-        float[][][][] landerActionValueFunction = (float[][][][]) readObjects(actionValueFunctionFileName + "lander.txt");
-        float[][][][][][][] stabilizerActionValueFunction = (float[][][][][][][]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
+        float[] landerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "lander.txt");
+        float[] stabilizerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
         return new OptimizedMap(landerActionValueFunction, stabilizerActionValueFunction);
     }
 

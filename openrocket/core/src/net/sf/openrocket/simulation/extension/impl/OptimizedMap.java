@@ -1,18 +1,20 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Function;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
+import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 /**
     valueFunctionTable
@@ -39,15 +41,16 @@ public class OptimizedMap {
     }
     public static MapMethod mapMethod = MapMethod.Coupled;
 
-    private float[][][][][][][][][][] valueFunctionTable = null;
-    private float[][][][] landerValueFunctionTable = null;
-    private float[][][][][][][] stabilizerValueFunctionTable = null;
-    private int minAltitude, minPositionX, minPositionY, minVelocity, minTime, minThrust, minAngleX, minAngleZ, minGimbleY, minGimbleZ;
-    private int maxAltitude, maxPositionX, maxPositionY, maxVelocity, maxTime, maxThrust, maxAngleX, maxAngleZ, maxGimbleY, maxGimbleZ;
+    private float[] valueFunctionTable = null;
+    private float[] landerValueFunctionTable = null;
+    private float[] stabilizerValueFunctionTable = null;
+    private int[] indeces;
+    private int[] landerIndeces;
+    private int[] stabilizerIndeces;
 
     public HashMap<String, Integer> boundaryMapMin = new HashMap<>();
     public HashMap<String, Integer> boundaryMapMax = new HashMap<>();
-    public HashMap<String, Method> methodMap = new HashMap<>();
+    public HashMap<String, Method> constants = new HashMap<>();
 
     public OptimizedMap() {
         if (mapMethod == MapMethod.Traditional)
@@ -56,11 +59,11 @@ public class OptimizedMap {
             constructorCoupled(null, null);
     }
 
-    public OptimizedMap(float[][][][][][][][][][] newValueFunctionTable) {
+    public OptimizedMap(float[] newValueFunctionTable) {
         constructorTraditional(newValueFunctionTable);
     }
 
-    private void constructorTraditional(float[][][][][][][][][][] newValueFunctionTable) {
+    private void constructorTraditional(float[] newValueFunctionTable) {
         constructorCode();
 
         // allocate new function table
@@ -69,11 +72,11 @@ public class OptimizedMap {
         this.valueFunctionTable = newValueFunctionTable;
     }
 
-    public OptimizedMap(float[][][][] newLanderValueFunctionTable, float[][][][][][][] newStabilizerValueFunctionTable) {
+    public OptimizedMap(float[] newLanderValueFunctionTable, float[] newStabilizerValueFunctionTable) {
         constructorCoupled(newLanderValueFunctionTable, newStabilizerValueFunctionTable);
     }
 
-    private void constructorCoupled(float[][][][] newLanderValueFunctionTable, float[][][][][][][] newStabilizerValueFunctionTable) {
+    private void constructorCoupled(float[] newLanderValueFunctionTable, float[] newStabilizerValueFunctionTable) {
         constructorCode();
 
         // allocate new function table
@@ -86,96 +89,82 @@ public class OptimizedMap {
     }
 
     private void constructorCode() {
+        HashSet<String> allFields = combineAllFields();
+
         // generate low minimum values
-        State lowState = new State(null);
-        minAltitude = lowState.setAltitude(MIN_ALTITUDE).altitude;
-        boundaryMapMin.put("altitude", minAltitude);
-        minPositionX = lowState.setAltitude(MIN_POSITION).positionX;
-        boundaryMapMin.put("positionX", minPositionX);
-        minPositionY = lowState.setAltitude(MIN_POSITION).positionY;
-        boundaryMapMin.put("positionY", minPositionY);
-        minVelocity = lowState.setVelocity(MIN_VELOCITY).velocity;
-        boundaryMapMin.put("velocity", minVelocity);
-        minTime = lowState.setTime(MIN_TIME).time;
-        boundaryMapMin.put("time", minTime);
-        minThrust = lowState.setThrust(MIN_THRUST).thrust;
-        boundaryMapMin.put("thrust", minThrust);
-        minAngleX = lowState.setAngleX(0).angleX;
-        boundaryMapMin.put("angleX", minAngleX);
-        minAngleZ = lowState.setAngleZ(MIN_TERMINAL_ORIENTATION_Z).angleZ;
-        boundaryMapMin.put("angleZ", minAngleZ);
-        minGimbleY = lowState.setGimbleY(0).gimbleY;
-        boundaryMapMin.put("gimbleY", minGimbleY);
-        minGimbleZ = lowState.setGimbleZ(MIN_GIMBLE_Z).gimbleZ;
-        boundaryMapMin.put("gimbleZ", minGimbleZ);
-        // generate high maximum values
-        State highState = new State(null);
-        maxAltitude = highState.setAltitude(MAX_ALTITUDE).altitude;
-        boundaryMapMax.put("altitude", maxAltitude);
-        maxPositionX = lowState.setAltitude(MAX_POSITION).positionX;
-        boundaryMapMax.put("positionX", maxPositionX);
-        maxPositionY = lowState.setAltitude(MAX_POSITION).positionY;
-        boundaryMapMax.put("positionY", maxPositionY);
-        maxVelocity = highState.setVelocity(MAX_VELOCITY).velocity;
-        boundaryMapMax.put("velocity", maxVelocity);
-        maxTime = highState.setTime(MAX_TIME).time;
-        boundaryMapMax.put("time", maxTime);
-        maxThrust = highState.setThrust(MAX_THRUST).thrust;
-        boundaryMapMax.put("thrust", maxThrust);
-        maxAngleX = highState.setAngleX(2 * MAX_HALF_CIRCLE - 0.00001).angleX;
-        boundaryMapMax.put("angleX", maxAngleX);
-        maxAngleZ = highState.setAngleZ(MAX_TERMINAL_ORIENTATION_Z).angleZ;
-        boundaryMapMax.put("angleZ", maxAngleZ);
-        maxGimbleY = highState.setGimbleY(2 * MAX_HALF_CIRCLE - 0.00001).gimbleY;
-        boundaryMapMax.put("gimbleY", maxGimbleY);
-        maxGimbleZ = highState.setGimbleZ(MAX_GIMBLE_Z).gimbleZ;
-        boundaryMapMax.put("gimbleZ", maxGimbleZ);
+        StateActionTuple stateActionTuple = new StateActionTuple(null, null);
+        State state = new State(null);
+        for(String field: allFields) {
+            String minField = "MIN_" + field.toUpperCase();
+            double value = (double) getConstant(minField);
+            if (field.equals("angleX") || field.equals("gimbleY"))
+                value = 0.0f;
+            int minValue = state.setDouble(field, value).getInt(field);
+            boundaryMapMin.put(field, minValue);
+        }
+        for(String field: allFields) {
+            String maxField = "MAX_" + field.toUpperCase();
+            double value = (double) getConstant(maxField);
+            if (field.equals("angleX") || field.equals("gimbleY"))
+                value = 2 * MAX_HALF_CIRCLE - 0.00001f;
+            int maxValue = state.setDouble(field, value).getInt(field);
+            boundaryMapMax.put(field, maxValue);
+        }
+
+        indeces = generateIndex(stateDefinition, actionDefinition);
+        landerIndeces = generateIndex(stateDefinitionLanding, actionDefinitionLanding);
+        stabilizerIndeces = generateIndex(stateDefinitionStabilizing, actionDefinitionStabilizing);
     }
 
+
     public float getLander(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getLanding(this, stateActionTuple.state, stateActionTuple.action);
+        return DynamicValueFunctionTable.getLanding(this, landerIndeces, stateActionTuple);
     }
 
     public float getStabilizer(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getStabilizing(this, stateActionTuple.state, stateActionTuple.action);
+        return DynamicValueFunctionTable.getStabilizing(this, stabilizerIndeces, stateActionTuple);
     }
 
     public float get(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.get(this, stateActionTuple.state, stateActionTuple.action);
+        return DynamicValueFunctionTable.get(this, indeces, stateActionTuple);
     }
 
     public float putLander(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putLanding(this, stateActionTuple.state, stateActionTuple.action, newValue);
+        return DynamicValueFunctionTable.putLanding(this, landerIndeces, stateActionTuple, newValue);
     }
 
     public float putStabilizer(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putStabilizing(this, stateActionTuple.state, stateActionTuple.action, newValue);
+        return DynamicValueFunctionTable.putStabilizing(this, stabilizerIndeces, stateActionTuple, newValue);
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.put(this, stateActionTuple.state, stateActionTuple.action, newValue);
+        return DynamicValueFunctionTable.put(this, indeces, stateActionTuple, newValue);
     }
 
     public static boolean equivalentStateLander(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
-        boolean equivalent = state_a.altitude == state_b.altitude &&
-                state_a.velocity == state_b.velocity &&
-                state_a.time == state_b.time;
+        boolean equivalent = true;
+        for (String stateField: stateDefinitionLanding) {
+            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
+        }
         return equivalent;
     }
 
     public static boolean equivalentStateStabilizer(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
-        boolean equivalent =
-                state_a.positionX == state_b.positionX && state_a.positionY == state_b.positionY &&
-                state_a.thrust == state_b.thrust &&
-                state_a.angleX == state_b.angleX && state_a.angleZ == state_b.angleZ;
+        boolean equivalent = true;
+        for (String stateField: stateDefinitionStabilizing) {
+            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
+        }
         return equivalent;
     }
 
     public static boolean equivalentState(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
-        boolean equivalent = state_a.equals(state_b);
+        boolean equivalent = true;
+        for (String stateField: stateDefinition) {
+            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
+        }
         return equivalent;
     }
 
@@ -197,12 +186,12 @@ public class OptimizedMap {
     public boolean checkBounds(StateActionTuple stateActionTuple) {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-        for (String stateField: ModelBaseImplementation.stateDefinition) {
-            int currentValue = state.getField(stateField);
+        for (String stateField: stateDefinition) {
+            int currentValue = state.getInt(stateField);
             if ((currentValue < getMinField(stateField)) || (currentValue > getMaxField(stateField))) return false;
         }
-        for (String actionField: ModelBaseImplementation.actionDefinition) {
-            int currentValue = action.getField(actionField);
+        for (String actionField: actionDefinition) {
+            int currentValue = action.getInt(actionField);
             if ((currentValue < getMinField(actionField)) || (currentValue > getMaxField(actionField))) return false;
         }
         return true;
@@ -221,39 +210,39 @@ public class OptimizedMap {
         boolean angleSuccess = true;
 
         if (state == null) return new TerminationBooleanTuple(true, true);
-        for (String landingField: ModelBaseImplementation.stateDefinitionLanding) {
+        for (String landingField: stateDefinitionLanding) {
             int minValue = getMinField(landingField);
             int maxValue = getMaxField(landingField);
-            int currentValue = state.getField(landingField);
-            if (currentValue < minValue) { verticalSuccess = false; state.setField(landingField, minValue); }
-            if (currentValue > maxValue) { verticalSuccess = false; state.setField(landingField, maxValue); }
+            int currentValue = state.getInt(landingField);
+            if (currentValue < minValue) { verticalSuccess = false; state.set(landingField, minValue); }
+            if (currentValue > maxValue) { verticalSuccess = false; state.set(landingField, maxValue); }
         }
-        for (String stabilizingField: ModelBaseImplementation.stateDefinitionStabilizing) {
+        for (String stabilizingField: stateDefinitionStabilizing) {
             int minValue = getMinField(stabilizingField);
             int maxValue = getMaxField(stabilizingField);
-            int currentValue = state.getField(stabilizingField);
-            if (currentValue < minValue) { angleSuccess = false; state.setField(stabilizingField, minValue); }
-            if (currentValue > maxValue) { angleSuccess = false; state.setField(stabilizingField, maxValue); }
+            int currentValue = state.getInt(stabilizingField);
+            if (currentValue < minValue) { angleSuccess = false; state.set(stabilizingField, minValue); }
+            if (currentValue > maxValue) { angleSuccess = false; state.set(stabilizingField, maxValue); }
         }
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
 
-    private float[][][][][][][][][][] allocateNewValueFunctionTable() {
-        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinition, ModelBaseImplementation.actionDefinition);
+    private float[] allocateNewValueFunctionTable() {
         System.out.println("Allocating stateSpace: " + indexProduct(indeces));
-        return (float[][][][][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+        // return (float[][][][][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+        return DynamicValueFunctionTable.callAllocation(indexProduct(indeces));
     }
 
-    private float[][][][] allocateNewLanderValueFunctionTable() {
-        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinitionLanding, ModelBaseImplementation.actionDefinitionLanding);
-        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
-        return (float[][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+    private float[] allocateNewLanderValueFunctionTable() {
+        System.out.println("Allocating stateSpace: " + indexProduct(landerIndeces));
+        // return (float[][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+        return DynamicValueFunctionTable.callAllocation(indexProduct(landerIndeces));
     }
 
-    private float[][][][][][][] allocateNewStabilizerValueFunctionTable() {
-        int[] indeces = generateIndex(ModelBaseImplementation.stateDefinitionStabilizing, ModelBaseImplementation.actionDefinitionStabilizing);
-        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
-        return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+    private float[] allocateNewStabilizerValueFunctionTable() {
+        System.out.println("Allocating stateSpace: " + indexProduct(stabilizerIndeces));
+        // return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+        return DynamicValueFunctionTable.callAllocation(indexProduct(stabilizerIndeces));
     }
 
     private int[] generateIndex(ArrayList<String> stateDefinition, ArrayList<String> actionDefinition){
@@ -270,7 +259,7 @@ public class OptimizedMap {
         return indeces;
     }
 
-    private int indexProduct(int[] indeces) {
+    public static int indexProduct(int[] indeces) {
         int totalSize = 1;
         for (int index: indeces) {
             totalSize *= index;
@@ -278,19 +267,27 @@ public class OptimizedMap {
         return totalSize;
     }
 
-    public float[][][][][][][][][][] getValueFunctionArray() {
+    public float[] getValueFunctionArray() {
         return valueFunctionTable;
     }
 
-    public float[][][][] getLanderValueFunctionArray() {
+    public float[] getLanderValueFunctionArray() {
         return landerValueFunctionTable;
     }
 
-    public float[][][][][][][] getStabilizerValueFunctionArray() {
+    public float[] getStabilizerValueFunctionArray() {
         return stabilizerValueFunctionTable;
     }
 
     public static Action combineCoupledActions(Action landerAction, Action stabilizerAction) {
-        return new Action(landerAction.getThrustDouble(), stabilizerAction.getGimbleYDouble(), stabilizerAction.getGimbleZDouble());
+        return new Action(landerAction.getDouble("thrust"), stabilizerAction.getDouble("gimbleY"), stabilizerAction.getDouble("gimbleZ"));
+    }
+
+    private HashSet<String> combineAllFields() {
+        HashSet<String> allFields = new HashSet<>();
+        allFields.addAll(stateDefinition); allFields.addAll(actionDefinition);
+        allFields.addAll(stateDefinitionLanding); allFields.addAll(actionDefinitionLanding);
+        allFields.addAll(stateDefinitionStabilizing); allFields.addAll(actionDefinitionStabilizing);
+        return allFields;
     }
 }

@@ -69,8 +69,8 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
 
     public float rewardStabilizing(StateActionTuple.State state) {
-        float angleReward = rewardAngleStabilizing(state.getAngleZDouble() * (180.0f / Math.PI));
-        float positionReward = rewardPositionStabilizing(state.getPositionXDouble(), state.getPositionYDouble());
+        float angleReward = rewardAngleStabilizing(state.getDouble("angleZ") * (180.0f / Math.PI));
+        float positionReward = rewardPositionStabilizing(state.getDouble("positionX"), state.getDouble("positionY"));
         return angleReward + positionReward;
     }
 

@@ -41,24 +41,24 @@ public class MonteCarlo extends ModelBaseImplementation {
 
     /** Traditional Implementation **/
     public float terminalReward(State lastState) {
-        float angleFromZ = (float)(Math.abs(lastState.getAngleZDouble()) * (180.0f / Math.PI));
-        float landingVelocity = (float)Math.abs(lastState.getVelocityDouble());
-        float altitude = (float)lastState.getAltitudeDouble();
+        float angleFromZ = (float)(Math.abs(lastState.getDouble("angleZ")) * (180.0f / Math.PI));
+        float landingVelocity = (float)Math.abs(lastState.getDouble("velocity"));
+        float altitude = (float)Math.abs(lastState.getDouble("altitude"));
         return -(angleFromZ + landingVelocity) * (altitude + 1.0f);
     }
     public float reward(State state) {
-        return -(float)(Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
+        return -(float)(Math.abs(state.getDouble("angleZ")) * (180.0f / Math.PI));
     }
 
     /** Coupled Implementation **/
 
     /** Landing **/
     public float terminalLandingReward(State lastState) {
-        float landingVelocity = (float)Math.abs(lastState.getVelocityDouble());
+        float landingVelocity = (float)Math.abs(lastState.getDouble("velocity"));
         return - (landingVelocity);
     }
     public float rewardLanding(StateActionTuple.State state) {
-        return - (float)(state.getThrustDouble() / 100.0f);
+        return - (float)(state.getDouble("thrust") / 100.0f);
     }
 
     /** Stabilizing **/
@@ -66,6 +66,6 @@ public class MonteCarlo extends ModelBaseImplementation {
         return 10.0f * rewardStabilizing(lastState);
     }
     public float rewardStabilizing(StateActionTuple.State state) {
-        return -(float) (Math.abs(state.getAngleZDouble()) * (180.0f / Math.PI));
+        return -(float) (Math.abs(state.getDouble("angleZ") * (180.0f / Math.PI)));
     }
 }

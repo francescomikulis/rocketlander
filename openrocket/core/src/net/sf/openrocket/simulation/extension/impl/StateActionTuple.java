@@ -2,69 +2,80 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import java.io.Serializable;
 import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.simulation.extension.impl.RLModel.*;
 import net.sf.openrocket.util.Coordinate;
-import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 
 import java.lang.reflect.Field;
 
+import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
+
 public class StateActionTuple implements Serializable {
-    public static float _1deg = (float)Math.PI / 180;
-    public static float _30deg = (float)Math.PI / 6;
-    public static float _60deg = (float)Math.PI / 3;
-    public static float _45deg = (float)Math.PI / 4;
-    public static float _2deg = (float)Math.PI / 90;
-    public static float _20deg = (float)Math.PI / 9;
-    public static float _0_5deg = (float)Math.PI / 360;
-    public static float _15deg = (float)Math.PI / 12;
-    public static float _5deg = (float)Math.PI / 36;
-    public static float _180deg = (float)Math.PI;
-    public static float _90deg = (float)Math.PI / 2;
-    public static float _720deg = (float)Math.PI * 4;
-    public static float _4deg = (float)Math.PI / 90;
+    public static StateActionTuple baseClass = new StateActionTuple(null, null);
+
+    public static double _1deg = (float)Math.PI / 180;
+    public static double _30deg = (float)Math.PI / 6;
+    public static double _60deg = (float)Math.PI / 3;
+    public static double _45deg = (float)Math.PI / 4;
+    public static double _2deg = (float)Math.PI / 90;
+    public static double _20deg = (float)Math.PI / 9;
+    public static double _0_5deg = (float)Math.PI / 360;
+    public static double _15deg = (float)Math.PI / 12;
+    public static double _5deg = (float)Math.PI / 36;
+    public static double _180deg = (float)Math.PI;
+    public static double _90deg = (float)Math.PI / 2;
+    public static double _720deg = (float)Math.PI * 4;
+    public static double _4deg = (float)Math.PI / 90;
 
     // altitude, positionX, positionY & velocity
-    public static float MIN_ALTITUDE = 0.0f;
-    public static float MAX_ALTITUDE = 36.0f;
-    public static float ALTITUDE_PRECISION = 1.0f;
+    public static double MIN_ALTITUDE = 0.0f;
+    public static double MAX_ALTITUDE = 36.0f;
+    public static double ALTITUDE_PRECISION = 1.0f;
 
-    public static float MIN_VELOCITY = -15.0f;
-    public static float MAX_VELOCITY = 5.0f;
-    public static float VELOCITY_PRECISION = 1.0f;
+    public static double MIN_VELOCITY = -15.0f;
+    public static double MAX_VELOCITY = 5.0f;
+    public static double VELOCITY_PRECISION = 1.0f;
 
-    public static float MIN_POSITION = -8.0f;
-    public static float MAX_POSITION = 8.0f;
-    public static float POSITION_PRECISION = 100.0f;
+    // positionX, positionY
+    public static double MIN_POSITIONX = -8.0f;
+    public static double MIN_POSITIONY = MIN_POSITIONX;
+    public static double MAX_POSITIONX = 8.0f;
+    public static double MAX_POSITIONY = MAX_POSITIONX;
+    public static double POSITIONX_PRECISION = 100.0f;
+    public static double POSITIONY_PRECISION = 100.0f;
+
     // thurst
-    public static float MIN_THRUST = 0.0f;
-    public static float MAX_THRUST = 1.0f;
-    public static float MIN_THRUST_INCREMENT_PER_TIMESTEP = 0.25f;  // TODO: RESTORE TO 0.25!!!
-    public static float MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 1.0!!!
-    // orientation
-    public static float MIN_TERMINAL_ORIENTATION_Z = 0.0f; // 30deg
-    public static float MAX_TERMINAL_ORIENTATION_Z = _30deg; // 30deg
-    // orientation angles
-    public static float ANGLE_X_PRECISION = _45deg;  // TODO: RESTORE TO _45deg!!!
-    public static float ANGLE_Z_PRECISION = _2deg;  // TODO: RESTORE TO _2deg!!!
+    public static double MIN_THRUST = 0.0f;
+    public static double MAX_THRUST = 1.0f;
+    public static double THRUST_PRECISION = 0.25f;  // TODO: RESTORE TO 0.25!!!
+    public static double MAX_THRUST_INCREMENT_PER_TIMESTEP = 1.0f;  // TODO: RESTORE TO 1.0!!!
+
+    // angleX
+    public static double MIN_ANGLEX = -_720deg;
+    public static double MAX_ANGLEX =_720deg;
+    public static double ANGLEX_PRECISION = _45deg;  // TODO: RESTORE TO _45deg!!!
+    // angleZ
+    public static double MIN_ANGLEZ = 0.0f; // 0deg
+    public static double MAX_ANGLEZ = _30deg; // 30deg
+    public static double ANGLEZ_PRECISION = _2deg;  // TODO: RESTORE TO _2deg!!!
+
     // gimble angles
-    public static float MIN_GIMBLE_Y = -_720deg;
-    public static float MAX_GIMBLE_Y = _720deg;
-    public static float MIN_GIMBLE_Z = 0.0f;
-    public static float MAX_GIMBLE_Z = _5deg;  // TODO: RESTORE TO _15deg!!!
-    public static float MAX_HALF_CIRCLE = _180deg;
+    public static double MIN_GIMBLEY = -_720deg;
+    public static double MAX_GIMBLEY = _720deg;
+    public static double MIN_GIMBLEZ = 0.0f;
+    public static double MAX_GIMBLEZ = _5deg;  // TODO: RESTORE TO _15deg!!!
+    public static double MAX_HALF_CIRCLE = _180deg;
 
-    public static float MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;  // TODO: RESTORE TO 45!!!
-    //public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _45deg;
-    public static float MAX_GIMBLE_Y_INCREMENT_PER_TIMESTEP = _180deg;
-    public static float MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _1deg; // TODO: RESTORE TO 1!!!
+    public static double GIMBLEY_PRECISION = _45deg;  // TODO: RESTORE TO 45!!!
+    //public static float MAX_GIMBLEY_INCREMENT = _45deg;
+    public static double MAX_GIMBLEY_INCREMENT = _180deg;
+    public static double GIMBLEZ_PRECISION = _1deg; // TODO: RESTORE TO 1!!!
     //public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = _2deg;
-    public static float MAX_GIMBLE_Z_INCREMENT_PER_TIMESTEP = MAX_GIMBLE_Z;
+    public static double MAX_GIMBLEZ_INCREMENT = MAX_GIMBLEZ;
 
-    public static float TIME_PRECISION = 1.0f;
-    public static float MIN_TIME = 0.0f;
-    public static float MAX_TIME = 7.0f;
+    public static double TIME_PRECISION = 1.0f;
+    public static double MIN_TIME = 0.0f;
+    public static double MAX_TIME = 7.0f;
 
     public State state;
     public Action action;
@@ -75,7 +86,9 @@ public class StateActionTuple implements Serializable {
 
     @Override
     public String toString() {
-        return ("(" + state.toString() + ", " + action.toString() + ")");
+        String stateString = (state != null) ? state.toString() : "";
+        String actionString = (action != null) ? action.toString() : "";
+        return ("(" + stateString + ", " + actionString + ")");
     }
 
     @Override
@@ -126,58 +139,56 @@ public class StateActionTuple implements Serializable {
             return result;
         }
 
-        // Thrust
-
-        public double getThrustDouble() { return ((double)this.thrust * MIN_THRUST_INCREMENT_PER_TIMESTEP); }
-
-        public StateActionClass setThrust(double thrust) {
-            if ((thrust < MIN_THRUST) || (thrust > MAX_THRUST + 0.0001)) {
-                throw new IllegalArgumentException("Invalid Thrust");
-            }
-            this.thrust = group_by_precision(thrust, MIN_THRUST_INCREMENT_PER_TIMESTEP);
-            return this;
-        }
-
-        protected int group_angle_by_precision(double angle, double precision) {
-            double shiftedAngle = ((angle + (2 * Math.PI)) % (2 * Math.PI));
+        protected static int group_angle_by_precision(double angle, double precision) {
+            if (angle == 2 * Math.PI) angle -= 0.00001;  // fall into right sector
+            double shiftedAngle = ((angle + (4 * Math.PI)) % (2 * Math.PI));
             return group_by_precision(shiftedAngle, precision);
         }
 
-        // GimbleY
 
-        protected StateActionClass setGimbleY(double gimbleY) {
-            this.gimbleY = group_angle_by_precision(gimbleY, MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP);
-            return this;
+
+
+
+
+        public int getInt(String field) {
+            return (int)getDynamicField(this, field);
         }
 
-        public double getGimbleYDouble() {
-            // Radians
-            return gimbleY * MIN_GIMBLE_Y_INCREMENT_PER_TIMESTEP;
+        public Object get(String field) {
+            return get(this, field);
         }
 
-        // GimbleZ
-
-        protected StateActionClass setGimbleZ(double gimbleZ) {
-            this.gimbleZ = group_angle_by_precision(gimbleZ, MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP);
-            return this;
+        public static Object get(StateActionClass object, String field) {
+            return getDynamicField(object, field);
         }
 
-        public double getGimbleZDouble() {
-            // Radians
-            return gimbleZ * MIN_GIMBLE_Z_INCREMENT_PER_TIMESTEP;
+        public double getDouble(String field) {
+            return getDouble(this, field);
         }
 
-        public int getField(String field) {
-            if (field.equals("thrust")) return this.thrust;
-            if (field.equals("gimbleY")) return this.gimbleY;
-            if (field.equals("gimbleZ")) return this.gimbleZ;
-            return Integer.MAX_VALUE;
+        public static double getDouble(StateActionClass object, String field) {
+            String precisionField = field.toUpperCase() + "_PRECISION";
+            return object.getInt(field) * getConstant(precisionField);
         }
 
-        public void setField(String field, int value) {
-            if (field.equals("thrust")) this.thrust = value;
-            if (field.equals("gimbleY")) this.gimbleY = value;
-            if (field.equals("gimbleZ")) this.gimbleZ = value;
+        public StateActionClass set(String field, Object value) {
+            return (StateActionClass)setDynamicField(this, field, value);
+        }
+
+        public StateActionClass setDouble(String field, double value) {
+            return setDouble(this, field, value);
+        }
+
+        public static StateActionClass setDouble(StateActionClass object, String field, double value) {
+            int realValue = 0;
+            String precisionField = field.toUpperCase() + "_PRECISION";
+            if (precisionField.contains("GIMBLE") || precisionField.contains("ANGLE"))
+                realValue = group_angle_by_precision(value, getConstant(precisionField));
+            else if (precisionField.contains("POSITION"))
+                realValue = group_by_precision_symmetric(value, getConstant(precisionField));
+            else
+                realValue = group_by_precision(value, getConstant(precisionField));
+            return object.set(field, realValue);
         }
     }
 
@@ -195,90 +206,17 @@ public class StateActionTuple implements Serializable {
         public State(SimulationStatus status) {
             if (status == null) return;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
-            setAltitude(status.getRocketPosition().z);
-            setPositionX(status.getRocketPosition().x);
-            setPositionY(status.getRocketPosition().y);
-            setVelocity(status.getRocketVelocity().z);
+            setDouble("altitude", status.getRocketPosition().z);
+            setDouble("positionX", status.getRocketPosition().x);
+            setDouble("positionY", status.getRocketPosition().y);
+            setDouble("velocity", status.getRocketVelocity().z);
             //setVelocity(Math.signum(status.getRocketVelocity().z) * status.getRocketVelocity().length());
-            setAngleX(Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
-            setAngleZ(Math.acos(rocketDirection.z));
-            setTime(status.getSimulationTime());
-            /*
-            // OpenRocket traditional approach - not working
 
-            // Vertical orientation (zenith)
-            double theta = Math.atan2(rocketDirection.z, MathUtil.hypot(rocketDirection.x, rocketDirection.y)) - Math.PI /2;  // offset vertical to 0 deg
-            // Lateral orientation (azimuth)
-            double phi = Math.atan2(rocketDirection.y, rocketDirection.x);
-            if (phi < -(Math.PI - 0.0001))
-                phi = Math.PI;
-            setAngleX(phi);
-            setAngleZ(theta);
-             */
+            setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
+            setDouble("angleZ", Math.acos(rocketDirection.z));
+            setDouble("time", status.getSimulationTime());
         }
 
-        public State setAltitude(double altitude) {
-            this.altitude = group_by_precision(altitude, ALTITUDE_PRECISION);
-            return this;
-        }
-
-        public double getAltitudeDouble() {
-            return altitude * ALTITUDE_PRECISION;
-        }
-
-        public State setPositionX(double positionX) {
-            this.positionX = group_by_precision_symmetric(positionX, POSITION_PRECISION);
-            return this;
-        }
-
-        public double getPositionXDouble() {
-            return positionX * POSITION_PRECISION;
-        }
-
-        public State setPositionY(double positionY) {
-            this.positionY = group_by_precision_symmetric(positionY, POSITION_PRECISION);
-            return this;
-        }
-
-        public double getPositionYDouble() {
-            return positionY * POSITION_PRECISION;
-        }
-
-        public State setVelocity(double velocity) {
-            this.velocity = group_by_precision(velocity, VELOCITY_PRECISION);
-            return this;
-        }
-
-        public double getVelocityDouble() {
-            return velocity * VELOCITY_PRECISION;
-        }
-
-        public State setAngleX(double angle) {
-            this.angleX = group_angle_by_precision(angle, ANGLE_X_PRECISION);
-            return this;
-        }
-
-        public double getAngleXDouble() {
-            return angleX * ANGLE_X_PRECISION;
-        }
-
-        public State setAngleZ(double angle) {
-            this.angleZ = group_angle_by_precision(angle, ANGLE_Z_PRECISION);
-            return this;
-        }
-
-        public double getAngleZDouble() {
-            return angleZ * ANGLE_Z_PRECISION;
-        }
-
-        public State setTime(double time) {
-            this.time = group_by_precision(time, TIME_PRECISION);
-            return this;
-        }
-
-        public double getTimeDouble() {
-            return time * TIME_PRECISION;
-        }
 
         @Override
         public int hashCode() {
@@ -286,7 +224,7 @@ public class StateActionTuple implements Serializable {
         }
 
         private int special_area_angle_hashcode() {
-            if (this.angleZ == group_angle_by_precision(Math.PI / 2, ANGLE_Z_PRECISION)) {
+            if (this.angleZ == group_angle_by_precision(Math.PI / 2, ANGLEZ_PRECISION)) {
                 this.angleX = 0;  // adapt for this special case.  May be needed when comparing equals code.
                 return this.angleZ;
             }
@@ -302,44 +240,22 @@ public class StateActionTuple implements Serializable {
             if (getClass() != obj.getClass())
                 return false;
             State other = (State) obj;
-            return altitude == other.altitude && velocity == other.velocity &&
-                    angleX == other.angleX && angleZ == other.angleZ &&
-                    gimbleY == other.gimbleY && gimbleZ == other.gimbleZ && time == other.time;
+            boolean equivalent = true;
+            for (String stateField: stateDefinition) {
+                equivalent = equivalent && this.get(stateField) == other.get(stateField);
+            }
+            return equivalent;
         }
 
         @Override
         public String toString() { return stringifyObject(this); }
-
-        public int getField(String field) {
-            int result = super.getField(field);
-            if (result != Integer.MAX_VALUE) return result;
-            if (field.equals("altitude")) return this.altitude;
-            if (field.equals("positionX")) return this.positionX;
-            if (field.equals("positionY")) return this.positionY;
-            if (field.equals("velocity")) return this.velocity;
-            if (field.equals("angleX")) return this.angleX;
-            if (field.equals("angleZ")) return this.angleZ;
-            if (field.equals("time")) return this.time;
-            return Integer.MAX_VALUE;
-        }
-
-        public void setField(String field, int value) {
-            super.setField(field, value);
-            if (field.equals("altitude")) this.altitude = value;
-            if (field.equals("positionX")) this.positionX = value;
-            if (field.equals("positionY")) this.positionY = value;
-            if (field.equals("velocity")) this.velocity = value;
-            if (field.equals("angleX")) this.angleX = value;
-            if (field.equals("angleZ")) this.angleZ = value;
-            if (field.equals("time")) this.time = value;
-        }
     }
 
     public static class Action extends StateActionClass {
         public Action(double thrust, double gimbleY, double gimbleZ) {
-            setThrust(thrust);
-            setGimbleY(gimbleY);
-            setGimbleZ(gimbleZ);
+            setDouble("thrust", thrust);
+            setDouble("gimbleY", gimbleY);
+            setDouble("gimbleZ", gimbleZ);
         }
 
         @Override
@@ -356,7 +272,11 @@ public class StateActionTuple implements Serializable {
             if (getClass() != obj.getClass())
                 return false;
             Action other = (Action) obj;
-            return thrust == other.thrust && gimbleY == other.gimbleY && gimbleZ == other.gimbleZ;
+            boolean equivalent = true;
+            for (String stateField: actionDefinition) {
+                equivalent = equivalent && this.get(stateField) == other.get(stateField);
+            }
+            return equivalent;
         }
 
         @Override
@@ -392,5 +312,51 @@ public class StateActionTuple implements Serializable {
         stringBuilder.append(")");
         return stringBuilder.toString();
     }
+
+    public static Object getDynamicField(Object object, String field){
+        if (object == null) return null;
+        Object result = null;
+        Class<?> c = object.getClass();
+        try {
+            Field f = c.getDeclaredField(field);
+            f.setAccessible(true);
+            result = (Object) f.get(object);
+        } catch (Exception e) {
+            try {
+                Field f = c.getField(field);
+                f.setAccessible(true);
+                result = (Object) f.get(object);
+            } catch (NoSuchFieldException | IllegalAccessException ex) {
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        return result;
+    }
+
+    public static double getConstant(String field){
+        return (double)getDynamicField(baseClass, field);
+    }
+
+    public static Object setDynamicField(Object object, String field, Object value){
+        if (object == null) return null;
+        Class<?> c = object.getClass();
+        try {
+            Field f = c.getDeclaredField(field);
+            f.setAccessible(true);
+            f.set(object, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            try {
+                Field f = c.getField(field);
+                f.setAccessible(true);
+                f.set(object, value);
+            } catch (NoSuchFieldException | IllegalAccessException ex) {
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        return object;
+    }
+
 }
 

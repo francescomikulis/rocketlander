@@ -199,8 +199,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (RLVectoringFlightConditions == null) return null;
 
         //action = new Action(60.0, move_gimbal_to_y, move_gimbal_to_z);
-        RLVectoringThrust *= (action.getThrustDouble());
-        return calculateAcceleration(status, action.getGimbleYDouble(), action.getGimbleZDouble());
+        RLVectoringThrust *= (action.getDouble("thrust"));
+        return calculateAcceleration(status, action.getDouble("gimbleY"), action.getDouble("gimbleZ"));
     }
 
     @Override
