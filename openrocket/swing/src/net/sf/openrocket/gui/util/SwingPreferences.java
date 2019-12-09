@@ -328,7 +328,7 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 		MODIFIED CODE HERE -- THIS IS OUR VERSION
 		return 2 * Runtime.getRuntime().availableProcessors() + 1;
 		*/
-		int numProcessors = Runtime.getRuntime().availableProcessors();
+		int numProcessors = 2 * Runtime.getRuntime().availableProcessors() + 1;
 		if (System.getProperty("os.name").toLowerCase().contains("mac")) {
 			numProcessors = Math.max(1, numProcessors/4);
 		}
@@ -436,7 +436,7 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 	public Simulation getBackgroundSimulation(Rocket rocket) {
 		Simulation s = new Simulation(rocket);
 		SimulationOptions cond = s.getOptions();
-		
+
 		cond.setTimeStep(RK4SimulationStepper.RECOMMENDED_TIME_STEP * 2);
 		return s;
 	}

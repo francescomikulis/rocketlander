@@ -48,7 +48,7 @@ public class ParallelExecutorCache implements ParallelFunctionCache {
 		MODIFIED CODE HERE -- THIS IS OUR VERSION
 		return 2 * Runtime.getRuntime().availableProcessors() + 1;
 		*/
-		this(System.getProperty("os.name").toLowerCase().contains("mac") ? Math.max(1, Runtime.getRuntime().availableProcessors()/4) : Runtime.getRuntime().availableProcessors());
+		this(System.getProperty("os.name").toLowerCase().contains("mac") ? Math.max(1, Runtime.getRuntime().availableProcessors()/4) : 2 * Runtime.getRuntime().availableProcessors() + 1);
 	}
 	
 	/**
