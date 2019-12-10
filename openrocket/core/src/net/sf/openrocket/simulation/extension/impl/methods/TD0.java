@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.ALTITUDE_PRECISION;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class TD0 extends ModelBaseImplementation implements ModelInterface {
@@ -34,25 +33,6 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
 
         putFunction.apply(old,
                 oldValue +  alpha * rewardValue + stepDiscount * currentValue - oldValue);
-    }
-
-    public void updateTerminalCommon(
-            ArrayList<StateActionTuple> stateActionTuples,
-            Function<StateActionTuple.State, Float> terminalReward,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<StateActionTuple.State, Float> reward
-    ) {
-        /*
-        if (stateActionTuples.get(stateActionTuples.size() - 1).state.getAltitudeDouble() <= ALTITUDE_PRECISION) {
-            // positively reward the system
-            ModelBaseImplementation mc = new MonteCarlo();
-            mc.setValueFunctionTable(this.valueFunctionTable);
-            mc.setAlpha(0.1f);
-            mc.setTerminalDiscount(0.999f);
-            mc.updateTerminalCommon(stateActionTuples, terminalReward, valueFunction, putFunction, reward);
-        }
-        */
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }

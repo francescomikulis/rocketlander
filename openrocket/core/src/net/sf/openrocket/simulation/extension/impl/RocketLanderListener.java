@@ -19,12 +19,14 @@ import net.sf.openrocket.util.Quaternion;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
-    private ArrayList<StateActionTuple> episodeStateActions;
+    private ArrayList<StateActionTuple> episodeStateActionsPrimary;
+    private ArrayList<StateActionTuple> episodeStateActionsSecondary;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
     private Random random;
@@ -45,9 +47,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     /** Used by the Visualize3DListener extension */
     public Action getLastAction() {
-        if (episodeStateActions.size() == 0)
-            return null;
-        return episodeStateActions.get(episodeStateActions.size() - 1).action;
+        return model.getLastAction(episodeStateActionsPrimary, episodeStateActionsSecondary);
     }
 
     RocketLanderListener(RocketLander rocketLander) {
@@ -73,20 +73,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
             return false;  // no update
         }
 
-        if (episodeStateActions.size() != 0) {
-            StateActionTuple lastStateAction = episodeStateActions.get(episodeStateActions.size() - 1);
-            state.gimbleY = lastStateAction.action.gimbleY;
-            state.gimbleZ = lastStateAction.action.gimbleZ;
-            state.thrust = lastStateAction.action.thrust;
-        }
-        action = model.generateAction(state, episodeStateActions);
+        model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsSecondary);
 
-        StateActionTuple nextStateActionTuple = new StateActionTuple(state, action);
-        if (episodeStateActions.size() == 0)
-            episodeStateActions.add(nextStateActionTuple);
-        else if (!episodeStateActions.get(episodeStateActions.size() - 1).equals(nextStateActionTuple)) {
-            episodeStateActions.add(nextStateActionTuple);
-        }
+        Action newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsSecondary);
+        if (newAction != null) action = newAction;
+
         return true;
     }
 
@@ -94,7 +85,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void startSimulation(SimulationStatus status) {
         episodeManager.initializeEpisodeManager();
         model.initializeModel();
-        episodeStateActions = episodeManager.initializeEmptyActionStateTuples();
+        episodeStateActionsPrimary = episodeManager.initializeEmptyActionStateTuples();
+        episodeStateActionsSecondary = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
@@ -216,7 +208,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
          */
 
         if (addedStateActionTuple)
-            model.updateStepStateActionValueFunction(episodeStateActions);
+            model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsSecondary);
     }
 
     @Override
@@ -225,7 +217,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(new State(status));
         if (!hasCompletedTerminalUpdate) {
-            model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleanTuple);
+            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsSecondary, terminationBooleanTuple);
             hasCompletedTerminalUpdate = true;
         }
     }

@@ -47,13 +47,13 @@ public class DynamicValueFunctionTable {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         for (String stateField: stateDefinitions) {
-            int currentValue = state.getInt(stateField);
+            int currentValue = (int)state.get(stateField);
             product /= indeces[currentSize];
             index += (currentValue - map.getMinField(stateField)) * product;
             currentSize += 1;
         }
         for (String actionField: actionDefinitions) {
-            int currentValue = action.getInt(actionField);
+            int currentValue = (int)action.get(actionField);
             product /= indeces[currentSize];
             index += (currentValue - map.getMinField(actionField)) * product;
             currentSize += 1;

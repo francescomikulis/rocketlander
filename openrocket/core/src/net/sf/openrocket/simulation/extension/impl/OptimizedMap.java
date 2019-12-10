@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Function;
 
+import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.MAX_HALF_CIRCLE;
+import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.getConstant;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
@@ -99,7 +101,7 @@ public class OptimizedMap {
             double value = (double) getConstant(minField);
             if (field.equals("angleX") || field.equals("gimbleY"))
                 value = 0.0f;
-            int minValue = state.setDouble(field, value).getInt(field);
+            int minValue = (int)state.setDouble(field, value).get(field);
             boundaryMapMin.put(field, minValue);
         }
         for(String field: allFields) {
@@ -107,7 +109,7 @@ public class OptimizedMap {
             double value = (double) getConstant(maxField);
             if (field.equals("angleX") || field.equals("gimbleY"))
                 value = 2 * MAX_HALF_CIRCLE - 0.00001f;
-            int maxValue = state.setDouble(field, value).getInt(field);
+            int maxValue = (int)state.setDouble(field, value).get(field);
             boundaryMapMax.put(field, maxValue);
         }
 
@@ -187,11 +189,11 @@ public class OptimizedMap {
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         for (String stateField: stateDefinition) {
-            int currentValue = state.getInt(stateField);
+            int currentValue = (int)state.get(stateField);
             if ((currentValue < getMinField(stateField)) || (currentValue > getMaxField(stateField))) return false;
         }
         for (String actionField: actionDefinition) {
-            int currentValue = action.getInt(actionField);
+            int currentValue = (int)action.get(actionField);
             if ((currentValue < getMinField(actionField)) || (currentValue > getMaxField(actionField))) return false;
         }
         return true;
@@ -213,14 +215,14 @@ public class OptimizedMap {
         for (String landingField: stateDefinitionLanding) {
             int minValue = getMinField(landingField);
             int maxValue = getMaxField(landingField);
-            int currentValue = state.getInt(landingField);
+            int currentValue = (int)state.get(landingField);
             if (currentValue < minValue) { verticalSuccess = false; state.set(landingField, minValue); }
             if (currentValue > maxValue) { verticalSuccess = false; state.set(landingField, maxValue); }
         }
         for (String stabilizingField: stateDefinitionStabilizing) {
             int minValue = getMinField(stabilizingField);
             int maxValue = getMaxField(stabilizingField);
-            int currentValue = state.getInt(stabilizingField);
+            int currentValue = (int)state.get(stabilizingField);
             if (currentValue < minValue) { angleSuccess = false; state.set(stabilizingField, minValue); }
             if (currentValue > maxValue) { angleSuccess = false; state.set(stabilizingField, maxValue); }
         }

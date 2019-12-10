@@ -23,19 +23,19 @@ public class Sarsa extends ModelBaseImplementation implements ModelInterface {
         double rew = reward(currentStateAction.state);
 
         double[] evaluation = new double[]{0.0,0.0};
-        evaluation[0] = discount * (weight[0] * currentStateAction.action.thrust);
-        evaluation[1] = discount * (weight[1] * currentStateAction.state.velocity);
+        evaluation[0] = discount * (weight[0] * currentStateAction.action.get("thrust"));
+        evaluation[1] = discount * (weight[1] * currentStateAction.state.get("velocity"));
 
 
         StateActionTuple lastStateActionTuple = stateActionTuples.get(lastTimeStep - 1);
 
         double[] previous = new double[]{0.0,0.0};
-        previous[0] = weight[0] * lastStateActionTuple.action.thrust;
-        previous[1] = weight[1] * lastStateActionTuple.state.velocity;
+        previous[0] = weight[0] * lastStateActionTuple.action.get("thrust");
+        previous[1] = weight[1] * lastStateActionTuple.state.get("velocity");
 
         double[] gradient = new double[]{1.0,1.0};
-        gradient[0] = lastStateActionTuple.action.thrust;
-        gradient[1] = lastStateActionTuple.state.velocity;
+        gradient[0] = lastStateActionTuple.action.get("thrust");
+        gradient[1] = lastStateActionTuple.state.get("velocity");
 
         weight[0] = weight[0] + alpha * (rew + evaluation[0] - previous[0]) * gradient[0];
         weight[1] = weight[1] + alpha * (rew + evaluation[1] - previous[1]) * gradient[1];

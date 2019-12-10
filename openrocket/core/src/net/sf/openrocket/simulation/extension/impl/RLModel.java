@@ -8,20 +8,17 @@ import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.*;
 
 
 public class RLModel {
     private Random randomGenerator = new Random();
     private RLEpisodeManager episodeManager = null;
-    private static boolean ONLY_GREEDY = true;
-
-    private static float THRUST_ON_PENALTY = -5;
 
     // MonteCarlo or TD0
     private ModelBaseImplementation primaryMethod = new MonteCarlo();
     private ModelBaseImplementation secondaryMethod = new TD0();
-    public SimulationType simulationType = SimulationType._3D;
+    public SimulationType simulationType = SimulationType._1D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -114,35 +111,74 @@ public class RLModel {
 
     // policy management
 
-    private Action run_policy(State state, ArrayList<StateActionTuple> stateActionTuples) {
-        State lastState = null;
-        Action lastAction = null;
-        if (stateActionTuples.size() > 0) {
-            lastState = stateActionTuples.get(stateActionTuples.size() - 1).state;
-            lastAction = stateActionTuples.get(stateActionTuples.size() - 1).action;
-        }
-        HashSet<Action> possibleActions = generatePossibleActions(state);
+    private Action run_policy(State state, ArrayList<StateActionTuple> stateActionTuplesPrimary, ArrayList<StateActionTuple> stateActionTuplesSecondary) {
         Action action = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            if (state.equals(lastState)) {
-                System.out.println("SHOULD NEVER HAPPEN - DUPLICATE STATES with TRADITIONAL");
-            }
-            action = policy(state, possibleActions, primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
+            State lastState = (stateActionTuplesPrimary.isEmpty()) ? null : stateActionTuplesPrimary.get(stateActionTuplesPrimary.size() - 1).state;
+            if (state.equals(lastState)) { return null; }
+            action = policy(state, generatePossibleActions(state), primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
+            addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action), stateActionTuplesPrimary, OptimizedMap::equivalentState);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            Action bestLanderAction = lastAction;
-            if (!OptimizedMap.equivalentStateLander(state, lastState))
-                bestLanderAction = policy(state, possibleActions, primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
-            possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(state.getDouble("thrust"))));
-            Action bestStabilizerAction = lastAction;
-            if (!OptimizedMap.equivalentStateStabilizer(state, lastState))
+
+            State lastLanderState = (stateActionTuplesPrimary.isEmpty()) ? null : stateActionTuplesPrimary.get(stateActionTuplesPrimary.size() - 1).state;
+            Action bestLanderAction = (stateActionTuplesPrimary.isEmpty()) ? null : stateActionTuplesPrimary.get(stateActionTuplesPrimary.size() - 1).action;
+            if (!OptimizedMap.equivalentStateLander(state, lastLanderState)) {
+                bestLanderAction = policy(state, generatePossibleActions(state), primaryMethod::landingValueFunction, primaryMethod.getExplorationPercentage());
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestLanderAction), stateActionTuplesPrimary, OptimizedMap::equivalentStateLander);
+            }
+
+            double currentThrust = state.getDouble("thrust");
+            state.setDouble("thrust", bestLanderAction.getDouble("thrust"));
+            HashSet<Action> possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
+
+            State lastStabilizerState = (stateActionTuplesSecondary.isEmpty()) ? null : stateActionTuplesSecondary.get(stateActionTuplesSecondary.size() - 1).state;
+            Action bestStabilizerAction = (stateActionTuplesSecondary.isEmpty()) ? null : stateActionTuplesSecondary.get(stateActionTuplesSecondary.size() - 1).action;
+            if (!OptimizedMap.equivalentStateStabilizer(state, lastStabilizerState)) {
                 bestStabilizerAction = policy(state, possibleActions, secondaryMethod::stabilizingValueFunction, secondaryMethod.getExplorationPercentage());
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestStabilizerAction), stateActionTuplesSecondary, OptimizedMap::equivalentStateStabilizer);
+            }
+            state.setDouble("thrust", currentThrust);
+
             action = OptimizedMap.combineCoupledActions(bestLanderAction, bestStabilizerAction);
         }
         return action;
     }
 
+    private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> stateActionTuples, BiFunction<State, State, Boolean> equivalentState) {
+        if (stateActionTuples.size() == 0)
+            stateActionTuples.add(stateActionTuple);
+        else if (!equivalentState.apply(stateActionTuples.get(stateActionTuples.size() - 1).state, stateActionTuple.state)) {
+            stateActionTuples.add(stateActionTuple);
+        }
+    }
+
+    public void updateStateBeforeNextAction(State state, ArrayList<StateActionTuple> stateActionTuplesPrimary, ArrayList<StateActionTuple> stateActionTuplesSecondary) {
+        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
+            if (!stateActionTuplesPrimary.isEmpty()) {
+                Action lastAction = stateActionTuplesPrimary.get(stateActionTuplesPrimary.size() - 1).action;
+                state.set("thrust", lastAction.get("thrust"));
+                state.set("gimbleY", lastAction.get("gimbleY"));
+                state.set("gimbleZ", lastAction.get("gimbleZ"));
+            }
+        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            if (!stateActionTuplesPrimary.isEmpty()) {
+                Action lastLanderAction = stateActionTuplesPrimary.get(stateActionTuplesPrimary.size() - 1).action;
+                state.set("thrust", lastLanderAction.get("thrust"));
+            }
+            if (!stateActionTuplesSecondary.isEmpty()) {
+                Action lastStabilizerAction = stateActionTuplesSecondary.get(stateActionTuplesSecondary.size() - 1).action;
+                state.set("gimbleY", lastStabilizerAction.get("gimbleY"));
+                state.set("gimbleZ", lastStabilizerAction.get("gimbleZ"));
+            }
+        }
+    }
+
+    public Action generateAction(State state, ArrayList<StateActionTuple> stateActionTuplesPrimary, ArrayList<StateActionTuple> stateActionTuplesSecondary) {
+        return run_policy(state, stateActionTuplesPrimary, stateActionTuplesSecondary);
+    }
+
     public Action generateAction(State state, ArrayList<StateActionTuple> stateActionTuples) {
-        return run_policy(state, stateActionTuples);
+        return generateAction(state, stateActionTuples, new ArrayList<>());
     }
 
     private Action policy(State state, HashSet<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
@@ -181,24 +217,24 @@ public class RLModel {
         return selectableActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuplesPrimary, ArrayList<StateActionTuple> stateActionTuplesSecondary) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            primaryMethod.updateStepFunction(stateActionTuples);
+            primaryMethod.updateStepFunction(stateActionTuplesPrimary);
 
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            primaryMethod.updateStepLandingFunction(stateActionTuples);
-            secondaryMethod.updateStepStabilizingFunction(stateActionTuples);
+            primaryMethod.updateStepLandingFunction(stateActionTuplesPrimary);
+            secondaryMethod.updateStepStabilizingFunction(stateActionTuplesSecondary);
         }
     }
 
-    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuples, TerminationBooleanTuple terminationBooleanTuple) {
+    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> stateActionTuplesPrimary, ArrayList<StateActionTuple> stateActionTuplesSecondary, TerminationBooleanTuple terminationBooleanTuple) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            primaryMethod.updateTerminalFunction(stateActionTuples);
+            primaryMethod.updateTerminalFunction(stateActionTuplesPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landingSucceeded()))
-                primaryMethod.updateTerminalLandingFunction(stateActionTuples);
+                primaryMethod.updateTerminalLandingFunction(stateActionTuplesPrimary);
             if (simulationType != SimulationType._1D)
-                secondaryMethod.updateTerminalStabilizingFunction(stateActionTuples);
+                secondaryMethod.updateTerminalStabilizingFunction(stateActionTuplesSecondary);
         }
     }
 
@@ -225,6 +261,22 @@ public class RLModel {
         primaryMethod = method;
         secondaryMethod = primaryMethod;
         method.setValueFunctionTable(valueFunctionTable);
+    }
+
+    public Action getLastAction(ArrayList<StateActionTuple> episodeStateActionsPrimary, ArrayList<StateActionTuple> episodeStateActionsSecondary) {
+        if (episodeStateActionsPrimary.size() == 0)
+            return null;
+
+        Action action = null;
+        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
+            action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
+        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            action = OptimizedMap.combineCoupledActions(
+                    episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
+                    episodeStateActionsSecondary.get(episodeStateActionsSecondary.size() - 1).action
+            );
+        }
+        return action;
     }
 
     @FunctionalInterface
