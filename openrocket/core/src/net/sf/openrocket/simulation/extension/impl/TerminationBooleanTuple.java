@@ -10,10 +10,10 @@ public class TerminationBooleanTuple {
     public boolean simulationFailed() {
         return !this.verticalSuccess || !this.angleSuccess;
     }
-    public boolean landingSucceeded() {
+    public boolean landerSucceeded() {
         return this.verticalSuccess && this.angleSuccess;
     }
-    public boolean stabilizingSucceeded() {
+    public boolean stabilizerSucceeded() {
         return this.angleSuccess;
     }
 }

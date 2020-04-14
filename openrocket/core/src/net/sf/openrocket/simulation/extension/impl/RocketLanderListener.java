@@ -19,14 +19,17 @@ import net.sf.openrocket.util.Quaternion;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
+    private static final double MIN_VELOCITY = -10;
+    private static final double MAX_ALTITUDE = 30;
+
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
     private ArrayList<StateActionTuple> episodeStateActionsPrimary;
-    private ArrayList<StateActionTuple> episodeStateActionsSecondary;
+    private ArrayList<StateActionTuple> episodeStateActionsGimbalX;
+    private ArrayList<StateActionTuple> episodeStateActionsGimbalY;
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
     private Random random;
@@ -47,7 +50,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     /** Used by the Visualize3DListener extension */
     public Action getLastAction() {
-        return model.getLastAction(episodeStateActionsPrimary, episodeStateActionsSecondary);
+        return model.getLastAction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
     }
 
     RocketLanderListener(RocketLander rocketLander) {
@@ -66,17 +69,13 @@ public class RocketLanderListener extends AbstractSimulationListener {
         terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
         model.getValueFunctionTable().alterTerminalStateIfFailure(oldState);
 
-        boolean stateDidNotChange = oldState != null && oldState.equals(state);
+        model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
 
-        if (stateDidNotChange) {
-            // don't add the stateActionTuple because avoiding the duplicate
-            return false;  // no update
+        Action newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        if (newAction != null) {
+            action = newAction;
+            // System.out.println("Action thrust = " + action.getDouble("thrust"));
         }
-
-        model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsSecondary);
-
-        Action newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsSecondary);
-        if (newAction != null) action = newAction;
 
         return true;
     }
@@ -86,7 +85,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeManager.initializeEpisodeManager();
         model.initializeModel();
         episodeStateActionsPrimary = episodeManager.initializeEmptyActionStateTuples();
-        episodeStateActionsSecondary = episodeManager.initializeEmptyActionStateTuples();
+        episodeStateActionsGimbalX = episodeManager.initializeEmptyActionStateTuples();
+        episodeStateActionsGimbalY = episodeManager.initializeEmptyActionStateTuples();
         episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
@@ -208,7 +208,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
          */
 
         if (addedStateActionTuple)
-            model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsSecondary);
+            model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
     }
 
     @Override
@@ -217,7 +217,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(new State(status));
         if (!hasCompletedTerminalUpdate) {
-            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsSecondary, terminationBooleanTuple);
+            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleanTuple);
             hasCompletedTerminalUpdate = true;
         }
     }

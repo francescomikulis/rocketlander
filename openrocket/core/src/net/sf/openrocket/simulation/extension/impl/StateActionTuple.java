@@ -11,16 +11,50 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.*;
+import static java.lang.Math.abs;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 public class StateActionTuple implements Serializable {
-    public static StateActionTuple baseClass = new StateActionTuple(null, null);
     public State state;
     public Action action;
-    public StateActionTuple(State state, Action action) {
+    public StateActionTuple(State state, Action action, HashMap<String, HashMap> definition) {
         this.state = state;
         this.action = action;
+        this.state.definition = definition;
+        this.action.definition = definition;
+        // formula logic
+        if (!definition.containsKey("formulas")) return;
+        for (Object entryObject : definition.get("formulas").entrySet()) {
+            Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+            String assignToField = entry.getKey();
+            String formula = entry.getValue();
+            if (!formula.contains("(")) {
+                String term = formula;
+                double value = bestGuessTermFromString(term, state, action);
+                this.state.setDouble(assignToField, value);
+                value = bestGuessTermFromString(term, action, state);
+                this.action.setDouble(assignToField, value);
+            } else if (formula.equals("add(abs(positionX),abs(positionY))")) {
+                double posX = bestGuessTermFromString("positionX", state, action);
+                double posY = bestGuessTermFromString("positionY", state, action);
+                this.state.setDouble(assignToField, abs(posX) + abs(posY));
+                posX = bestGuessTermFromString("positionX", action, state);
+                posY = bestGuessTermFromString("positionY", action, state);
+                this.action.setDouble(assignToField, abs(posX) + abs(posY));
+            } else {
+                System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
+            }
+        }
+    }
+
+    private double bestGuessTermFromString(String term, StateActionClass primary, StateActionClass fallback) {
+        double value = 0;
+        if (primary.valueMap.containsKey(term)) value = primary.getDouble(term);
+        else {
+            if (fallback.valueMap.containsKey(term)) value = fallback.getDouble(term);
+            else System.out.println("MAJOR ISSUE IN MISSING PROPERTY");
+        }
+        return value;
     }
 
     @Override
@@ -49,6 +83,36 @@ public class StateActionTuple implements Serializable {
 
     public static class StateActionClass implements Serializable {
         public HashMap<String, Integer> valueMap = new HashMap<>();
+        public HashMap<String, HashMap> definition;
+
+        protected void runALLMDPDefinitionFormulas() {
+            HashMap<String, HashMap> originalDefinition = this.definition;
+            this.definition = landerDefinition;
+            runMDPDefinitionFormulas();
+            this.definition = reacherDefinition;
+            runMDPDefinitionFormulas();
+            this.definition = stabilizerDefinition;
+            runMDPDefinitionFormulas();
+            this.definition = originalDefinition;
+        }
+
+        protected void runMDPDefinitionFormulas() {
+            if (!definition.containsKey("formulas")) return;
+            for (Object entryObject : definition.get("formulas").entrySet()) {
+                Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+                String assignToField = entry.getKey();
+                String formula = entry.getValue();
+                if (!formula.contains("(")) {
+                    setDouble(assignToField, getDouble(formula));
+                } else if (formula.equals("add(abs(positionX),abs(positionY))")) {
+                    double posX = getDouble("positionX");
+                    double posY = getDouble("positionY");
+                    setDouble(assignToField, abs(posX) + abs(posY));
+                } else {
+                    System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
+                }
+            }
+        }
 
         protected static int group_by_precision(double value, double precision) {
             return (int) Math.floor((double)value / (double)precision);
@@ -82,10 +146,6 @@ public class StateActionTuple implements Serializable {
             return group_by_precision(shiftedAngle, precision);
         }
 
-
-
-
-
         public int get(String field) {
             Object result = valueMap.get(field);
             if (result == null) return 0;
@@ -101,7 +161,25 @@ public class StateActionTuple implements Serializable {
         }
 
         public static double getDouble(StateActionClass object, String field) {
-            return object.get(field) * getPrecisionConstant(field);
+            return object.get(field) * getPrecisionConstant(object, field);
+        }
+
+        public double getPrecisionConstant(String field) {
+            return getPrecisionConstant(this, field);
+        }
+
+        public static double getPrecisionConstant(StateActionClass object, String field) {
+            float[] fieldDefinition;
+            if ((object == null) || (object.definition == null))
+                System.out.println("SERIOUS PROBLEM IN DEFINITION INITIALIZATION");
+            if (object.definition.get("stateDefinition").containsKey(field)) {
+                fieldDefinition = (float[])object.definition.get("stateDefinition").get(field);
+            } else {
+                fieldDefinition = (float[])object.definition.get("actionDefinition").get(field);
+            }
+            if (fieldDefinition == null)
+                return 0.000000001;
+            return fieldDefinition[2];
         }
 
         public StateActionClass set(String field, int value) {
@@ -130,8 +208,20 @@ public class StateActionTuple implements Serializable {
     // Required data structures.
 
     public static class State extends StateActionClass {
-        public State(SimulationStatus status) {
+        public State(SimulationStatus status){
             if (status == null) return;
+            constructorCode(status, landerDefinition);
+            runALLMDPDefinitionFormulas();
+        }
+
+        public State(SimulationStatus status, HashMap<String, HashMap> definition) {
+            if (status == null) return;
+            constructorCode(status, definition);
+        }
+
+        private void constructorCode(SimulationStatus status, HashMap<String, HashMap> definition) {
+            if (status == null) return;
+            this.definition = definition;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
             setDouble("altitude", status.getRocketPosition().z);
             setDouble("positionX", status.getRocketPosition().x);
@@ -139,9 +229,15 @@ public class StateActionTuple implements Serializable {
             setDouble("velocity", status.getRocketVelocity().z);
             //setVelocity(Math.signum(status.getRocketVelocity().z) * status.getRocketVelocity().length());
 
+            // new angle approach
+            //setDouble("angleX", Math.asin(rocketDirection.x));
+            //setDouble("angleY", Math.asin(rocketDirection.y));
+            // original angle approach
             setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             setDouble("angleZ", Math.acos(rocketDirection.z));
             setDouble("time", status.getSimulationTime());
+
+            runMDPDefinitionFormulas();
         }
 
 
@@ -170,7 +266,8 @@ public class StateActionTuple implements Serializable {
                 return false;
             State other = (State) obj;
             boolean equivalent = true;
-            for (String stateField: stateDefinition) {
+            for (Object objectField : definition.get("stateDefinition").keySet()) {
+                String stateField = (String)objectField;
                 equivalent = equivalent && this.get(stateField) == other.get(stateField);
             }
             return equivalent;
@@ -178,6 +275,17 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public String toString() { return stringifyObject(this); }
+
+        public State deepcopy(HashMap<String, HashMap> definition) {
+            State newState = new State(null);
+            newState.definition = definition;
+            newState.valueMap = new HashMap<>();
+            for (Map.Entry<String, Integer> entry: this.valueMap.entrySet()) {
+                newState.valueMap.put(entry.getKey(), entry.getValue());
+            }
+            runALLMDPDefinitionFormulas();
+            return newState;
+        }
     }
 
     public static class Action extends StateActionClass {
@@ -185,9 +293,22 @@ public class StateActionTuple implements Serializable {
             if (nullObj != null) System.out.println("FAILURE!");
         }
         public Action(double thrust, double gimbleY, double gimbleZ) {
+            constructorCode(thrust, gimbleY, gimbleZ, landerDefinition);
+            runALLMDPDefinitionFormulas();
+        }
+
+        public Action(double thrust, double gimbleY, double gimbleZ, HashMap<String, HashMap> definition) {
+            constructorCode(thrust, gimbleY, gimbleZ, definition);
+        }
+
+        private void constructorCode(double thrust, double gimbleY, double gimbleZ, HashMap<String, HashMap> definition) {
+            this.definition = definition;
+
             setDouble("thrust", thrust);
             setDouble("gimbleY", gimbleY);
             setDouble("gimbleZ", gimbleZ);
+
+            runMDPDefinitionFormulas();
         }
 
         @Override
@@ -205,14 +326,26 @@ public class StateActionTuple implements Serializable {
                 return false;
             Action other = (Action) obj;
             boolean equivalent = true;
-            for (String stateField: actionDefinition) {
-                equivalent = equivalent && this.get(stateField) == other.get(stateField);
+            for (Object objectField : definition.get("actionDefinition").keySet()) {
+                String actionField = (String)objectField;
+                equivalent = equivalent && this.get(actionField) == other.get(actionField);
             }
             return equivalent;
         }
 
         @Override
         public String toString() { return stringifyObject(this); }
+
+        public Action deepcopy(HashMap<String, HashMap> definition) {
+            Action newAction = new Action(0, 0,0 , this.definition);
+            newAction.definition = definition;
+            newAction.valueMap = new HashMap<>();
+            for (Map.Entry<String, Integer> entry: this.valueMap.entrySet()) {
+                newAction.valueMap.put(entry.getKey(), entry.getValue());
+            }
+            newAction.runALLMDPDefinitionFormulas();
+            return newAction;
+        }
     }
 
 
@@ -258,38 +391,6 @@ public class StateActionTuple implements Serializable {
         stringBuilder.append(")");
         return stringBuilder.toString();
          */
-    }
-
-    public static Object getDynamicField(Object object, String stringField){
-        return interactDynamicField(false, object, stringField, 0.0);
-    }
-
-    public static Object setDynamicField(Object object, String stringField, Object value){
-        return interactDynamicField(true, object, stringField, value);
-    }
-
-    public static Object interactDynamicField(boolean needsSet, Object object, String stringField, Object value){
-        if (object == null) return null;
-        Class<?> c = object.getClass();
-        Field field = getField(stringField);
-        if (field != null) {
-            try{
-                if (!needsSet) return field.get(object);
-                else field.set(object, value);
-
-                return object;
-            } catch (IllegalAccessException e) {
-                System.out.println(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-        try {
-            throw new NoSuchFieldException("EXCEPTION!!");
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        }
-        return object;
-
     }
 }
 

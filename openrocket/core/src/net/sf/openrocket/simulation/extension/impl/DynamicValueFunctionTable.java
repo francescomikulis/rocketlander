@@ -6,56 +6,76 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 public class DynamicValueFunctionTable {
     public static float get(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
         float[] valueFunctionTable = map.getValueFunctionArray();
-        return valueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinition, actionDefinition)];
+        return valueFunctionTable[computeIndex(indeces, map, stateActionTuple, generalDefinition)];
     }
-    public static float getLanding(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
+    public static float getLander(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
         float[] landerValueFunctionTable = map.getLanderValueFunctionArray();
-        return landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinitionLanding, actionDefinitionLanding)];
+        return landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)];
     }
-    public static float getStabilizing(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
+    public static float getStabilizer(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
         float[] stabilizerValueFunctionTable = map.getStabilizerValueFunctionArray();
-        return stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinitionStabilizing, actionDefinitionStabilizing)];
+        return stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stabilizerDefinition)];
+    }
+    public static float getReaching(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
+        float[] reachingValueFunctionTable = map.getReacherValueFunctionArray();
+        return reachingValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)];
     }
 
     public static float put(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
         float[] valueFunctionTable = map.getValueFunctionArray();
-        valueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinition, actionDefinition)] = newValue;
+        valueFunctionTable[computeIndex(indeces, map, stateActionTuple, generalDefinition)] = newValue;
         return newValue;
     }
-    public static float putLanding(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
+    public static float putLander(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
         float[] landerValueFunctionTable = map.getLanderValueFunctionArray();
-        landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinitionLanding, actionDefinitionLanding)] = newValue;
+        landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)] = newValue;
         return newValue;
     }
-    public static float putStabilizing(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
+    public static float putStabilizer(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
         float[] stabilizerValueFunctionTable = map.getStabilizerValueFunctionArray();
-        stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stateDefinitionStabilizing, actionDefinitionStabilizing)] = newValue;
+        stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stabilizerDefinition)] = newValue;
+        return newValue;
+    }
+    public static float putReaching(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
+        float[] reacherValueFunctionTable = map.getReacherValueFunctionArray();
+        reacherValueFunctionTable[computeIndex(indeces, map, stateActionTuple, reacherDefinition)] = newValue;
         return newValue;
     }
 
 
-    private static int computeIndex(int indeces[], OptimizedMap map, StateActionTuple stateActionTuple, ArrayList<String> stateDefinitions, ArrayList<String> actionDefinitions) {
+    private static int computeIndex(int indeces[], OptimizedMap map, StateActionTuple stateActionTuple, HashMap<String, HashMap> MDPDefinition) {
         int index = 0;
         int currentSize = 0;
         int product = OptimizedMap.indexProduct(indeces);
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
-        for (String stateField: stateDefinitions) {
-            int currentValue = (int)state.get(stateField);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String stateField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int currentValue = (int) state.get(stateField);
             product /= indeces[currentSize];
-            index += (currentValue - map.getMinField(stateField)) * product;
+            index += (currentValue - minValue) * product;
             currentSize += 1;
         }
-        for (String actionField: actionDefinitions) {
-            int currentValue = (int)action.get(actionField);
+        for (Object entryObject : MDPDefinition.get("actionDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String actionField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int currentValue = (int) action.get(actionField);
             product /= indeces[currentSize];
-            index += (currentValue - map.getMinField(actionField)) * product;
+            index += (currentValue - minValue) * product;
             currentSize += 1;
         }
         return index;

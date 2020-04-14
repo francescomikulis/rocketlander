@@ -6,14 +6,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.function.Function;
 
-import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.MAX_HALF_CIRCLE;
-import static net.sf.openrocket.simulation.extension.impl.StateActionConstants.getConstant;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
@@ -46,19 +41,20 @@ public class OptimizedMap {
     private float[] valueFunctionTable = null;
     private float[] landerValueFunctionTable = null;
     private float[] stabilizerValueFunctionTable = null;
+    private float[] reacherValueFunctionTable = null;
     private int[] indeces;
     private int[] landerIndeces;
     private int[] stabilizerIndeces;
+    private int[] reacherIndeces;
 
-    public HashMap<String, Integer> boundaryMapMin = new HashMap<>();
-    public HashMap<String, Integer> boundaryMapMax = new HashMap<>();
-    public HashMap<String, Method> constants = new HashMap<>();
+    //public HashMap<String, HashMap> boundaryMapMin = new HashMap<>();
+    //public HashMap<String, HashMap> boundaryMapMax = new HashMap<>();
 
     public OptimizedMap() {
         if (mapMethod == MapMethod.Traditional)
             constructorTraditional(null);
         else if (mapMethod == MapMethod.Coupled)
-            constructorCoupled(null, null);
+            constructorCoupled(null, null, null);
     }
 
     public OptimizedMap(float[] newValueFunctionTable) {
@@ -74,11 +70,11 @@ public class OptimizedMap {
         this.valueFunctionTable = newValueFunctionTable;
     }
 
-    public OptimizedMap(float[] newLanderValueFunctionTable, float[] newStabilizerValueFunctionTable) {
-        constructorCoupled(newLanderValueFunctionTable, newStabilizerValueFunctionTable);
+    public OptimizedMap(float[] newLanderValueFunctionTable, float[] newReacherValueFunctionTable, float[] newStabilizerValueFunctionTable) {
+        constructorCoupled(newLanderValueFunctionTable, newReacherValueFunctionTable, newStabilizerValueFunctionTable);
     }
 
-    private void constructorCoupled(float[] newLanderValueFunctionTable, float[] newStabilizerValueFunctionTable) {
+    private void constructorCoupled(float[] newLanderValueFunctionTable, float[] newReacherValueFunctionTable, float[] newStabilizerValueFunctionTable) {
         constructorCode();
 
         // allocate new function table
@@ -88,43 +84,34 @@ public class OptimizedMap {
         if (newStabilizerValueFunctionTable == null)
             newStabilizerValueFunctionTable = allocateNewStabilizerValueFunctionTable();
         this.stabilizerValueFunctionTable = newStabilizerValueFunctionTable;
+        if (newReacherValueFunctionTable == null)
+            newReacherValueFunctionTable = allocateNewReacherValueFunctionTable();
+        this.reacherValueFunctionTable = newReacherValueFunctionTable;
     }
 
     private void constructorCode() {
-        HashSet<String> allFields = combineAllFields();
+        addIntegersToDefinition(generalDefinition);
+        addIntegersToDefinition(landerDefinition);
+        addIntegersToDefinition(reacherDefinition);
+        addIntegersToDefinition(stabilizerDefinition);
 
-        // generate low minimum values
-        StateActionTuple stateActionTuple = new StateActionTuple(null, null);
-        State state = new State(null);
-        for(String field: allFields) {
-            String minField = "MIN_" + field.toUpperCase();
-            double value = (double) getConstant(minField);
-            if (field.equals("angleX") || field.equals("gimbleY"))
-                value = 0.0f;
-            int minValue = (int)state.setDouble(field, value).get(field);
-            boundaryMapMin.put(field, minValue);
-        }
-        for(String field: allFields) {
-            String maxField = "MAX_" + field.toUpperCase();
-            double value = (double) getConstant(maxField);
-            if (field.equals("angleX") || field.equals("gimbleY"))
-                value = 2 * MAX_HALF_CIRCLE - 0.00001f;
-            int maxValue = (int)state.setDouble(field, value).get(field);
-            boundaryMapMax.put(field, maxValue);
-        }
-
-        indeces = generateIndex(stateDefinition, actionDefinition);
-        landerIndeces = generateIndex(stateDefinitionLanding, actionDefinitionLanding);
-        stabilizerIndeces = generateIndex(stateDefinitionStabilizing, actionDefinitionStabilizing);
+        indeces = generateIndex(generalDefinition);
+        landerIndeces = generateIndex(landerDefinition);
+        stabilizerIndeces = generateIndex(stabilizerDefinition);
+        reacherIndeces = generateIndex(reacherDefinition);
     }
 
 
     public float getLander(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getLanding(this, landerIndeces, stateActionTuple);
+        return DynamicValueFunctionTable.getLander(this, landerIndeces, stateActionTuple);
     }
 
     public float getStabilizer(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getStabilizing(this, stabilizerIndeces, stateActionTuple);
+        return DynamicValueFunctionTable.getStabilizer(this, stabilizerIndeces, stateActionTuple);
+    }
+
+    public float getReacher(StateActionTuple stateActionTuple) {
+        return DynamicValueFunctionTable.getReaching(this, reacherIndeces, stateActionTuple);
     }
 
     public float get(StateActionTuple stateActionTuple) {
@@ -132,11 +119,15 @@ public class OptimizedMap {
     }
 
     public float putLander(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putLanding(this, landerIndeces, stateActionTuple, newValue);
+        return DynamicValueFunctionTable.putLander(this, landerIndeces, stateActionTuple, newValue);
     }
 
     public float putStabilizer(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putStabilizing(this, stabilizerIndeces, stateActionTuple, newValue);
+        return DynamicValueFunctionTable.putStabilizer(this, stabilizerIndeces, stateActionTuple, newValue);
+    }
+
+    public float putReacher(StateActionTuple stateActionTuple, float newValue) {
+        return DynamicValueFunctionTable.putReaching(this, reacherIndeces, stateActionTuple, newValue);
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
@@ -146,7 +137,8 @@ public class OptimizedMap {
     public static boolean equivalentStateLander(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
         boolean equivalent = true;
-        for (String stateField: stateDefinitionLanding) {
+        for (Object objectField : landerDefinition.get("stateDefinition").keySet()) {
+            String stateField = (String)objectField;
             equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
         }
         return equivalent;
@@ -155,7 +147,18 @@ public class OptimizedMap {
     public static boolean equivalentStateStabilizer(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
         boolean equivalent = true;
-        for (String stateField: stateDefinitionStabilizing) {
+        for (Object objectField : stabilizerDefinition.get("stateDefinition").keySet()) {
+            String stateField = (String)objectField;
+            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
+        }
+        return equivalent;
+    }
+
+    public static boolean equivalentStateReacher(State state_a, State state_b) {
+        if (state_a == null || state_b == null) return false;
+        boolean equivalent = true;
+        for (Object objectField : reacherDefinition.get("stateDefinition").keySet()) {
+            String stateField = (String)objectField;
             equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
         }
         return equivalent;
@@ -164,7 +167,8 @@ public class OptimizedMap {
     public static boolean equivalentState(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
         boolean equivalent = true;
-        for (String stateField: stateDefinition) {
+        for (Object objectField : generalDefinition.get("stateDefinition").keySet()) {
+            String stateField = (String)objectField;
             equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
         }
         return equivalent;
@@ -181,30 +185,12 @@ public class OptimizedMap {
         // return checkBounds(stateActionTuple);
     }
 
-    public boolean checkBounds(State state) {
-        return checkBounds(new StateActionTuple(state, new Action(0, 0, 0)));
+    public int getMinField(int[] minMax) {
+        return minMax[0];
     }
 
-    public boolean checkBounds(StateActionTuple stateActionTuple) {
-        State state = stateActionTuple.state;
-        Action action = stateActionTuple.action;
-        for (String stateField: stateDefinition) {
-            int currentValue = (int)state.get(stateField);
-            if ((currentValue < getMinField(stateField)) || (currentValue > getMaxField(stateField))) return false;
-        }
-        for (String actionField: actionDefinition) {
-            int currentValue = (int)action.get(actionField);
-            if ((currentValue < getMinField(actionField)) || (currentValue > getMaxField(actionField))) return false;
-        }
-        return true;
-    }
-
-    public int getMinField(String baseField) {
-        return boundaryMapMin.get(baseField);
-    }
-
-    public int getMaxField(String baseField) {
-        return boundaryMapMax.get(baseField);
+    public int getMaxField(int[] minMax) {
+        return minMax[1];
     }
 
     public TerminationBooleanTuple alterTerminalStateIfFailure(State state) {
@@ -212,19 +198,32 @@ public class OptimizedMap {
         boolean angleSuccess = true;
 
         if (state == null) return new TerminationBooleanTuple(true, true);
-        for (String landingField: stateDefinitionLanding) {
-            int minValue = getMinField(landingField);
-            int maxValue = getMaxField(landingField);
-            int currentValue = (int)state.get(landingField);
-            if (currentValue < minValue) { verticalSuccess = false; state.set(landingField, minValue); }
-            if (currentValue > maxValue) { verticalSuccess = false; state.set(landingField, maxValue); }
+        for (Object entryObject : landerDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
+            String landerField = entry.getKey();
+            int minValue = getMinField(entry.getValue());
+            int maxValue = getMaxField(entry.getValue());
+            int currentValue = (int)state.get(landerField);
+            if (currentValue < minValue) { verticalSuccess = false; state.set(landerField, minValue); }
+            if (currentValue > maxValue) { verticalSuccess = false; state.set(landerField, maxValue); }
         }
-        for (String stabilizingField: stateDefinitionStabilizing) {
-            int minValue = getMinField(stabilizingField);
-            int maxValue = getMaxField(stabilizingField);
-            int currentValue = (int)state.get(stabilizingField);
-            if (currentValue < minValue) { angleSuccess = false; state.set(stabilizingField, minValue); }
-            if (currentValue > maxValue) { angleSuccess = false; state.set(stabilizingField, maxValue); }
+        for (Object entryObject : stabilizerDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
+            String stabilizerField = entry.getKey();
+            int minValue = getMinField(entry.getValue());
+            int maxValue = getMaxField(entry.getValue());
+            int currentValue = (int)state.get(stabilizerField);
+            if (currentValue < minValue) { angleSuccess = false; state.set(stabilizerField, minValue); }
+            if (currentValue > maxValue) { angleSuccess = false; state.set(stabilizerField, maxValue); }
+        }
+        for (Object entryObject : reacherDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
+            String reacherField = entry.getKey();
+            int minValue = getMinField(entry.getValue());
+            int maxValue = getMaxField(entry.getValue());
+            int currentValue = (int)state.get(reacherField);
+            if (currentValue < minValue) { angleSuccess = false; state.set(reacherField, minValue); }
+            if (currentValue > maxValue) { angleSuccess = false; state.set(reacherField, maxValue); }
         }
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
@@ -247,15 +246,24 @@ public class OptimizedMap {
         return DynamicValueFunctionTable.callAllocation(indexProduct(stabilizerIndeces));
     }
 
-    private int[] generateIndex(ArrayList<String> stateDefinition, ArrayList<String> actionDefinition){
-        int[] indeces = new int[stateDefinition.size() + actionDefinition.size()];
+    private float[] allocateNewReacherValueFunctionTable() {
+        System.out.println("Allocating stateSpace: " + indexProduct(reacherIndeces));
+        // return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
+        return DynamicValueFunctionTable.callAllocation(indexProduct(reacherIndeces));
+    }
+
+    private int[] generateIndex(HashMap<String, HashMap> MDPDefinition){
+        int[] indeces = new int[MDPDefinition.get("stateDefinitionIntegers").size() + MDPDefinition.get("actionDefinitionIntegers").size()];
         int index = 0;
-        for (String stateField: stateDefinition) {
-            indeces[index] = (getMaxField(stateField) - getMinField(stateField) + 1);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
+            indeces[index] = (getMaxField(entry.getValue()) - getMinField(entry.getValue()) + 1);
             index += 1;
         }
-        for (String actionField: actionDefinition) {
-            indeces[index] = (getMaxField(actionField) - getMinField(actionField) + 1);
+        for (Object entryObject : MDPDefinition.get("actionDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
+            indeces[index] = (getMaxField(entry.getValue()) - getMinField(entry.getValue()) + 1);
             index += 1;
         }
         return indeces;
@@ -281,15 +289,48 @@ public class OptimizedMap {
         return stabilizerValueFunctionTable;
     }
 
+    public float[] getReacherValueFunctionArray() {
+        return reacherValueFunctionTable;
+    }
+
     public static Action combineCoupledActions(Action landerAction, Action stabilizerAction) {
         return new Action(landerAction.getDouble("thrust"), stabilizerAction.getDouble("gimbleY"), stabilizerAction.getDouble("gimbleZ"));
     }
 
-    private HashSet<String> combineAllFields() {
-        HashSet<String> allFields = new HashSet<>();
-        allFields.addAll(stateDefinition); allFields.addAll(actionDefinition);
-        allFields.addAll(stateDefinitionLanding); allFields.addAll(actionDefinitionLanding);
-        allFields.addAll(stateDefinitionStabilizing); allFields.addAll(actionDefinitionStabilizing);
-        return allFields;
+    public static Action combineCoupledTripleActions(Action landerAction, Action gimbalXAction, Action gimbalYAction) {
+        return new Action(landerAction.getDouble("thrust"), gimbalXAction.getDouble("gimbleY"), gimbalYAction.getDouble("gimbleZ"));
+    }
+
+    private void addIntegersToDefinition(HashMap<String, HashMap> MDPDefinition) {
+        State state = new State(null);
+        state.definition = MDPDefinition;
+
+        // state section
+        HashMap<String, int[]> integerFields = new HashMap<>();
+        for (Object entryObject : MDPDefinition.get("stateDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
+            String field = entry.getKey();
+            float[] fieldDefinition = entry.getValue();
+            float minFloatValue = fieldDefinition[0];  // low
+            int minIntValue = (int)state.setDouble(field, minFloatValue).get(field);
+            float maxFloatValue = fieldDefinition[1];  // high
+            int maxIntValue = (int)state.setDouble(field, maxFloatValue).get(field);
+            integerFields.put(field, new int[]{minIntValue, maxIntValue});
+        }
+        MDPDefinition.put("stateDefinitionIntegers", integerFields);
+
+        // action section
+        integerFields = new HashMap<>();
+        for (Object entryObject : MDPDefinition.get("actionDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
+            String field = entry.getKey();
+            float[] fieldDefinition = entry.getValue();
+            float minFloatValue = fieldDefinition[0];  // low
+            int minIntValue = (int)state.setDouble(field, minFloatValue).get(field);
+            float maxFloatValue = fieldDefinition[1];  // high
+            int maxIntValue = (int)state.setDouble(field, maxFloatValue).get(field);
+            integerFields.put(field, new int[]{minIntValue, maxIntValue});
+        }
+        MDPDefinition.put("actionDefinitionIntegers", integerFields);
     }
 }

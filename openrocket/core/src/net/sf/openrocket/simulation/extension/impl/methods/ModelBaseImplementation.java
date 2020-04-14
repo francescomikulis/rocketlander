@@ -6,34 +6,44 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
+    public HashMap<String, HashMap> definition;
     float stepDiscount = 0.7f;
     float terminalDiscount = 0.999f;
     float alpha = 0.2f;
 
-    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
+    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action, generalDefinition)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
         return valueFunctionTable.get(stateActionTuple);
     }
 
-    public float landingValueFunction(State state, Action action) { return landingValueFunction(new StateActionTuple(state, action)); }
-    public float landingValueFunction(StateActionTuple stateActionTuple) {
+    public float landerValueFunction(State state, Action action) { return landerValueFunction(new StateActionTuple(state, action, landerDefinition)); }
+    public float landerValueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
         return valueFunctionTable.getLander(stateActionTuple);
     }
-    public float stabilizingValueFunction(State state, Action action) { return stabilizingValueFunction(new StateActionTuple(state, action)); }
-    public float stabilizingValueFunction(StateActionTuple stateActionTuple) {
+    public float stabilizerValueFunction(State state, Action action) { return stabilizerValueFunction(new StateActionTuple(state, action, stabilizerDefinition)); }
+    public float stabilizerValueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
         return valueFunctionTable.getStabilizer(stateActionTuple);
     }
+    public float reachingValueFunction(State state, Action action) { return reachingValueFunction(new StateActionTuple(state, action, reacherDefinition)); }
+    public float reachingValueFunction(StateActionTuple stateActionTuple) {
+        if (!valueFunctionTable.containsKey(stateActionTuple))
+            return 0.0f;
+        return valueFunctionTable.getReacher(stateActionTuple);
+    }
+
 
     public OptimizedMap getValueFunctionTable() {
         return this.valueFunctionTable;
@@ -48,7 +58,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public void setAlpha(float alpha) { this.alpha = alpha; }
 
     public void updateStepCommon(
-            ArrayList<StateActionTuple> stateActionTuples,
+            ArrayList<StateActionTuple> SA,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
             Function<State, Float> reward,
@@ -56,7 +66,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     ) {}
 
     public void updateTerminalCommon(
-            ArrayList<StateActionTuple> stateActionTuples,
+            ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,
             Function<StateActionTuple, Float> valueFunction,
             BiFunction<StateActionTuple, Float, Float> putFunction,
@@ -71,20 +81,20 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
     /** Combined (Traditional) Implementation **/
 
-    public void updateStepFunction(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateStepFunction(ArrayList<StateActionTuple> SA) {
         //System.out.println("Step Combined method");
         updateStepCommon(
-            stateActionTuples,
+            SA,
             this::valueFunction,
             valueFunctionTable::put,
             this::reward,
             OptimizedMap::equivalentState
         );
     }
-    public void updateTerminalFunction(ArrayList<StateActionTuple> stateActionTuples) {
+    public void updateTerminalFunction(ArrayList<StateActionTuple> SA) {
         // System.out.println("Terminal Combined method");
         updateTerminalCommon(
-            stateActionTuples,
+            SA,
             this::terminalReward,
             this::valueFunction,
             valueFunctionTable::put,
@@ -93,64 +103,157 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         );
     }
 
-    /** Landing method references **/
+    /** Lander method references **/
 
-    public void updateStepLandingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        //System.out.println("Step Landing method");
+    public void updateStepLanderFunction(ArrayList<StateActionTuple> SA) {
+        //System.out.println("Step Lander method");
         updateStepCommon(
-            stateActionTuples,
-            this::landingValueFunction,
+            SA,
+            this::landerValueFunction,
             valueFunctionTable::putLander,
-            this::rewardLanding,
+            this::rewardLander,
             OptimizedMap::equivalentStateLander
         );
     }
 
-    public void updateTerminalLandingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        // System.out.println("Terminal Landing method");
+    public void updateTerminalLanderFunction(ArrayList<StateActionTuple> SA) {
+        // System.out.println("Terminal Lander method");
         updateTerminalCommon(
-            stateActionTuples,
-            this::terminalLandingReward,
-            this::landingValueFunction,
+            SA,
+            this::terminalLanderReward,
+            this::landerValueFunction,
             valueFunctionTable::putLander,
-            this::rewardLanding,
+            this::rewardLander,
             OptimizedMap::equivalentStateLander
         );
     }
 
-    /** Stabilizing method references **/
+    /** Stabilizer method references **/
 
-    public void updateStepStabilizingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        //System.out.println("Step Stabilizing method");
+    public void updateStepStabilizerFunction(ArrayList<StateActionTuple> SA) {
+        //System.out.println("Step Stabilizer method");
         updateStepCommon(
-            stateActionTuples,
-            this::stabilizingValueFunction,
+            SA,
+            this::stabilizerValueFunction,
             valueFunctionTable::putStabilizer,
-            this::rewardStabilizing,
+            this::rewardStabilizer,
             OptimizedMap::equivalentStateStabilizer
         );
     }
 
-    public void updateTerminalStabilizingFunction(ArrayList<StateActionTuple> stateActionTuples) {
-        // System.out.println("Terminal Stabilizing method");
+    public void updateTerminalStabilizerFunction(ArrayList<StateActionTuple> SA) {
+        // System.out.println("Terminal Stabilizer method");
         updateTerminalCommon(
-            stateActionTuples,
-            this::terminalStabilizingReward,
-            this::stabilizingValueFunction,
+            SA,
+            this::terminalStabilizerReward,
+            this::stabilizerValueFunction,
             valueFunctionTable::putStabilizer,
-            this::rewardStabilizing,
+            this::rewardStabilizer,
             OptimizedMap::equivalentStateStabilizer
         );
     }
 
-    public static ArrayList<String> stateDefinition = new ArrayList<>(Arrays.asList(
-            "altitude", "positionX", "positionY", "velocity", "time", "angleX", "angleZ", "thrust", "gimbleY", "gimbleZ"
-    ));
-    public static ArrayList<String> actionDefinition = new ArrayList<>(Arrays.asList("thrust", "gimbleY", "gimbleZ"));
+    /** Reaching method references **/
 
-    public static ArrayList<String> stateDefinitionLanding = new ArrayList<>(Arrays.asList("altitude", "velocity", "time"));
-    public static ArrayList<String> actionDefinitionLanding = new ArrayList<>(Arrays.asList("thrust"));
+    public void updateStepReachingFunction(ArrayList<StateActionTuple> SA) {
+        //System.out.println("Step Stabilizer method");
+        updateStepCommon(
+                SA,
+                this::reachingValueFunction,
+                valueFunctionTable::putReacher,
+                this::rewardReaching,
+                OptimizedMap::equivalentStateReacher
+        );
+    }
 
-    public static ArrayList<String> stateDefinitionStabilizing = new ArrayList<>(Arrays.asList("positionX", "positionY", "angleX", "angleZ"));
-    public static ArrayList<String> actionDefinitionStabilizing = new ArrayList<>(Arrays.asList("thrust", "gimbleY", "gimbleZ"));
+    public void updateTerminalReachingFunction(ArrayList<StateActionTuple> SA) {
+        // System.out.println("Terminal Stabilizer method");
+        updateTerminalCommon(
+                SA,
+                this::terminalReachingReward,
+                this::reachingValueFunction,
+                valueFunctionTable::putReacher,
+                this::rewardReaching,
+                OptimizedMap::equivalentStateReacher
+        );
+    }
+
+    // general ----- NOTE: PRECISIONS ARE NOT CORRECT!
+    public static HashMap<String, HashMap> generalDefinition = new HashMap<String, HashMap>() {{
+        put("stateDefinition",  new HashMap<String, float[]>() {{
+            put("altitude", new float[]{0, 1, 0.25f});
+            put("positionX", new float[]{0, 1, 0.25f});
+            put("positionY", new float[]{0, 1, 0.25f});
+            put("velocity", new float[]{0, 1, 0.25f});
+            put("time", new float[]{0, 1, 0.25f});
+            put("angleX", new float[]{0, 1, 0.25f});
+            put("angleZ", new float[]{0, 1, 0.25f});
+            put("thrust", new float[]{0, 1, 0.25f});
+            put("gimbleY", new float[]{0, 1, 0.25f});
+            put("gimbleZ", new float[]{0, 1, 0.25f});
+        }});
+        put("actionDefinition", new HashMap<String, float[]>() {{
+            put("thrust", new float[]{-6, 6, 2});
+            put("gimbleY", new float[]{-6, 6, 2});
+            put("gimbleZ", new float[]{-6, 6, 2});
+        }});
+        put("meta", new HashMap<String, String>() {{
+            put("name", "general");
+        }});
+    }};
+
+
+    // lander ----- NOTE: PRECISIONS ARE NOT CORRECT!
+    public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>() {{
+        put("stateDefinition",  new HashMap<String, float[]>() {{
+            put("position", new float[]{0, 8, 2});
+            put("altitude", new float[]{0, 1, 0.25f});
+            put("velocity", new float[]{-15, 15, 5});
+            put("time", new float[]{-4, 4, 2});
+        }});
+        put("actionDefinition", new HashMap<String, float[]>() {{
+            put("thrust", new float[]{0, 1, 0.25f});
+        }});
+        put("formulas", new HashMap<String, String>() {{
+            put("position", "add(abs(positionX),abs(positionY))");
+        }});
+        put("meta", new HashMap<String, String>() {{
+            put("name", "lander");
+        }});
+    }};
+
+    // reacher
+    public static HashMap<String, HashMap> reacherDefinition = new HashMap<String, HashMap>() {{
+        put("stateDefinition",  new HashMap<String, float[]>() {{
+            put("thrust", new float[]{0, 1, 0.25f});
+            put("angle", new float[]{-15, 15, 5});
+            put("position", new float[]{-4, 4, 2});
+            put("velocity", new float[]{-3, 3, 1});
+        }});
+        put("actionDefinition", new HashMap<String, float[]>() {{
+            put("gimbal", new float[]{-6, 6, 2});
+        }});
+        put("meta", new HashMap<String, String>() {{
+            put("name", "reacher");
+            put("simmetrical", "true");
+        }});
+    }};
+
+    // stabilizer
+    public static HashMap<String, HashMap> stabilizerDefinition = new HashMap<String, HashMap>() {{
+        put("stateDefinition",  new HashMap<String, float[]>() {{
+            put("time", new float[]{0, 5, 1});
+            put("thrust", new float[]{0, 1, 0.25f});
+            put("angle", new float[]{-12, 12, 2});
+            put("angleVelocity", new float[]{-6, 6, 2});
+        }});
+        put("actionDefinition", new HashMap<String, float[]>() {{
+            put("gimbal", new float[]{-3, 3, 0.5f});
+        }});
+        put("meta", new HashMap<String, String>() {{
+            put("name", "stabilizer");
+            put("simmetrical", "true");
+        }});
+    }};
+
 }
