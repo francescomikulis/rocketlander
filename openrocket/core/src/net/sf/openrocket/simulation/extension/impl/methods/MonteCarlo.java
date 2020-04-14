@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
+import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
@@ -16,10 +17,7 @@ public class MonteCarlo extends ModelBaseImplementation {
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward,
-            BiFunction<State, State, Boolean> equivalentState
+            Function<State, Float> reward
     ) {
         int lastTimeStep = SA.size() - 1;
         StateActionTuple lastStateActionTuple = SA.get(lastTimeStep);
@@ -31,13 +29,13 @@ public class MonteCarlo extends ModelBaseImplementation {
             StateActionTuple stateActionTuple = SA.get(timeStep);
 
             // skip if the states are equivalent under the equivalentStateFunction
-            if (equivalentState.apply(lastStateActionTuple.state, stateActionTuple.state)) continue;
+            if (OptimizedMap.equivalentState(lastStateActionTuple.state, stateActionTuple.state)) continue;
             lastStateActionTuple = stateActionTuple;
 
             actualSteps += 1;
-            float originalValue = valueFunction.apply(stateActionTuple);
+            float originalValue = valueFunction(stateActionTuple);
             if (originalValue == 0.0f) numExplorationSteps++;
-            putFunction.apply(stateActionTuple, originalValue + alpha * (G - originalValue));
+            valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
             G = (terminalDiscount * G) + reward.apply(stateActionTuple.state);
         }
         // System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
@@ -45,13 +43,18 @@ public class MonteCarlo extends ModelBaseImplementation {
 
     /** Traditional Implementation **/
     public float terminalReward(State lastState) {
-        float angleFromZ = (float)(Math.abs(lastState.getDouble("angleZ")) * (180.0f / Math.PI));
+        float realAngleX = (float)(Math.abs(Math.asin(lastState.getDouble("angleX")) * (180.0f / Math.PI)));
+        float realAngleY = (float)(Math.abs(Math.asin(lastState.getDouble("angleY")) * (180.0f / Math.PI)));
+        // float angleFromZ = (float)(Math.abs(lastState.getDouble("angleZ")) * (180.0f / Math.PI));
         float landerVelocity = (float)Math.abs(lastState.getDouble("velocity"));
         float altitude = (float)Math.abs(lastState.getDouble("altitude"));
-        return -(angleFromZ + landerVelocity) * (altitude + 1.0f);
+        return -(realAngleX + realAngleY + landerVelocity) * (altitude + 1.0f);
     }
     public float reward(State state) {
-        return -(float)(Math.abs(state.getDouble("angleZ")) * (180.0f / Math.PI));
+        // return -(float)(Math.abs(state.getDouble("angleZ")) * (180.0f / Math.PI));
+        float realAngleX = (float)(Math.abs(Math.asin(state.getDouble("angleX")) * (180.0f / Math.PI)));
+        float realAngleY = (float)(Math.abs(Math.asin(state.getDouble("angleY")) * (180.0f / Math.PI)));
+        return -(realAngleX + realAngleY);
     }
 
     /** Coupled Implementation **/
@@ -70,7 +73,8 @@ public class MonteCarlo extends ModelBaseImplementation {
         return 10.0f * rewardStabilizer(lastState);
     }
     public float rewardStabilizer(StateActionTuple.State state) {
-        return -(float) (Math.abs(state.getDouble("angleZ") * (180.0f / Math.PI)));
+        // return -(float) (Math.abs(state.getDouble("angleZ") * (180.0f / Math.PI)));
+        return -(float)(Math.abs(Math.asin(state.getDouble("angle")) * (180.0f / Math.PI)));
     }
 
     /** Reaching **/
@@ -78,6 +82,8 @@ public class MonteCarlo extends ModelBaseImplementation {
         return 10.0f * rewardReaching(lastState);
     }
     public float rewardReaching(StateActionTuple.State state) {
-        return -(float) (Math.abs(state.getDouble("angleZ") * (180.0f / Math.PI)));
+        float position = (float)Math.abs(state.getDouble("position"));
+        // return -(float)(Math.abs(Math.asin(state.getDouble("angle")) * (180.0f / Math.PI)));
+        return -position;
     }
 }

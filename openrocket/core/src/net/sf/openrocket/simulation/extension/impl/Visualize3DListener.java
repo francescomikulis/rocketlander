@@ -26,7 +26,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		client.setConnectionString(visualize3D.getConnectionString());
 		client.Connect();
 
-		// RocketLanderListener integration for gimble
+		// RocketLanderListener integration for gimbal
 		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
 		for (SimulationListener listener: listeners) {
 			if (listener.getClass().toString().contains("RocketLanderListener")) {
@@ -95,7 +95,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			actualMotorThrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
 		} catch (Exception e) {}
 		offset = arrayAdd(bytes, actualMotorThrust * RLL.getThrust(rocketLanderListener), offset);
-		// gimble angles not yet present in the simulationStatus
+		// gimbal angles not yet present in the simulationStatus
 		if (rocketLanderListener == null) {
 			offset = arrayAdd(bytes, 0.0, offset);
 			offset = arrayAdd(bytes, 0.0, offset);

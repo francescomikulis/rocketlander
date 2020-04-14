@@ -13,57 +13,48 @@ import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImple
 
 public class DynamicValueFunctionTable {
     public static float get(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
-        float[] valueFunctionTable = map.getValueFunctionArray();
-        return valueFunctionTable[computeIndex(indeces, map, stateActionTuple, generalDefinition)];
+        String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
+        float[] valueFunctionTable = getCorrectTable(map, definitionName);
+        int index = computeIndex(indeces, map, stateActionTuple);
+        return valueFunctionTable[index];
     }
-    public static float getLander(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
-        float[] landerValueFunctionTable = map.getLanderValueFunctionArray();
-        return landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)];
-    }
-    public static float getStabilizer(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
-        float[] stabilizerValueFunctionTable = map.getStabilizerValueFunctionArray();
-        return stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stabilizerDefinition)];
-    }
-    public static float getReaching(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
-        float[] reachingValueFunctionTable = map.getReacherValueFunctionArray();
-        return reachingValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)];
-    }
-
     public static float put(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
-        float[] valueFunctionTable = map.getValueFunctionArray();
-        valueFunctionTable[computeIndex(indeces, map, stateActionTuple, generalDefinition)] = newValue;
+        String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
+        float[] valueFunctionTable = getCorrectTable(map, definitionName);
+        int index = computeIndex(indeces, map, stateActionTuple);
+        valueFunctionTable[index] = newValue;
         return newValue;
     }
-    public static float putLander(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
-        float[] landerValueFunctionTable = map.getLanderValueFunctionArray();
-        landerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, landerDefinition)] = newValue;
-        return newValue;
-    }
-    public static float putStabilizer(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
-        float[] stabilizerValueFunctionTable = map.getStabilizerValueFunctionArray();
-        stabilizerValueFunctionTable[computeIndex(indeces, map, stateActionTuple, stabilizerDefinition)] = newValue;
-        return newValue;
-    }
-    public static float putReaching(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
-        float[] reacherValueFunctionTable = map.getReacherValueFunctionArray();
-        reacherValueFunctionTable[computeIndex(indeces, map, stateActionTuple, reacherDefinition)] = newValue;
-        return newValue;
+    
+    private static float[] getCorrectTable(OptimizedMap map, String definitionName){
+        float[] valueFunctionTable = new float[0];
+        if (definitionName.equals("general"))
+            valueFunctionTable = map.getValueFunctionArray();
+        else if (definitionName.equals("lander"))
+            valueFunctionTable = map.getLanderValueFunctionArray();
+        else if (definitionName.equals("reacher"))
+            valueFunctionTable = map.getReacherValueFunctionArray();
+        else if (definitionName.equals("stabilizer"))
+            valueFunctionTable = map.getStabilizerValueFunctionArray();
+        else
+            System.out.println("VALUE FUNCTION TABLE GET DID NOT WORK!");
+        return valueFunctionTable;
     }
 
-
-    private static int computeIndex(int indeces[], OptimizedMap map, StateActionTuple stateActionTuple, HashMap<String, HashMap> MDPDefinition) {
+    private static int computeIndex(int indeces[], OptimizedMap map, StateActionTuple stateActionTuple) {
         int index = 0;
         int currentSize = 0;
         int product = OptimizedMap.indexProduct(indeces);
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
+        HashMap<String, HashMap> MDPDefinition = state.definition;
 
         for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
             Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
             String stateField = entry.getKey();
             int[] minMax = entry.getValue();
             int minValue = minMax[0];
-            int currentValue = (int) state.get(stateField);
+            int currentValue = Math.min((int) state.get(stateField), minMax[1]);
             product /= indeces[currentSize];
             index += (currentValue - minValue) * product;
             currentSize += 1;
@@ -73,7 +64,7 @@ public class DynamicValueFunctionTable {
             String actionField = entry.getKey();
             int[] minMax = entry.getValue();
             int minValue = minMax[0];
-            int currentValue = (int) action.get(actionField);
+            int currentValue = Math.min((int) action.get(actionField), minMax[1]);
             product /= indeces[currentSize];
             index += (currentValue - minValue) * product;
             currentSize += 1;

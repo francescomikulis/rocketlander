@@ -178,7 +178,7 @@ public class StateActionTuple implements Serializable {
                 fieldDefinition = (float[])object.definition.get("actionDefinition").get(field);
             }
             if (fieldDefinition == null)
-                return 0.000000001;
+                return 0.000001;
             return fieldDefinition[2];
         }
 
@@ -194,7 +194,7 @@ public class StateActionTuple implements Serializable {
 
         public StateActionClass setDouble(String field, double value) {
             int realValue = 0;
-            if (field.contains("gimble") || field.contains("angle"))
+            if (field.contains("gimbal") || field.contains("angle"))
                 realValue = group_angle_by_precision(value, getPrecisionConstant(field));
             else if (field.contains("position"))
                 realValue = group_by_precision_symmetric(value, getPrecisionConstant(field));
@@ -230,11 +230,11 @@ public class StateActionTuple implements Serializable {
             //setVelocity(Math.signum(status.getRocketVelocity().z) * status.getRocketVelocity().length());
 
             // new angle approach
-            //setDouble("angleX", Math.asin(rocketDirection.x));
-            //setDouble("angleY", Math.asin(rocketDirection.y));
+            setDouble("angleX", Math.asin(rocketDirection.x));
+            setDouble("angleY", Math.asin(rocketDirection.y));
             // original angle approach
-            setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
-            setDouble("angleZ", Math.acos(rocketDirection.z));
+            //setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
+            //setDouble("angleZ", Math.acos(rocketDirection.z));
             setDouble("time", status.getSimulationTime());
 
             runMDPDefinitionFormulas();
@@ -243,7 +243,12 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return get("velocity") * 1000000 + get("altitude") * 100000 + get("thrust") * 10000 + get("angleX") * 100 + get("angleZ");
+            int code = 0;
+            for (Object objectField : definition.get("stateDefinition").keySet()) {
+                String stateField = (String) objectField;
+                code += get(stateField);
+            }
+            return code;
         }
         /*
 
@@ -283,7 +288,7 @@ public class StateActionTuple implements Serializable {
             for (Map.Entry<String, Integer> entry: this.valueMap.entrySet()) {
                 newState.valueMap.put(entry.getKey(), entry.getValue());
             }
-            runALLMDPDefinitionFormulas();
+            newState.runALLMDPDefinitionFormulas();
             return newState;
         }
     }
@@ -292,28 +297,33 @@ public class StateActionTuple implements Serializable {
         public Action(Object nullObj){
             if (nullObj != null) System.out.println("FAILURE!");
         }
-        public Action(double thrust, double gimbleY, double gimbleZ) {
-            constructorCode(thrust, gimbleY, gimbleZ, landerDefinition);
+        public Action(double thrust, double gimbalX, double gimbalY) {
+            constructorCode(thrust, gimbalX, gimbalY, landerDefinition);
             runALLMDPDefinitionFormulas();
         }
 
-        public Action(double thrust, double gimbleY, double gimbleZ, HashMap<String, HashMap> definition) {
-            constructorCode(thrust, gimbleY, gimbleZ, definition);
+        public Action(double thrust, double gimbalX, double gimbalY, HashMap<String, HashMap> definition) {
+            constructorCode(thrust, gimbalX, gimbalY, definition);
         }
 
-        private void constructorCode(double thrust, double gimbleY, double gimbleZ, HashMap<String, HashMap> definition) {
+        private void constructorCode(double thrust, double gimbalX, double gimbalY, HashMap<String, HashMap> definition) {
             this.definition = definition;
 
             setDouble("thrust", thrust);
-            setDouble("gimbleY", gimbleY);
-            setDouble("gimbleZ", gimbleZ);
+            setDouble("gimbalX", gimbalX);
+            setDouble("gimbalY", gimbalY);
 
             runMDPDefinitionFormulas();
         }
 
         @Override
         public int hashCode() {
-            return get("thrust") * 10000 + get("gimbleY") * 100 + get("gimbleZ");
+            int code = 0;
+            for (Object objectField : definition.get("actionDefinition").keySet()) {
+                String stateField = (String) objectField;
+                code += get(stateField);
+            }
+            return code;
         }
 
         @Override

@@ -19,7 +19,7 @@ public class RLModel {
     private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-    public SimulationType simulationType = SimulationType._1D;
+    public SimulationType simulationType = SimulationType._3D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -76,17 +76,17 @@ public class RLModel {
         return generatePossibleActions(state, overrideThrustValues, new HashSet<>(), new HashSet<>());
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbleYValues, HashSet<Double> possibleGimbleZValues) {
-        return generatePossibleActions(state, new HashSet<>(), possibleGimbleYValues, possibleGimbleZValues);
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbleXValues, HashSet<Double> possibleGimbleYValues) {
+        return generatePossibleActions(state, new HashSet<>(), possibleGimbleXValues, possibleGimbleYValues);
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbleYValues, HashSet<Double> overrideGimbleZValues) {
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbleXValues, HashSet<Double> overrideGimbleYValues) {
         double currentThrust = state.getDouble("thrust");
         HashSet<Action> possibleActions = new HashSet<>();
 
         if (simulationType == SimulationType._1D) {
+            overrideGimbleXValues = new HashSet<>(Arrays.asList(0.0));
             overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0));
-            overrideGimbleZValues = new HashSet<>(Arrays.asList(0.0));
         } else if (simulationType == SimulationType._2D) {
             overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0, Math.PI + 0.00001f));
         }
@@ -102,27 +102,27 @@ public class RLModel {
                 possibleThrustValues = generatePossibleActionValues(currentThrust, actionDefinition.get("thrust"));
         }
 
+        HashSet<Double> possibleGimbleXValues = new HashSet<>(Collections.singletonList(0.0));
+        if (overrideGimbleXValues.size() > 0) possibleGimbleXValues = overrideGimbleXValues;
+        else {
+            if (actionFields.contains("gimbalX"))
+                possibleGimbleXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbalX"));
+            if (actionFields.contains("gimbal"))
+                possibleGimbleXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
+        }
+
         HashSet<Double> possibleGimbleYValues = new HashSet<>(Collections.singletonList(0.0));
         if (overrideGimbleYValues.size() > 0) possibleGimbleYValues = overrideGimbleYValues;
         else {
-            if (actionFields.contains("gimbleY"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbleY"), actionDefinition.get("gimbleY"));
-            if (actionFields.contains("gimble"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbleY"), actionDefinition.get("gimble"));
-        }
-
-        HashSet<Double> possibleGimbleZValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideGimbleZValues.size() > 0) possibleGimbleZValues = overrideGimbleZValues;
-        else {
-            if (actionFields.contains("gimbleX"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbleX"), actionDefinition.get("gimbleX"));
-            if (actionFields.contains("gimble"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbleX"), actionDefinition.get("gimble"));
+            if (actionFields.contains("gimbalY"))
+                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbalY"));
+            if (actionFields.contains("gimbal"))
+                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
         }
 
         for (double possibleThrust: possibleThrustValues) {
-            for (double possibleGimbleY: possibleGimbleYValues) {
-                for (double possibleGimbleZ: possibleGimbleZValues) {
+            for (double possibleGimbleY: possibleGimbleXValues) {
+                for (double possibleGimbleZ: possibleGimbleYValues) {
                     possibleActions.add(new Action(possibleThrust, possibleGimbleY, possibleGimbleZ, state.definition));
                 }
             }
@@ -140,14 +140,15 @@ public class RLModel {
             State lastState = getLastStateOrNull(SAPrimary);
             if (state.equals(lastState)) { return null; }
             action = policy(state, generatePossibleActions(state), primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
-            addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action, primaryMethod.definition), SAPrimary, OptimizedMap::equivalentState);
+            addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action, primaryMethod.definition), SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
 
             State lastLanderState = getLastStateOrNull(SAPrimary);
             Action bestLanderAction = getLastActionOrNull(SAPrimary);
-            if (!OptimizedMap.equivalentStateLander(state, lastLanderState)) {
-                bestLanderAction = policy(state, generatePossibleActions(state), primaryMethod::landerValueFunction, primaryMethod.getExplorationPercentage());
-                addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestLanderAction, primaryMethod.definition), SAPrimary, OptimizedMap::equivalentStateLander);
+            state = state.deepcopy(primaryMethod.definition);
+            if (!OptimizedMap.equivalentState(state, lastLanderState)) {
+                bestLanderAction = policy(state, generatePossibleActions(state), primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestLanderAction, primaryMethod.definition), SAPrimary);
             }
 
             double currentThrust = state.getDouble("thrust");
@@ -162,18 +163,20 @@ public class RLModel {
             if (state.getDouble("positionX") < 4.0) {
                 // stabilize X
                 state = state.deepcopy(tertiaryMethod.definition);
-                if (!OptimizedMap.equivalentStateStabilizer(state, lastGimbalXState)) {
+                if (!OptimizedMap.equivalentState(state, lastGimbalXState)) {
                     possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalXAction = policy(state, possibleActions, tertiaryMethod::stabilizerValueFunction, tertiaryMethod.getExplorationPercentage());
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, tertiaryMethod.definition), SAGimbalX, OptimizedMap::equivalentStateStabilizer);
+                    bestGimbalXAction = policy(state, possibleActions, tertiaryMethod::valueFunction, tertiaryMethod.getExplorationPercentage());
+                    bestGimbalXAction.setDouble("gimbal", bestGimbalXAction.getDouble("gimbalX"));
+                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, tertiaryMethod.definition), SAGimbalX);
                 }
             } else {
                 // reach X
                 state = state.deepcopy(secondaryMethod.definition);
-                if (!OptimizedMap.equivalentStateReacher(state, lastGimbalXState)) {
+                if (!OptimizedMap.equivalentState(state, lastGimbalXState)) {
                     possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalXAction = policy(state, possibleActions, secondaryMethod::reachingValueFunction, secondaryMethod.getExplorationPercentage());
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, secondaryMethod.definition), SAGimbalX, OptimizedMap::equivalentStateReacher);
+                    bestGimbalXAction = policy(state, possibleActions, secondaryMethod::valueFunction, secondaryMethod.getExplorationPercentage());
+                    bestGimbalXAction.setDouble("gimbal", bestGimbalXAction.getDouble("gimbalX"));
+                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, secondaryMethod.definition), SAGimbalX);
                 }
             }
 
@@ -183,18 +186,20 @@ public class RLModel {
             if (state.getDouble("positionY") < 4.0) {
                 // stabilize Y
                 state = state.deepcopy(tertiaryMethod.definition);
-                if (!OptimizedMap.equivalentStateStabilizer(state, lastGimbalYState)) {
+                if (!OptimizedMap.equivalentState(state, lastGimbalYState)) {
                     possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalYAction = policy(state, possibleActions, tertiaryMethod::stabilizerValueFunction, tertiaryMethod.getExplorationPercentage());
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, tertiaryMethod.definition), SAGimbalY, OptimizedMap::equivalentStateStabilizer);
+                    bestGimbalYAction = policy(state, possibleActions, tertiaryMethod::valueFunction, tertiaryMethod.getExplorationPercentage());
+                    bestGimbalYAction.setDouble("gimbal", bestGimbalYAction.getDouble("gimbalY"));
+                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, tertiaryMethod.definition), SAGimbalY);
                 }
             } else {
                 // reach Y
                 state = state.deepcopy(secondaryMethod.definition);
-                if (!OptimizedMap.equivalentStateReacher(state, lastGimbalYState)) {
+                if (!OptimizedMap.equivalentState(state, lastGimbalYState)) {
                     possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalYAction = policy(state, possibleActions, secondaryMethod::reachingValueFunction, secondaryMethod.getExplorationPercentage());
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, secondaryMethod.definition), SAGimbalY, OptimizedMap::equivalentStateReacher);
+                    bestGimbalYAction = policy(state, possibleActions, secondaryMethod::valueFunction, secondaryMethod.getExplorationPercentage());
+                    bestGimbalYAction.setDouble("gimbal", bestGimbalYAction.getDouble("gimbalY"));
+                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, secondaryMethod.definition), SAGimbalY);
                 }
             }
             state.setDouble("thrust", currentThrust);
@@ -204,10 +209,10 @@ public class RLModel {
         return action;
     }
 
-    private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> SA, BiFunction<State, State, Boolean> equivalentState) {
+    private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> SA) {
         if (SA.size() == 0)
             SA.add(stateActionTuple);
-        else if (!equivalentState.apply(SA.get(SA.size() - 1).state, stateActionTuple.state)) {
+        else if (!OptimizedMap.equivalentState(SA.get(SA.size() - 1).state, stateActionTuple.state)) {
             SA.add(stateActionTuple);
         }
     }
@@ -217,21 +222,27 @@ public class RLModel {
             if (!SAPrimary.isEmpty()) {
                 Action lastAction = SAPrimary.get(SAPrimary.size() - 1).action;
                 state.set("thrust", lastAction.get("thrust"));
-                state.set("gimbleY", lastAction.get("gimbleY"));
-                state.set("gimbleZ", lastAction.get("gimbleZ"));
+                state.set("gimbalX", lastAction.get("gimbalX"));
+                state.set("gimbalY", lastAction.get("gimbalY"));
             }
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             if (!SAPrimary.isEmpty()) {
                 Action lastLanderAction = SAPrimary.get(SAPrimary.size() - 1).action;
                 state.set("thrust", lastLanderAction.get("thrust"));
+                /*
+                // DYNAMIC
+                for (Object objectField: lastLanderAction.definition.get("actionDefinition").keySet()) {
+                    String stateField = (String)objectField;
+                    state.set(stateField, lastLanderAction.get(stateField));
+                }*/
             }
             if (!SAGimbalX.isEmpty()) {
                 Action lastGimbalXAction = SAGimbalX.get(SAGimbalX.size() - 1).action;
-                state.set("gimbleX", lastGimbalXAction.get("gimbleX"));
+                state.set("gimbalX", lastGimbalXAction.get("gimbalX"));
             }
             if (!SAGimbalY.isEmpty()) {
                 Action lastGimbalYAction = SAGimbalY.get(SAGimbalY.size() - 1).action;
-                state.set("gimbleY", lastGimbalYAction.get("gimbleY"));
+                state.set("gimbalY", lastGimbalYAction.get("gimbalY"));
             }
         }
     }
@@ -246,7 +257,7 @@ public class RLModel {
 
     private Action policy(State state, HashSet<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
         HashSet<Action> bestActions = new HashSet<>();
-        bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbleY"), state.getDouble("gimbleZ")));
+        bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbalX"), state.getDouble("gimbalY")));
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;

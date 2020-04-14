@@ -23,13 +23,13 @@ import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImple
     2: thrust
     3: angleX
     4: angleZ
-    5: gimbleY
-    6: gimbleZ
+    5: gimbalX
+    6: gimbalY
 
     --- Action ---
     7: thrust
-    8: gimbleY
-    9: gimbleZ
+    8: gimbalX
+    9: gimbalY
  */
 
 public class OptimizedMap {
@@ -42,13 +42,6 @@ public class OptimizedMap {
     private float[] landerValueFunctionTable = null;
     private float[] stabilizerValueFunctionTable = null;
     private float[] reacherValueFunctionTable = null;
-    private int[] indeces;
-    private int[] landerIndeces;
-    private int[] stabilizerIndeces;
-    private int[] reacherIndeces;
-
-    //public HashMap<String, HashMap> boundaryMapMin = new HashMap<>();
-    //public HashMap<String, HashMap> boundaryMapMax = new HashMap<>();
 
     public OptimizedMap() {
         if (mapMethod == MapMethod.Traditional)
@@ -66,7 +59,7 @@ public class OptimizedMap {
 
         // allocate new function table
         if (newValueFunctionTable == null)
-            newValueFunctionTable = allocateNewValueFunctionTable();
+            newValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(generalDefinition));
         this.valueFunctionTable = newValueFunctionTable;
     }
 
@@ -79,13 +72,13 @@ public class OptimizedMap {
 
         // allocate new function table
         if (newLanderValueFunctionTable == null)
-            newLanderValueFunctionTable = allocateNewLanderValueFunctionTable();
+            newLanderValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(landerDefinition));
         this.landerValueFunctionTable = newLanderValueFunctionTable;
         if (newStabilizerValueFunctionTable == null)
-            newStabilizerValueFunctionTable = allocateNewStabilizerValueFunctionTable();
+            newStabilizerValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(stabilizerDefinition));
         this.stabilizerValueFunctionTable = newStabilizerValueFunctionTable;
         if (newReacherValueFunctionTable == null)
-            newReacherValueFunctionTable = allocateNewReacherValueFunctionTable();
+            newReacherValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(reacherDefinition));
         this.reacherValueFunctionTable = newReacherValueFunctionTable;
     }
 
@@ -95,79 +88,26 @@ public class OptimizedMap {
         addIntegersToDefinition(reacherDefinition);
         addIntegersToDefinition(stabilizerDefinition);
 
-        indeces = generateIndex(generalDefinition);
-        landerIndeces = generateIndex(landerDefinition);
-        stabilizerIndeces = generateIndex(stabilizerDefinition);
-        reacherIndeces = generateIndex(reacherDefinition);
-    }
-
-
-    public float getLander(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getLander(this, landerIndeces, stateActionTuple);
-    }
-
-    public float getStabilizer(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getStabilizer(this, stabilizerIndeces, stateActionTuple);
-    }
-
-    public float getReacher(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.getReaching(this, reacherIndeces, stateActionTuple);
+        generateAndIndecesToDefinition(generalDefinition);
+        generateAndIndecesToDefinition(landerDefinition);
+        generateAndIndecesToDefinition(reacherDefinition);
+        generateAndIndecesToDefinition(stabilizerDefinition);
     }
 
     public float get(StateActionTuple stateActionTuple) {
+        int[] indeces = getIndecesFromDefinition(stateActionTuple.state.definition);
         return DynamicValueFunctionTable.get(this, indeces, stateActionTuple);
     }
 
-    public float putLander(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putLander(this, landerIndeces, stateActionTuple, newValue);
-    }
-
-    public float putStabilizer(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putStabilizer(this, stabilizerIndeces, stateActionTuple, newValue);
-    }
-
-    public float putReacher(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.putReaching(this, reacherIndeces, stateActionTuple, newValue);
-    }
-
     public float put(StateActionTuple stateActionTuple, float newValue) {
+        int[] indeces = getIndecesFromDefinition(stateActionTuple.state.definition);
         return DynamicValueFunctionTable.put(this, indeces, stateActionTuple, newValue);
-    }
-
-    public static boolean equivalentStateLander(State state_a, State state_b) {
-        if (state_a == null || state_b == null) return false;
-        boolean equivalent = true;
-        for (Object objectField : landerDefinition.get("stateDefinition").keySet()) {
-            String stateField = (String)objectField;
-            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
-        }
-        return equivalent;
-    }
-
-    public static boolean equivalentStateStabilizer(State state_a, State state_b) {
-        if (state_a == null || state_b == null) return false;
-        boolean equivalent = true;
-        for (Object objectField : stabilizerDefinition.get("stateDefinition").keySet()) {
-            String stateField = (String)objectField;
-            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
-        }
-        return equivalent;
-    }
-
-    public static boolean equivalentStateReacher(State state_a, State state_b) {
-        if (state_a == null || state_b == null) return false;
-        boolean equivalent = true;
-        for (Object objectField : reacherDefinition.get("stateDefinition").keySet()) {
-            String stateField = (String)objectField;
-            equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
-        }
-        return equivalent;
     }
 
     public static boolean equivalentState(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
         boolean equivalent = true;
-        for (Object objectField : generalDefinition.get("stateDefinition").keySet()) {
+        for (Object objectField : state_a.definition.get("stateDefinition").keySet()) {
             String stateField = (String)objectField;
             equivalent = equivalent && state_a.get(stateField) == state_b.get(stateField);
         }
@@ -228,31 +168,12 @@ public class OptimizedMap {
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
 
-    private float[] allocateNewValueFunctionTable() {
+    private float[] allocateNewValueFunctionTable(int[] indeces) {
         System.out.println("Allocating stateSpace: " + indexProduct(indeces));
-        // return (float[][][][][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
         return DynamicValueFunctionTable.callAllocation(indexProduct(indeces));
     }
 
-    private float[] allocateNewLanderValueFunctionTable() {
-        System.out.println("Allocating stateSpace: " + indexProduct(landerIndeces));
-        // return (float[][][][]) DynamicValueFunctionTable.callAllocation(indeces);
-        return DynamicValueFunctionTable.callAllocation(indexProduct(landerIndeces));
-    }
-
-    private float[] allocateNewStabilizerValueFunctionTable() {
-        System.out.println("Allocating stateSpace: " + indexProduct(stabilizerIndeces));
-        // return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
-        return DynamicValueFunctionTable.callAllocation(indexProduct(stabilizerIndeces));
-    }
-
-    private float[] allocateNewReacherValueFunctionTable() {
-        System.out.println("Allocating stateSpace: " + indexProduct(reacherIndeces));
-        // return (float[][][][][][][]) DynamicValueFunctionTable.callAllocation(indeces);
-        return DynamicValueFunctionTable.callAllocation(indexProduct(reacherIndeces));
-    }
-
-    private int[] generateIndex(HashMap<String, HashMap> MDPDefinition){
+    private void generateAndIndecesToDefinition(HashMap<String, HashMap> MDPDefinition){
         int[] indeces = new int[MDPDefinition.get("stateDefinitionIntegers").size() + MDPDefinition.get("actionDefinitionIntegers").size()];
         int index = 0;
 
@@ -266,7 +187,10 @@ public class OptimizedMap {
             indeces[index] = (getMaxField(entry.getValue()) - getMinField(entry.getValue()) + 1);
             index += 1;
         }
-        return indeces;
+        MDPDefinition.put("indeces",
+            new HashMap<String, int[]>() {{
+                put("indeces", indeces);
+        }});
     }
 
     public static int indexProduct(int[] indeces) {
@@ -294,11 +218,15 @@ public class OptimizedMap {
     }
 
     public static Action combineCoupledActions(Action landerAction, Action stabilizerAction) {
-        return new Action(landerAction.getDouble("thrust"), stabilizerAction.getDouble("gimbleY"), stabilizerAction.getDouble("gimbleZ"));
+        return new Action(landerAction.getDouble("thrust"), stabilizerAction.getDouble("gimbalX"), stabilizerAction.getDouble("gimbalY"));
     }
 
     public static Action combineCoupledTripleActions(Action landerAction, Action gimbalXAction, Action gimbalYAction) {
-        return new Action(landerAction.getDouble("thrust"), gimbalXAction.getDouble("gimbleY"), gimbalYAction.getDouble("gimbleZ"));
+        return new Action(landerAction.getDouble("thrust"), gimbalXAction.getDouble("gimbalX"), gimbalYAction.getDouble("gimbalY"));
+    }
+
+    private int[] getIndecesFromDefinition(HashMap<String, HashMap> MDPDefinition){
+        return (int[])MDPDefinition.get("indeces").get("indeces");
     }
 
     private void addIntegersToDefinition(HashMap<String, HashMap> MDPDefinition) {

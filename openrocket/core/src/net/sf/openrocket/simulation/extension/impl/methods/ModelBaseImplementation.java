@@ -18,32 +18,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     float terminalDiscount = 0.999f;
     float alpha = 0.2f;
 
-    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action, generalDefinition)); }
+    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action, state.definition)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
         return valueFunctionTable.get(stateActionTuple);
     }
-
-    public float landerValueFunction(State state, Action action) { return landerValueFunction(new StateActionTuple(state, action, landerDefinition)); }
-    public float landerValueFunction(StateActionTuple stateActionTuple) {
-        if (!valueFunctionTable.containsKey(stateActionTuple))
-            return 0.0f;
-        return valueFunctionTable.getLander(stateActionTuple);
-    }
-    public float stabilizerValueFunction(State state, Action action) { return stabilizerValueFunction(new StateActionTuple(state, action, stabilizerDefinition)); }
-    public float stabilizerValueFunction(StateActionTuple stateActionTuple) {
-        if (!valueFunctionTable.containsKey(stateActionTuple))
-            return 0.0f;
-        return valueFunctionTable.getStabilizer(stateActionTuple);
-    }
-    public float reachingValueFunction(State state, Action action) { return reachingValueFunction(new StateActionTuple(state, action, reacherDefinition)); }
-    public float reachingValueFunction(StateActionTuple stateActionTuple) {
-        if (!valueFunctionTable.containsKey(stateActionTuple))
-            return 0.0f;
-        return valueFunctionTable.getReacher(stateActionTuple);
-    }
-
 
     public OptimizedMap getValueFunctionTable() {
         return this.valueFunctionTable;
@@ -59,19 +39,13 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
     public void updateStepCommon(
             ArrayList<StateActionTuple> SA,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward,
-            BiFunction<State, State, Boolean> equivalentState
+            Function<State, Float> reward
     ) {}
 
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<StateActionTuple.State, Float> reward,
-            BiFunction<State, State, Boolean> equivalentState
+            Function<StateActionTuple.State, Float> reward
     ) {}
 
     /**
@@ -85,10 +59,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         //System.out.println("Step Combined method");
         updateStepCommon(
             SA,
-            this::valueFunction,
-            valueFunctionTable::put,
-            this::reward,
-            OptimizedMap::equivalentState
+            this::reward
         );
     }
     public void updateTerminalFunction(ArrayList<StateActionTuple> SA) {
@@ -96,10 +67,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         updateTerminalCommon(
             SA,
             this::terminalReward,
-            this::valueFunction,
-            valueFunctionTable::put,
-            this::reward,
-            OptimizedMap::equivalentState
+            this::reward
         );
     }
 
@@ -109,10 +77,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         //System.out.println("Step Lander method");
         updateStepCommon(
             SA,
-            this::landerValueFunction,
-            valueFunctionTable::putLander,
-            this::rewardLander,
-            OptimizedMap::equivalentStateLander
+            this::rewardLander
         );
     }
 
@@ -121,10 +86,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         updateTerminalCommon(
             SA,
             this::terminalLanderReward,
-            this::landerValueFunction,
-            valueFunctionTable::putLander,
-            this::rewardLander,
-            OptimizedMap::equivalentStateLander
+            this::rewardLander
         );
     }
 
@@ -134,10 +96,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         //System.out.println("Step Stabilizer method");
         updateStepCommon(
             SA,
-            this::stabilizerValueFunction,
-            valueFunctionTable::putStabilizer,
-            this::rewardStabilizer,
-            OptimizedMap::equivalentStateStabilizer
+            this::rewardStabilizer
         );
     }
 
@@ -146,10 +105,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         updateTerminalCommon(
             SA,
             this::terminalStabilizerReward,
-            this::stabilizerValueFunction,
-            valueFunctionTable::putStabilizer,
-            this::rewardStabilizer,
-            OptimizedMap::equivalentStateStabilizer
+            this::rewardStabilizer
         );
     }
 
@@ -159,10 +115,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         //System.out.println("Step Stabilizer method");
         updateStepCommon(
                 SA,
-                this::reachingValueFunction,
-                valueFunctionTable::putReacher,
-                this::rewardReaching,
-                OptimizedMap::equivalentStateReacher
+                this::rewardReaching
         );
     }
 
@@ -171,10 +124,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         updateTerminalCommon(
                 SA,
                 this::terminalReachingReward,
-                this::reachingValueFunction,
-                valueFunctionTable::putReacher,
-                this::rewardReaching,
-                OptimizedMap::equivalentStateReacher
+                this::rewardReaching
         );
     }
 
@@ -189,13 +139,13 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("angleX", new float[]{0, 1, 0.25f});
             put("angleZ", new float[]{0, 1, 0.25f});
             put("thrust", new float[]{0, 1, 0.25f});
-            put("gimbleY", new float[]{0, 1, 0.25f});
-            put("gimbleZ", new float[]{0, 1, 0.25f});
+            put("gimbalX", new float[]{0, 1, 0.25f});
+            put("gimbalY", new float[]{0, 1, 0.25f});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("thrust", new float[]{-6, 6, 2});
-            put("gimbleY", new float[]{-6, 6, 2});
-            put("gimbleZ", new float[]{-6, 6, 2});
+            put("gimbalX", new float[]{-6, 6, 2});
+            put("gimbalY", new float[]{-6, 6, 2});
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "general");
@@ -203,13 +153,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     }};
 
 
-    // lander ----- NOTE: PRECISIONS ARE NOT CORRECT!
+
     public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>() {{
         put("stateDefinition",  new HashMap<String, float[]>() {{
             put("position", new float[]{0, 8, 2});
-            put("altitude", new float[]{0, 1, 0.25f});
-            put("velocity", new float[]{-15, 15, 5});
-            put("time", new float[]{-4, 4, 2});
+            put("altitude", new float[]{0, 50, 2.5f});
+            put("velocity", new float[]{-30, 5, 5});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});

@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
+import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 
 import java.util.ArrayList;
@@ -15,10 +16,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
     public float getExplorationPercentage() { return 0.02f; }
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
-         Function<StateActionTuple, Float> valueFunction,
-         BiFunction<StateActionTuple, Float, Float> putFunction,
-         Function<StateActionTuple.State, Float> reward,
-         BiFunction<State, State, Boolean> equivalentState
+         Function<StateActionTuple.State, Float> reward
     ) {
         if(SA.size() <= 2) { return; }
 
@@ -26,16 +24,16 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         StateActionTuple current = SA.get(SA.size() - 1);
 
         // skip if the states are equivalent under the equivalentStateFunction
-        if (equivalentState.apply(old.state, current.state)) return;
+        if (OptimizedMap.equivalentState(old.state, current.state)) return;
 
-        if (!valueFunctionTable.containsKey(old)) putFunction.apply(old, 0.0f);
-        if (!valueFunctionTable.containsKey(current)) putFunction.apply(current, 0.0f);
+        if (!valueFunctionTable.containsKey(old)) valueFunctionTable.put(old, 0.0f);
+        if (!valueFunctionTable.containsKey(current)) valueFunctionTable.put(current, 0.0f);
 
-        float oldValue = valueFunction.apply(old);
-        float currentValue = valueFunction.apply(current);
+        float oldValue = valueFunction(old);
+        float currentValue = valueFunction(current);
         float rewardValue = reward.apply(current.state);
 
-        putFunction.apply(old,
+        valueFunctionTable.put(old,
                 oldValue +  alpha * rewardValue + stepDiscount * currentValue - oldValue);
     }
 
@@ -53,8 +51,9 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
 
     public float rewardStabilizer(StateActionTuple.State state) {
-        float angleReward = rewardAngleStabilizer((float)(state.getDouble("angleZ") * (180.0f / Math.PI)));
-        return angleReward;
+        float realAngleX = (float)(Math.asin(state.getDouble("angleX")) * (180.0f / Math.PI));
+        float realAngleY = (float)(Math.asin(state.getDouble("angleY")) * (180.0f / Math.PI));
+        return rewardAngleStabilizer(realAngleX) + rewardAngleStabilizer(realAngleY);
     }
 
     private float rewardAngleStabilizer(float angleInDegrees){

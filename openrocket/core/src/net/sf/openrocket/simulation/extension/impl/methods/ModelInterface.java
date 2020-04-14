@@ -11,19 +11,13 @@ public interface ModelInterface {
     float getExplorationPercentage();
     void updateStepCommon(
             ArrayList<StateActionTuple> SA,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward,
-            BiFunction<State, State, Boolean> equivalentState
+            Function<State, Float> reward
     );
 
     void updateTerminalCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,
-            Function<StateActionTuple, Float> valueFunction,
-            BiFunction<StateActionTuple, Float, Float> putFunction,
-            Function<State, Float> reward,
-            BiFunction<State, State, Boolean> equivalentState
+            Function<State, Float> reward
     );
 
     float terminalReward(State lastState);
