@@ -54,7 +54,10 @@ public class DynamicValueFunctionTable {
             String stateField = entry.getKey();
             int[] minMax = entry.getValue();
             int minValue = minMax[0];
-            int currentValue = Math.min((int) state.get(stateField), minMax[1]);
+            int maxValue = minMax[1];
+            int currentValue = (int) state.get(stateField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
             product /= indeces[currentSize];
             index += (currentValue - minValue) * product;
             currentSize += 1;
@@ -64,7 +67,10 @@ public class DynamicValueFunctionTable {
             String actionField = entry.getKey();
             int[] minMax = entry.getValue();
             int minValue = minMax[0];
-            int currentValue = Math.min((int) action.get(actionField), minMax[1]);
+            int maxValue = minMax[1];
+            int currentValue = (int) state.get(actionField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
             product /= indeces[currentSize];
             index += (currentValue - minValue) * product;
             currentSize += 1;
