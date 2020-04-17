@@ -30,7 +30,7 @@ public class Visualize3D extends AbstractSimulationExtension {
 	}
 
 	public String getConnectionString() {
-		return config.getString("connectionString", "127.0.0.0:5000");
+		return config.getString("connectionString", "10.0.0.226:8080");  // "127.0.0.0:5000"
 	}
 
 	public void setTimeRate(double rate) {

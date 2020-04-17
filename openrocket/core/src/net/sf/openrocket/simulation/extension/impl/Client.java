@@ -8,7 +8,7 @@ public class Client {
     // initialize socket and output streams
     private Socket socket            = null;
     private DataOutputStream out     = null;
-    private String connectionString = "127.0.0.1:5000"; // 10.22.0.180:8080
+    private String connectionString = "10.0.0.226:8080"; // 10.22.0.180:8080  // "127.0.0.1:5000"
     private int port;
     private String address;
 

@@ -14,11 +14,11 @@ import java.util.function.Function;
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
     public HashMap<String, HashMap> definition;
-    float stepDiscount = 0.7f;
+    float stepDiscount = 0.9f;
     float terminalDiscount = 0.999f;
-    float alpha = 0.2f;
+    float alpha = 0.1f;
 
-    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action, state.definition)); }
+    public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
         if (!valueFunctionTable.containsKey(stateActionTuple))
             return 0.0f;
@@ -128,13 +128,29 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         );
     }
 
+    // Model base implementation is the schema of the MDP
+    // angles are in degrees and later converted to radians ONLY IF angle >= 0.1
+
+    public static void printDefinition(HashMap<String, HashMap> definition) {
+        System.out.println("definition={");
+        System.out.println("    meta=" + ((HashMap<String, String>)definition.get("meta")).toString());
+        System.out.println("    stateDefinition=" + ((HashMap<String, float[]>)definition.get("stateDefinition")).toString());
+        System.out.println("    actionDefinition=" + ((HashMap<String, float[]>)definition.get("actionDefinition")).toString());
+        System.out.println("    stateDefinitionIntegers=" + ((HashMap<String, float[]>)definition.get("stateDefinitionIntegers")).toString());
+        System.out.println("    actionDefinitionIntegers=" + ((HashMap<String, float[]>)definition.get("actionDefinitionIntegers")).toString());
+        System.out.println("    indeces=" + ((int[])definition.get("indeces").get("indeces")).toString());
+        if (definition.containsKey("formulas"))
+            System.out.println("    formulas=" + ((HashMap<String, String>)definition.get("formulas")).toString());
+        System.out.println("}");
+    }
+
     // general ----- NOTE: PRECISIONS ARE NOT CORRECT!
     public static HashMap<String, HashMap> generalDefinition = new HashMap<String, HashMap>() {{
         put("stateDefinition",  new HashMap<String, float[]>() {{
-            put("altitude", new float[]{0, 1, 0.25f});
             put("positionX", new float[]{0, 1, 0.25f});
             put("positionY", new float[]{0, 1, 0.25f});
-            put("velocity", new float[]{0, 1, 0.25f});
+            put("positionZ", new float[]{0, 1, 0.25f});
+            put("velocityZ", new float[]{0, 1, 0.25f});
             put("time", new float[]{0, 1, 0.25f});
             put("angleX", new float[]{0, 1, 0.25f});
             put("angleZ", new float[]{0, 1, 0.25f});
@@ -157,8 +173,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>() {{
         put("stateDefinition",  new HashMap<String, float[]>() {{
             put("position", new float[]{0, 8, 2});
-            put("altitude", new float[]{0, 50, 2.5f});
-            put("velocity", new float[]{-30, 5, 5});
+            put("positionZ", new float[]{0, 50, 1});  // 2.5
+            put("velocityZ", new float[]{-30, 5, 2.5f});  // 5
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
@@ -184,7 +200,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "reacher");
-            put("simmetrical", "true");
+            put("symmetry", "angle,position,velocity,gimbal");
         }});
     }};
 
@@ -194,14 +210,14 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("time", new float[]{0, 5, 1});
             put("thrust", new float[]{0, 1, 0.25f});
             put("angle", new float[]{-12, 12, 2});
-            put("angleVelocity", new float[]{-6, 6, 2});
+            put("angleVelocity", new float[]{-12, 12, 4});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("gimbal", new float[]{-3, 3, 0.5f});
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "stabilizer");
-            put("simmetrical", "true");
+            put("symmetry", "angle,angleVelocity,gimbal");
         }});
     }};
 

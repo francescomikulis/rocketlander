@@ -12,16 +12,16 @@ import java.util.Map;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 public class DynamicValueFunctionTable {
-    public static float get(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple) {
+    public static float get(OptimizedMap map, StateActionTuple stateActionTuple) {
         String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
         float[] valueFunctionTable = getCorrectTable(map, definitionName);
-        int index = computeIndex(indeces, map, stateActionTuple);
+        int index = computeIndex(stateActionTuple);
         return valueFunctionTable[index];
     }
-    public static float put(OptimizedMap map, int[] indeces, StateActionTuple stateActionTuple, float newValue) {
+    public static float put(OptimizedMap map, StateActionTuple stateActionTuple, float newValue) {
         String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
         float[] valueFunctionTable = getCorrectTable(map, definitionName);
-        int index = computeIndex(indeces, map, stateActionTuple);
+        int index = computeIndex(stateActionTuple);
         valueFunctionTable[index] = newValue;
         return newValue;
     }
@@ -41,13 +41,14 @@ public class DynamicValueFunctionTable {
         return valueFunctionTable;
     }
 
-    private static int computeIndex(int indeces[], OptimizedMap map, StateActionTuple stateActionTuple) {
+    private static int computeIndex(StateActionTuple stateActionTuple) {
         int index = 0;
         int currentSize = 0;
-        int product = OptimizedMap.indexProduct(indeces);
         State state = stateActionTuple.state;
         Action action = stateActionTuple.action;
         HashMap<String, HashMap> MDPDefinition = state.definition;
+        int indeces[] = ((int[])(MDPDefinition.get("indeces").get("indeces")));
+        int product = OptimizedMap.indexProduct(indeces);
 
         for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
             Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
@@ -62,13 +63,44 @@ public class DynamicValueFunctionTable {
             index += (currentValue - minValue) * product;
             currentSize += 1;
         }
+        int stateIndex = index;
         for (Object entryObject : MDPDefinition.get("actionDefinitionIntegers").entrySet()) {
             Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
             String actionField = entry.getKey();
             int[] minMax = entry.getValue();
             int minValue = minMax[0];
             int maxValue = minMax[1];
-            int currentValue = (int) state.get(actionField);
+            int currentValue = (int) action.get(actionField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
+            product /= indeces[currentSize];
+            index += (currentValue - minValue) * product;
+            currentSize += 1;
+        }
+        int actionIndex = index - stateIndex;
+        if (index != computeIndexState(state) + computeIndexAction(action)) {
+            System.out.println("Failed computation assertion for index calculation");
+            System.out.println("index=" + index);
+            System.out.println("stateIndex=" + computeIndexState(state) + ", actionIndex=" + computeIndexAction(action));
+            System.out.println("internalState=" + stateIndex + ", internalAction=" + actionIndex);
+        }
+        return index;
+    }
+
+    public static int computeIndexState(State state) {
+        int index = 0;
+        int currentSize = 0;
+        HashMap<String, HashMap> MDPDefinition = state.definition;
+        int indeces[] = ((int[])(MDPDefinition.get("indeces").get("indeces")));
+        int product = OptimizedMap.indexProduct(indeces);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String stateField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int maxValue = minMax[1];
+            int currentValue = (int) state.get(stateField);
             currentValue = Math.max(currentValue, minValue);
             currentValue = Math.min(currentValue, maxValue);
             product /= indeces[currentSize];
@@ -77,6 +109,36 @@ public class DynamicValueFunctionTable {
         }
         return index;
     }
+
+    public static int computeIndexAction(Action action) {
+        int index = 0;
+        int currentSize = 0;
+        HashMap<String, HashMap> MDPDefinition = action.definition;
+        int indeces[] = ((int[])(MDPDefinition.get("indeces").get("indeces")));
+        int product = OptimizedMap.indexProduct(indeces);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            product /= indeces[currentSize];
+            currentSize += 1;
+        }
+
+        for (Object entryObject : MDPDefinition.get("actionDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String actionField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int maxValue = minMax[1];
+            int currentValue = (int) action.get(actionField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
+            product /= indeces[currentSize];
+            index += (currentValue - minValue) * product;
+            currentSize += 1;
+        }
+        return index;
+    }
+
+
 
     public static float[] callAllocation(int size) {
         return new float[size];

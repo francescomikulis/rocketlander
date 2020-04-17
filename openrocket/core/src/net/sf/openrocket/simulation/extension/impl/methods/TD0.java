@@ -14,7 +14,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public TD0 (HashMap<String, HashMap> definition) {
         this.definition = definition;
     }
-    public float getExplorationPercentage() { return 0.02f; }
+    public float getExplorationPercentage() { return 0.05f; }
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
          Function<StateActionTuple.State, Float> reward
     ) {
@@ -34,7 +34,8 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         float rewardValue = reward.apply(current.state);
 
         valueFunctionTable.put(old,
-                oldValue +  alpha * rewardValue + stepDiscount * currentValue - oldValue);
+                oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue)
+        );
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
@@ -51,16 +52,17 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
 
     public float rewardStabilizer(StateActionTuple.State state) {
+        float rewardValue = -(float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
+        // force positive reward for gimbal angle that helps stabilize
+        if (Math.signum(state.getDouble("angle")) != Math.signum(state.getDouble("gimbal"))) {
+            rewardValue = Math.abs(rewardValue);
+        }
+        return rewardValue;
+        /*
         float realAngleX = (float)(Math.asin(state.getDouble("angleX")) * (180.0f / Math.PI));
         float realAngleY = (float)(Math.asin(state.getDouble("angleY")) * (180.0f / Math.PI));
         return rewardAngleStabilizer(realAngleX) + rewardAngleStabilizer(realAngleY);
-    }
-
-    private float rewardAngleStabilizer(float angleInDegrees){
-        angleInDegrees = Math.abs(angleInDegrees);
-        // double best = 1;
-        // double worst = 1.0 / (226 + 1.0);  // 0.0625
-        return 1.0f / (float) (angleInDegrees * angleInDegrees + 1.0f);
+         */
     }
 
     public float terminalReachingReward(StateActionTuple.State lastState) {
@@ -78,8 +80,6 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     private float rewardPositionStabilizer(double positionX, double positionY){
         positionX = Math.abs(positionX);
         positionY = Math.abs(positionY);
-        // best at 5 deg --> 1/(5+1) // 0.16667
-        float best = rewardAngleStabilizer(5);
-        return best * 1.0f / (1.0f + (float)((positionX + positionY) / 10.0f));
+        return -(float)(positionX + positionY);
     }
 }

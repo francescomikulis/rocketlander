@@ -9,6 +9,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Function;
 
+import static java.lang.Float.NaN;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
@@ -74,15 +75,42 @@ public class OptimizedMap {
         if (newLanderValueFunctionTable == null)
             newLanderValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(landerDefinition));
         this.landerValueFunctionTable = newLanderValueFunctionTable;
+        checkTableValues(landerDefinition);
         if (newStabilizerValueFunctionTable == null)
             newStabilizerValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(stabilizerDefinition));
         this.stabilizerValueFunctionTable = newStabilizerValueFunctionTable;
+        checkTableValues(stabilizerDefinition);
         if (newReacherValueFunctionTable == null)
             newReacherValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(reacherDefinition));
         this.reacherValueFunctionTable = newReacherValueFunctionTable;
+        checkTableValues(reacherDefinition);
+    }
+
+    public void checkTableValues(HashMap<String, HashMap> definition) {
+        String name = (String)definition.get("meta").get("name");
+        float table[] = null;
+        if (name.equals("general")) table = this.valueFunctionTable;
+        else if (name.equals("lander")) table = this.landerValueFunctionTable;
+        else if (name.equals("stabilizer")) table = this.stabilizerValueFunctionTable;
+        else if (name.equals("reacher")) table = this.reacherValueFunctionTable;
+        else System.out.println("TABLE TYPE DOES NOT EXIST!");
+
+        int[] indeces = getIndecesFromDefinition(definition);
+        int product = indexProduct(indeces);
+        for (int i = 0; i < product; i++) {
+            if (Float.isNaN(table[i])) {
+                System.out.println("NAN IN TABLE!");
+            }
+        }
     }
 
     private void constructorCode() {
+        System.out.println("Hit constructor code for OptimizedMap");
+        convertAnglesToRadians(generalDefinition);
+        convertAnglesToRadians(landerDefinition);
+        convertAnglesToRadians(reacherDefinition);
+        convertAnglesToRadians(stabilizerDefinition);
+
         addIntegersToDefinition(generalDefinition);
         addIntegersToDefinition(landerDefinition);
         addIntegersToDefinition(reacherDefinition);
@@ -95,13 +123,11 @@ public class OptimizedMap {
     }
 
     public float get(StateActionTuple stateActionTuple) {
-        int[] indeces = getIndecesFromDefinition(stateActionTuple.state.definition);
-        return DynamicValueFunctionTable.get(this, indeces, stateActionTuple);
+        return DynamicValueFunctionTable.get(this, stateActionTuple);
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        int[] indeces = getIndecesFromDefinition(stateActionTuple.state.definition);
-        return DynamicValueFunctionTable.put(this, indeces, stateActionTuple, newValue);
+        return DynamicValueFunctionTable.put(this, stateActionTuple, newValue);
     }
 
     public static boolean equivalentState(State state_a, State state_b) {
@@ -133,37 +159,40 @@ public class OptimizedMap {
         return minMax[1];
     }
 
-    public TerminationBooleanTuple alterTerminalStateIfFailure(State state) {
+    public TerminationBooleanTuple getTerminationValidity(CoupledStates coupledStates) {
         boolean verticalSuccess = true;
         boolean angleSuccess = true;
 
-        if (state == null) return new TerminationBooleanTuple(true, true);
-        for (Object entryObject : landerDefinition.get("stateDefinitionIntegers").entrySet()) {
-            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
-            String landerField = entry.getKey();
-            int minValue = getMinField(entry.getValue());
-            int maxValue = getMaxField(entry.getValue());
-            int currentValue = (int)state.get(landerField);
-            if (currentValue < minValue) { verticalSuccess = false; state.set(landerField, minValue); }
-            if (currentValue > maxValue) { verticalSuccess = false; state.set(landerField, maxValue); }
+        if (coupledStates == null) return new TerminationBooleanTuple(true, true);
+
+        State landerState = coupledStates.get(0);
+        for (Object entryObject : landerState.definition.get("stateDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+            String field = entry.getKey();
+            double currentValue = landerState.getDouble(field);
+            float[] minMaxPrecision = entry.getValue();
+            if (currentValue < minMaxPrecision[0]) { verticalSuccess = false; break; }
+            if (currentValue > minMaxPrecision[1]) { verticalSuccess = false; break; }
         }
-        for (Object entryObject : stabilizerDefinition.get("stateDefinitionIntegers").entrySet()) {
-            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
-            String stabilizerField = entry.getKey();
-            int minValue = getMinField(entry.getValue());
-            int maxValue = getMaxField(entry.getValue());
-            int currentValue = (int)state.get(stabilizerField);
-            if (currentValue < minValue) { angleSuccess = false; state.set(stabilizerField, minValue); }
-            if (currentValue > maxValue) { angleSuccess = false; state.set(stabilizerField, maxValue); }
+
+        State reacherState = coupledStates.get(1);
+        for (Object entryObject : reacherState.definition.get("stateDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+            String field = entry.getKey();
+            double currentValue = reacherState.getDouble(field);
+            float[] minMaxPrecision = entry.getValue();
+            if (currentValue < minMaxPrecision[0]) { angleSuccess = false; break; }
+            if (currentValue > minMaxPrecision[1]) { angleSuccess = false; break; }
         }
-        for (Object entryObject : reacherDefinition.get("stateDefinitionIntegers").entrySet()) {
-            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>)entryObject;
-            String reacherField = entry.getKey();
-            int minValue = getMinField(entry.getValue());
-            int maxValue = getMaxField(entry.getValue());
-            int currentValue = (int)state.get(reacherField);
-            if (currentValue < minValue) { angleSuccess = false; state.set(reacherField, minValue); }
-            if (currentValue > maxValue) { angleSuccess = false; state.set(reacherField, maxValue); }
+
+        State stabilizerState = coupledStates.get(2);
+        for (Object entryObject : stabilizerState.definition.get("stateDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+            String field = entry.getKey();
+            double currentValue = stabilizerState.getDouble(field);
+            float[] minMaxPrecision = entry.getValue();
+            if (currentValue < minMaxPrecision[0]) { angleSuccess = false; break; }
+            if (currentValue > minMaxPrecision[1]) { angleSuccess = false; break; }
         }
         return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
     }
@@ -217,16 +246,47 @@ public class OptimizedMap {
         return reacherValueFunctionTable;
     }
 
-    public static Action combineCoupledActions(Action landerAction, Action stabilizerAction) {
-        return new Action(landerAction.getDouble("thrust"), stabilizerAction.getDouble("gimbalX"), stabilizerAction.getDouble("gimbalY"));
+    public static CoupledActions combineCoupledActions(Action landerAction, Action stabilizerAction) {
+        return new CoupledActions(landerAction, stabilizerAction, stabilizerAction);
     }
 
-    public static Action combineCoupledTripleActions(Action landerAction, Action gimbalXAction, Action gimbalYAction) {
-        return new Action(landerAction.getDouble("thrust"), gimbalXAction.getDouble("gimbalX"), gimbalYAction.getDouble("gimbalY"));
+    public static CoupledActions combineCoupledTripleActions(Action landerAction, Action gimbalXAction, Action gimbalYAction) {
+        return new CoupledActions(landerAction, gimbalXAction, gimbalYAction);
     }
 
     private int[] getIndecesFromDefinition(HashMap<String, HashMap> MDPDefinition){
         return (int[])MDPDefinition.get("indeces").get("indeces");
+    }
+
+    private void convertAnglesToRadians(HashMap<String, HashMap> MDPDefinition) {
+        State state = new State(null);
+        state.definition = MDPDefinition;
+        for (Object entryObject : MDPDefinition.get("stateDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
+            String field = entry.getKey();
+            if (field.contains("angle") || field.contains("gimbal")) {
+                float precision = entry.getValue()[2];
+                if (precision >= 0.1) {
+                    float[] definitionValues = entry.getValue();
+                    definitionValues[0] *= (Math.PI / 180);
+                    definitionValues[1] *= (Math.PI / 180);
+                    definitionValues[2] *= (Math.PI / 180);
+                }
+            }
+        }
+        for (Object entryObject : MDPDefinition.get("actionDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
+            String field = entry.getKey();
+            if (field.contains("angle") || field.contains("gimbal")) {
+                float precision = entry.getValue()[2];
+                if (precision >= 0.1) {
+                    float[] definitionValues = entry.getValue();
+                    definitionValues[0] *= (Math.PI / 180);
+                    definitionValues[1] *= (Math.PI / 180);
+                    definitionValues[2] *= (Math.PI / 180);
+                }
+            }
+        }
     }
 
     private void addIntegersToDefinition(HashMap<String, HashMap> MDPDefinition) {

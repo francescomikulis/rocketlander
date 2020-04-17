@@ -56,7 +56,7 @@ public class RLEpisodeManager {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional)
             mof.storeActionValueFunction(model.getValueFunctionTable(), selectFileNameExtension());
         else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            mof.storeCoupledActionValueFunction(model.getValueFunctionTable(), selectFileNameExtension());
+            mof.storeCoupledActionValueFunction(model.getValueFunctionTable(), model.simulationType, selectFileNameExtension());
         }
     }
 
@@ -75,6 +75,8 @@ public class RLEpisodeManager {
     }
 
     public String selectFileNameExtension() {
+        return ".txt";
+        /*
         String filenameExtension = "1D.txt";
         if (model.simulationType == SimulationType._1D) {
             filenameExtension = "1D.txt";
@@ -85,5 +87,6 @@ public class RLEpisodeManager {
             filenameExtension = "3D.txt";
         }
         return filenameExtension;
+         */
     }
 }

@@ -13,7 +13,7 @@ public class MonteCarlo extends ModelBaseImplementation {
     public MonteCarlo (HashMap<String, HashMap> definition) {
         this.definition = definition;
     }
-    public float getExplorationPercentage() { return 0.02f; }
+    public float getExplorationPercentage() { return 0.05f; }
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,
@@ -46,14 +46,14 @@ public class MonteCarlo extends ModelBaseImplementation {
         float realAngleX = (float)(Math.abs(Math.asin(lastState.getDouble("angleX")) * (180.0f / Math.PI)));
         float realAngleY = (float)(Math.abs(Math.asin(lastState.getDouble("angleY")) * (180.0f / Math.PI)));
         // float angleFromZ = (float)(Math.abs(lastState.getDouble("angleZ")) * (180.0f / Math.PI));
-        float landerVelocity = (float)Math.abs(lastState.getDouble("velocity"));
-        float altitude = (float)Math.abs(lastState.getDouble("altitude"));
+        float landerVelocity = (float)Math.abs(lastState.getDouble("velocityZ"));
+        float altitude = (float)Math.abs(lastState.getDouble("positionZ"));
         return -(realAngleX + realAngleY + landerVelocity) * (altitude + 1.0f);
     }
     public float reward(State state) {
         // return -(float)(Math.abs(state.getDouble("angleZ")) * (180.0f / Math.PI));
-        float realAngleX = (float)(Math.abs(Math.asin(state.getDouble("angleX")) * (180.0f / Math.PI)));
-        float realAngleY = (float)(Math.abs(Math.asin(state.getDouble("angleY")) * (180.0f / Math.PI)));
+        float realAngleX = (float)(Math.abs(state.getDouble("angleX") * (180.0f / Math.PI)));
+        float realAngleY = (float)(Math.abs(state.getDouble("angleY") * (180.0f / Math.PI)));
         return -(realAngleX + realAngleY);
     }
 
@@ -61,8 +61,8 @@ public class MonteCarlo extends ModelBaseImplementation {
 
     /** Lander **/
     public float terminalLanderReward(State lastState) {
-        float landerVelocity = (float)Math.abs(lastState.getDouble("velocity"));
-        return - (landerVelocity);
+        float landerVelocity = (float)Math.abs(lastState.getDouble("velocityZ"));
+        return - (landerVelocity);  // +(float)lastState.getDouble("time")
     }
     public float rewardLander(StateActionTuple.State state) {
         return - (float)(state.getDouble("thrust") / 100.0f);
@@ -74,7 +74,7 @@ public class MonteCarlo extends ModelBaseImplementation {
     }
     public float rewardStabilizer(StateActionTuple.State state) {
         // return -(float) (Math.abs(state.getDouble("angleZ") * (180.0f / Math.PI)));
-        return -(float)(Math.abs(Math.asin(state.getDouble("angle")) * (180.0f / Math.PI)));
+        return -(float)(Math.abs(state.getDouble("angle") * (180.0f / Math.PI)));
     }
 
     /** Reaching **/

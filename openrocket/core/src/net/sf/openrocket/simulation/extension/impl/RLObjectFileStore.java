@@ -40,7 +40,7 @@ public class RLObjectFileStore {
     }
 
     public OptimizedMap readCoupledActionValueFunction(String filenameExtension){
-        float[] landerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "lander.txt");
+        float[] landerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "lander" + filenameExtension);
         float[] stabilizerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
         float[] reacherActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "reacher" + filenameExtension);
         return new OptimizedMap(landerActionValueFunction, reacherActionValueFunction, stabilizerActionValueFunction);
@@ -50,10 +50,12 @@ public class RLObjectFileStore {
         storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
     }
 
-    public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
-        storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander.txt");
-        storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
-        storeObject(optimizedMap.getReacherValueFunctionArray(), actionValueFunctionFileName + "reacher" + filenameExtension);
+    public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, RLModel.SimulationType symType, String filenameExtension){
+        storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander" + filenameExtension);
+        if ((symType == RLModel.SimulationType._2D) || (symType == RLModel.SimulationType._3D))
+            storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
+        if (symType == RLModel.SimulationType._3D)
+            storeObject(optimizedMap.getReacherValueFunctionArray(), actionValueFunctionFileName + "reacher" + filenameExtension);
     }
 
     /*

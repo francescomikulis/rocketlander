@@ -100,8 +100,8 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			offset = arrayAdd(bytes, 0.0, offset);
 			offset = arrayAdd(bytes, 0.0, offset);
 		} else {
-			offset = arrayAdd(bytes, RLL.getGimbleY(rocketLanderListener), offset);
-			offset = arrayAdd(bytes, RLL.getGimbleZ(rocketLanderListener), offset);
+			offset = arrayAdd(bytes, RLL.getGimbalX(rocketLanderListener), offset);
+			offset = arrayAdd(bytes, RLL.getGimbalY(rocketLanderListener), offset);
 		}
 		return bytes;
 	}
@@ -111,20 +111,21 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	 **/
 
 	public static class RLL {
-		public static float getGimbleY(Object rocketLanderListener) {
-			Object result = callMethod(getAction(rocketLanderListener), "getGimbleYDouble");
-			if (result == null) return 0.0f;
-			return ((Double)result).floatValue();
+		public static float getGimbalX(Object rocketLanderListener) {
+			return getActionDoubleValue(rocketLanderListener, "gimbalX");
 		}
 
-		public static float getGimbleZ(Object rocketLanderListener) {
-			Object result = callMethod(getAction(rocketLanderListener), "getGimbleZDouble");
-			if (result == null) return 0.0f;
-			return ((Double)result).floatValue();
+		public static float getGimbalY(Object rocketLanderListener) {
+			return getActionDoubleValue(rocketLanderListener, "gimbalY");
 		}
 
 		public static float getThrust(Object rocketLanderListener) {
-			Object result = callMethod(getAction(rocketLanderListener), "getThrustDouble");
+			return getActionDoubleValue(rocketLanderListener, "thrust");
+		}
+
+		public static float getActionDoubleValue(Object rocketLanderListener, String field){
+			Object action = getAction(rocketLanderListener);
+			Object result = callMethod(action, action.getClass(), "getDouble", field);
 			if (result == null) return 0.0f;
 			return ((Double)result).floatValue();
 		}
@@ -164,6 +165,26 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			try {
 				method.setAccessible(true);
 				return method.invoke(object);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+
+		public static Object callMethod(Object object, Class theClass, String methodName, Object... args) {
+			if (object == null) return null;
+
+			Method method;
+			try {
+				method = theClass.getMethod(methodName, String.class);
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+				return null;
+			}
+
+			try {
+				method.setAccessible(true);
+				return method.invoke(object, args);
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null;

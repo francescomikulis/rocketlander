@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.methods.*;
 
 import java.util.*;
@@ -76,19 +77,19 @@ public class RLModel {
         return generatePossibleActions(state, overrideThrustValues, new HashSet<>(), new HashSet<>());
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbleXValues, HashSet<Double> possibleGimbleYValues) {
-        return generatePossibleActions(state, new HashSet<>(), possibleGimbleXValues, possibleGimbleYValues);
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbalXValues, HashSet<Double> possibleGimbalYValues) {
+        return generatePossibleActions(state, new HashSet<>(), possibleGimbalXValues, possibleGimbalYValues);
     }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbleXValues, HashSet<Double> overrideGimbleYValues) {
+    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbalXValues, HashSet<Double> overrideGimbalYValues) {
         double currentThrust = state.getDouble("thrust");
         HashSet<Action> possibleActions = new HashSet<>();
 
         if (simulationType == SimulationType._1D) {
-            overrideGimbleXValues = new HashSet<>(Arrays.asList(0.0));
-            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0));
+            overrideGimbalXValues = new HashSet<>(Arrays.asList(0.0));
+            overrideGimbalYValues = new HashSet<>(Arrays.asList(0.0));
         } else if (simulationType == SimulationType._2D) {
-            overrideGimbleYValues = new HashSet<>(Arrays.asList(0.0, Math.PI + 0.00001f));
+            // overrideGimbalYValues = new HashSet<>(Arrays.asList(0.0, Math.PI + 0.00001f));
         }
 
         HashMap<String, float[]> actionDefinition = state.definition.get("actionDefinition");
@@ -102,28 +103,42 @@ public class RLModel {
                 possibleThrustValues = generatePossibleActionValues(currentThrust, actionDefinition.get("thrust"));
         }
 
-        HashSet<Double> possibleGimbleXValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideGimbleXValues.size() > 0) possibleGimbleXValues = overrideGimbleXValues;
+        String symmetryAxis = "";
+
+        HashSet<Double> possibleGimbalXValues = new HashSet<>(Collections.singletonList(0.0));
+        if (overrideGimbalXValues.size() > 0) possibleGimbalXValues = overrideGimbalXValues;
         else {
             if (actionFields.contains("gimbalX"))
-                possibleGimbleXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbalX"));
-            if (actionFields.contains("gimbal"))
-                possibleGimbleXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
+                possibleGimbalXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbalX"));
+            if (actionFields.contains("gimbal")) {
+                symmetryAxis = "X";
+                possibleGimbalXValues = generatePossibleActionValues((float) state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
+            }
         }
 
-        HashSet<Double> possibleGimbleYValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideGimbleYValues.size() > 0) possibleGimbleYValues = overrideGimbleYValues;
+        HashSet<Double> possibleGimbalYValues = new HashSet<>(Collections.singletonList(0.0));
+        if (overrideGimbalYValues.size() > 0) possibleGimbalYValues = overrideGimbalYValues;
         else {
             if (actionFields.contains("gimbalY"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbalY"));
-            if (actionFields.contains("gimbal"))
-                possibleGimbleYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
+                possibleGimbalYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbalY"));
+            if (actionFields.contains("gimbal")) {
+                symmetryAxis = "Y";
+                possibleGimbalYValues = generatePossibleActionValues((float) state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
+            }
         }
 
         for (double possibleThrust: possibleThrustValues) {
-            for (double possibleGimbleY: possibleGimbleXValues) {
-                for (double possibleGimbleZ: possibleGimbleYValues) {
-                    possibleActions.add(new Action(possibleThrust, possibleGimbleY, possibleGimbleZ, state.definition));
+            for (double possibleGimbalX: possibleGimbalXValues) {
+                for (double possibleGimbalY: possibleGimbalYValues) {
+                    Action action = new Action(possibleThrust, possibleGimbalX, possibleGimbalY, state.definition);
+                    if (action.definition.get("meta").containsKey("symmetry")) {
+                        String axes = (String)action.definition.get("meta").get("symmetry");
+                        String[] symmetryAxes = axes.split(",");
+                        for (String axis: symmetryAxes) {
+                            action.setSymmetry(axis, symmetryAxis);
+                        }
+                    }
+                    possibleActions.add(action);
                 }
             }
         }
@@ -133,80 +148,73 @@ public class RLModel {
 
     // policy management
 
-    private Action run_policy(State state, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
-        State originalState = state;
-        Action action = null;
+    private CoupledActions run_policy(CoupledStates coupledStates, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+        double currentThrust = coupledStates.get(0).getDouble("thrust");
+        CoupledActions coupledActions = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             State lastState = getLastStateOrNull(SAPrimary);
+            State state = coupledStates.get(0);
             if (state.equals(lastState)) { return null; }
-            action = policy(state, generatePossibleActions(state), primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
-            addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action, primaryMethod.definition), SAPrimary);
+            Action action = policy(state, generatePossibleActions(state), primaryMethod);
+            coupledActions = new CoupledActions(action, action, action);
+            addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action), SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
 
             State lastLanderState = getLastStateOrNull(SAPrimary);
             Action bestLanderAction = getLastActionOrNull(SAPrimary);
-            state = state.deepcopy(primaryMethod.definition);
-            if (!OptimizedMap.equivalentState(state, lastLanderState)) {
-                bestLanderAction = policy(state, generatePossibleActions(state), primaryMethod::valueFunction, primaryMethod.getExplorationPercentage());
-                addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestLanderAction, primaryMethod.definition), SAPrimary);
+            State landerState = coupledStates.get(0);
+            if (!OptimizedMap.equivalentState(landerState, lastLanderState)) {
+                bestLanderAction = policy(landerState, generatePossibleActions(landerState), primaryMethod);
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(landerState, bestLanderAction), SAPrimary);
             }
 
-            double currentThrust = state.getDouble("thrust");
-            state.setDouble("thrust", bestLanderAction.getDouble("thrust"));
-            HashSet<Action> possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
+            // propagate thrust selection
+            double thrust = bestLanderAction.getDouble("thrust");
+            coupledStates.get(0).setDouble("thrust", thrust);
+            coupledStates.get(1).setDouble("thrust", thrust);
+            coupledStates.get(2).setDouble("thrust", thrust);
 
             // gimbal action selection below
 
             State lastGimbalXState = getLastStateOrNull(SAGimbalX);
             Action bestGimbalXAction = getLastActionOrNull(SAGimbalX);
             // calculate gimbalX
-            if (state.getDouble("positionX") < 4.0) {
-                // stabilize X
-                state = state.deepcopy(tertiaryMethod.definition);
-                if (!OptimizedMap.equivalentState(state, lastGimbalXState)) {
-                    possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalXAction = policy(state, possibleActions, tertiaryMethod::valueFunction, tertiaryMethod.getExplorationPercentage());
-                    bestGimbalXAction.setDouble("gimbal", bestGimbalXAction.getDouble("gimbalX"));
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, tertiaryMethod.definition), SAGimbalX);
+            State gimbalXState = coupledStates.get(1);
+            if (!OptimizedMap.equivalentState(gimbalXState, lastGimbalXState)) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalXState, new HashSet<>(Arrays.asList(thrust)), new HashSet<>(), new HashSet<>(Arrays.asList(0.0)));
+                if (Math.abs(coupledStates.get(0).getDouble("positionX")) >= 4.0) {
+                    bestGimbalXAction = policy(gimbalXState, possibleActions, secondaryMethod);
+                } else {
+                    bestGimbalXAction = policy(gimbalXState, possibleActions, tertiaryMethod);
                 }
-            } else {
-                // reach X
-                state = state.deepcopy(secondaryMethod.definition);
-                if (!OptimizedMap.equivalentState(state, lastGimbalXState)) {
-                    possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalXAction = policy(state, possibleActions, secondaryMethod::valueFunction, secondaryMethod.getExplorationPercentage());
-                    bestGimbalXAction.setDouble("gimbal", bestGimbalXAction.getDouble("gimbalX"));
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalXAction, secondaryMethod.definition), SAGimbalX);
-                }
+                bestGimbalXAction.setDouble("gimbal", bestGimbalXAction.getDouble("gimbalX"));
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(gimbalXState, bestGimbalXAction), SAGimbalX);
             }
 
             State lastGimbalYState = getLastStateOrNull(SAGimbalY);
             Action bestGimbalYAction = getLastActionOrNull(SAGimbalY);
             // calculate gimbalY
-            if (state.getDouble("positionY") < 4.0) {
-                // stabilize Y
-                state = state.deepcopy(tertiaryMethod.definition);
-                if (!OptimizedMap.equivalentState(state, lastGimbalYState)) {
-                    possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalYAction = policy(state, possibleActions, tertiaryMethod::valueFunction, tertiaryMethod.getExplorationPercentage());
-                    bestGimbalYAction.setDouble("gimbal", bestGimbalYAction.getDouble("gimbalY"));
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, tertiaryMethod.definition), SAGimbalY);
+            State gimbalYState = coupledStates.get(2);
+            if (!OptimizedMap.equivalentState(gimbalYState, lastGimbalYState)) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalYState, new HashSet<>(Arrays.asList(thrust)), new HashSet<>(Arrays.asList(0.0)), new HashSet<>());
+                if (Math.abs(coupledStates.get(0).getDouble("positionY")) >= 4.0) {
+                    bestGimbalYAction = policy(gimbalYState, possibleActions, secondaryMethod);
+                } else {
+                    bestGimbalYAction = policy(gimbalYState, possibleActions, tertiaryMethod);
                 }
-            } else {
-                // reach Y
-                state = state.deepcopy(secondaryMethod.definition);
-                if (!OptimizedMap.equivalentState(state, lastGimbalYState)) {
-                    possibleActions = generatePossibleActions(state, new HashSet<>(Arrays.asList(bestLanderAction.getDouble("thrust"))));
-                    bestGimbalYAction = policy(state, possibleActions, secondaryMethod::valueFunction, secondaryMethod.getExplorationPercentage());
-                    bestGimbalYAction.setDouble("gimbal", bestGimbalYAction.getDouble("gimbalY"));
-                    addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestGimbalYAction, secondaryMethod.definition), SAGimbalY);
-                }
+                bestGimbalYAction.setDouble("gimbal", bestGimbalYAction.getDouble("gimbalY"));
+                addStateActionTupleIfNotDuplicate(new StateActionTuple(gimbalYState, bestGimbalYAction), SAGimbalY);
             }
-            state.setDouble("thrust", currentThrust);
 
-            action = OptimizedMap.combineCoupledTripleActions(bestLanderAction, bestGimbalXAction, bestGimbalYAction);
+            if ((bestGimbalXAction != null) && (Math.abs(bestGimbalXAction.getDouble("gimbal")) > 200.0)) {
+                System.out.println("Something is fucked up with this gimbal (X): " + bestGimbalXAction.getDouble("gimbal"));
+            }
+            if ((bestGimbalYAction != null) && (Math.abs(bestGimbalYAction.getDouble("gimbal")) > 200.0)) {
+                System.out.println("Something is fucked up with this gimbal (Y): " + bestGimbalYAction.getDouble("gimbal"));
+            }
+            coupledActions = OptimizedMap.combineCoupledTripleActions(bestLanderAction, bestGimbalXAction, bestGimbalYAction);
         }
-        return action;
+        return coupledActions;
     }
 
     private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> SA) {
@@ -217,10 +225,27 @@ public class RLModel {
         }
     }
 
-    public void updateStateBeforeNextAction(State state, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+    public CoupledStates generateNewCoupledStates(SimulationStatus status) {
+        State primaryState = new State(status, primaryMethod.definition);
+        State secondaryState = null;
+        State tertiaryState = null;
+        if (Math.abs(primaryState.getDouble("positionX")) >= 4.0)
+            secondaryState =  new State(status, secondaryMethod.definition);
+        else
+            secondaryState =  new State(status, tertiaryMethod.definition);
+        if (Math.abs(primaryState.getDouble("positionY")) >= 4.0)
+            tertiaryState =  new State(status, secondaryMethod.definition);
+        else
+            tertiaryState =  new State(status, tertiaryMethod.definition);
+
+        return new CoupledStates(primaryState, secondaryState, tertiaryState);
+    }
+
+    public void updateStateBeforeNextAction(CoupledStates coupledStates, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             if (!SAPrimary.isEmpty()) {
                 Action lastAction = SAPrimary.get(SAPrimary.size() - 1).action;
+                State state = coupledStates.get(0);
                 state.set("thrust", lastAction.get("thrust"));
                 state.set("gimbalX", lastAction.get("gimbalX"));
                 state.set("gimbalY", lastAction.get("gimbalY"));
@@ -228,7 +253,8 @@ public class RLModel {
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             if (!SAPrimary.isEmpty()) {
                 Action lastLanderAction = SAPrimary.get(SAPrimary.size() - 1).action;
-                state.set("thrust", lastLanderAction.get("thrust"));
+                State primaryState = coupledStates.get(0);
+                lastLanderAction.applyDefinitionValuesToState(primaryState);
                 /*
                 // DYNAMIC
                 for (Object objectField: lastLanderAction.definition.get("actionDefinition").keySet()) {
@@ -238,26 +264,30 @@ public class RLModel {
             }
             if (!SAGimbalX.isEmpty()) {
                 Action lastGimbalXAction = SAGimbalX.get(SAGimbalX.size() - 1).action;
-                state.set("gimbalX", lastGimbalXAction.get("gimbalX"));
+                State gimbalXState = coupledStates.get(1);
+                lastGimbalXAction.applyDefinitionValuesToState(gimbalXState);
             }
             if (!SAGimbalY.isEmpty()) {
                 Action lastGimbalYAction = SAGimbalY.get(SAGimbalY.size() - 1).action;
-                state.set("gimbalY", lastGimbalYAction.get("gimbalY"));
+                State gimbalYState = coupledStates.get(2);
+                lastGimbalYAction.applyDefinitionValuesToState(gimbalYState);
             }
         }
     }
 
-    public Action generateAction(State state, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+    public CoupledActions generateAction(CoupledStates state, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
         return run_policy(state, SAPrimary, SAGimbalX, SAGimbalY);
     }
 
-    public Action generateAction(State state, ArrayList<StateActionTuple> SA) {
+    public CoupledActions generateAction(CoupledStates state, ArrayList<StateActionTuple> SA) {
         return generateAction(state, SA, new ArrayList<>(), new ArrayList<>());
     }
 
-    private Action policy(State state, HashSet<Action> possibleActions, BiFunction<State, Action, Float> func, float explorationPercentage) {
+    private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
         HashSet<Action> bestActions = new HashSet<>();
-        bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbalX"), state.getDouble("gimbalY")));
+        //bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbalX"), state.getDouble("gimbalY")));
+
+        float explorationPercentage = method.getExplorationPercentage();
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;
@@ -268,7 +298,7 @@ public class RLModel {
 
         for (Action action: possibleActions) {
             //try {
-                float v = func.apply(state, action);
+                float v = method.valueFunction(state, action);
                 if (greedy) {
                     if (v > val) {
                         // value is best compared to all previous encounters.  Reset bestAction ArrayList.
@@ -286,38 +316,48 @@ public class RLModel {
             //    System.out.println("Failed to compute the value in the hashmap");
             //}
         }
+        if (bestActions.size() == 0) {
+            System.out.println("Size of best actions is 0.  This will cause failure - WHY IS IT HAPPENING?");
+        }
         // ties broken completely at random
         ArrayList<Action> selectableActions = new ArrayList<>(bestActions);
         return selectableActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY, int[] lastUpdateSizes) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            primaryMethod.updateStepFunction(SAPrimary);
+            if (SAPrimary.size() != lastUpdateSizes[0]) primaryMethod.updateStepFunction(SAPrimary);
 
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            primaryMethod.updateStepLanderFunction(SAPrimary);
+            if (stateHasChanged(SAPrimary))
+                primaryMethod.updateStepLanderFunction(SAPrimary);
 
-            Action lastActionX = getLastActionOrNull(SAGimbalX);
-            if (lastActionX != null) {
-                String MDPName = (String)lastActionX.definition.get("meta").get("name");
-                if (MDPName.equals("reacher"))
-                    secondaryMethod.updateStepReachingFunction(SAGimbalX);
-                else if (MDPName.equals("stabilizer"))
-                    tertiaryMethod.updateStepStabilizerFunction(SAGimbalX);
-                else
-                    System.out.println("Something is fucked up in the value function (X)");
-            }
+            if (simulationType != SimulationType._1D) {
+                if (SAGimbalX.size() != lastUpdateSizes[1]) {
+                    Action lastActionX = getLastActionOrNull(SAGimbalX);
+                    if ((lastActionX != null) && (stateHasChanged(SAGimbalX))) {
+                        String MDPName = (String) lastActionX.definition.get("meta").get("name");
+                        if (MDPName.equals("reacher"))
+                            secondaryMethod.updateStepReachingFunction(SAGimbalX);
+                        else if (MDPName.equals("stabilizer"))
+                            tertiaryMethod.updateStepStabilizerFunction(SAGimbalX);
+                        else
+                            System.out.println("Something is fucked up in the value function (X)");
+                    }
+                }
 
-            Action lastActionY = getLastActionOrNull(SAGimbalY);
-            if (lastActionY != null) {
-                String MDPName = (String)lastActionY.definition.get("meta").get("name");
-                if (MDPName.equals("reacher"))
-                    secondaryMethod.updateStepReachingFunction(SAGimbalY);
-                else if (MDPName.equals("stabilizer"))
-                    tertiaryMethod.updateStepStabilizerFunction(SAGimbalY);
-                else
-                    System.out.println("Something is fucked up in the value function (Y)");
+                if (SAGimbalY.size() != lastUpdateSizes[2]) {
+                    Action lastActionY = getLastActionOrNull(SAGimbalY);
+                    if ((lastActionY != null) && (stateHasChanged(SAGimbalY))) {
+                        String MDPName = (String) lastActionY.definition.get("meta").get("name");
+                        if (MDPName.equals("reacher"))
+                            secondaryMethod.updateStepReachingFunction(SAGimbalY);
+                        else if (MDPName.equals("stabilizer"))
+                            tertiaryMethod.updateStepStabilizerFunction(SAGimbalY);
+                        else
+                            System.out.println("Something is fucked up in the value function (Y)");
+                    }
+                }
             }
         }
     }
@@ -331,6 +371,7 @@ public class RLModel {
                 primaryMethod.updateTerminalLanderFunction(SAPrimary);
             }
             if (simulationType != SimulationType._1D) {
+
                 ArrayList<StateActionTuple> SAGimbalXReacher = new ArrayList<>();
                 ArrayList<StateActionTuple> SAGimbalXStabilizer = new ArrayList<>();
                 for (StateActionTuple stateActionTuple: SAGimbalX) {
@@ -340,10 +381,6 @@ public class RLModel {
                     else if (MDPName.equals("stabilizer"))
                         SAGimbalXStabilizer.add(stateActionTuple);
                 }
-                System.out.println("Number of unique reacher states (X): " + SAGimbalXReacher.size());
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
-                System.out.println("Number of unique stabilizer states (X): " + SAGimbalXStabilizer.size());
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
 
                 ArrayList<StateActionTuple> SAGimbalYReacher = new ArrayList<>();
                 ArrayList<StateActionTuple> SAGimbalYStabilizer = new ArrayList<>();
@@ -354,12 +391,27 @@ public class RLModel {
                     else if (MDPName.equals("stabilizer"))
                         SAGimbalYStabilizer.add(stateActionTuple);
                 }
-                System.out.println("Number of unique reacher states (Y): " + SAGimbalYReacher.size());
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
-                System.out.println("Number of unique stabilizer states (Y): " + SAGimbalYStabilizer.size());
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
+
+                double updateOrder = randomGenerator.nextDouble();
+                if (updateOrder < 0.5) {
+                    terminalUpdateLogic(secondaryMethod, "X", SAGimbalXReacher);
+                    terminalUpdateLogic(tertiaryMethod, "X", SAGimbalXStabilizer);
+                    terminalUpdateLogic(secondaryMethod, "Y", SAGimbalYReacher);
+                    terminalUpdateLogic(tertiaryMethod, "Y", SAGimbalYStabilizer);
+                } else {
+                    terminalUpdateLogic(secondaryMethod, "Y", SAGimbalYReacher);
+                    terminalUpdateLogic(tertiaryMethod, "Y", SAGimbalYStabilizer);
+                    terminalUpdateLogic(secondaryMethod, "X", SAGimbalXReacher);
+                    terminalUpdateLogic(tertiaryMethod, "X", SAGimbalXStabilizer);
+                }
             }
         }
+    }
+
+    private void terminalUpdateLogic(ModelBaseImplementation method, String axis, ArrayList<StateActionTuple> SA) {
+        String methodName = (String)method.definition.get("meta").get("name");
+        // System.out.println("Number of unique " + methodName + " states (" + axis + "): " + SA.size());
+        method.updateTerminalReachingFunction(SA);
     }
 
     public void resetValueFunctionTable() {
@@ -389,27 +441,38 @@ public class RLModel {
         method.setValueFunctionTable(valueFunctionTable);
     }
 
-    public Action getLastAction(ArrayList<StateActionTuple> episodeStateActionsPrimary, ArrayList<StateActionTuple> episodeStateActionsGimbalX, ArrayList<StateActionTuple> episodeStateActionsGimbalY) {
+    public CoupledActions getLastAction(ArrayList<StateActionTuple> episodeStateActionsPrimary, ArrayList<StateActionTuple> episodeStateActionsGimbalX, ArrayList<StateActionTuple> episodeStateActionsGimbalY) {
         if (episodeStateActionsPrimary.size() == 0)
             return null;
 
-        Action action = null;
+        CoupledActions coupledActions = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
+            Action action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
+            coupledActions = new CoupledActions(action, action, action);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            action = OptimizedMap.combineCoupledTripleActions(
+            coupledActions = OptimizedMap.combineCoupledTripleActions(
                     episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
                     episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
                     episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action
             );
         }
-        return action;
+        return coupledActions;
     }
 
 
+    private boolean stateHasChanged(ArrayList<StateActionTuple> episodeStateActions){
+        State lastStateOrNull = getLastStateOrNull(episodeStateActions);
+        if (lastStateOrNull == null) return false;
+        State lastLastStateOrNull = getLastLastStateOrNull(episodeStateActions);
+        return !lastStateOrNull.equals(lastLastStateOrNull);
+    }
 
     private State getLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
         return (episodeStateActions.isEmpty()) ? null : episodeStateActions.get(episodeStateActions.size() - 1).state;
+    }
+
+    private State getLastLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
+        return (episodeStateActions.size() <= 1) ? null : episodeStateActions.get(episodeStateActions.size() - 2).state;
     }
 
     private Action getLastActionOrNull(ArrayList<StateActionTuple> episodeStateActions){

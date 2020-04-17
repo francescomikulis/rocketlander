@@ -34,9 +34,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
     private Random random;
-    private State state;
-    private Action action;
+    private CoupledStates state;
+    private CoupledActions action;
     TerminationBooleanTuple terminationBooleanTuple;
+    private int[] lastStepUpdateSizes = new int[]{0, 0, 0};
     private static double variation = 2;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
@@ -50,7 +51,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean hasCompletedTerminalUpdate = false;
 
     /** Used by the Visualize3DListener extension */
-    public Action getLastAction() {
+    public CoupledActions getLastAction() {
         return model.getLastAction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
     }
 
@@ -64,20 +65,25 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private boolean setupStateActionAndStore(SimulationStatus status) {
-        State oldState = state;
-        state = new State(status);
-
-        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(state);
-        model.getValueFunctionTable().alterTerminalStateIfFailure(oldState);
+        CoupledStates oldState = state;
+        state = model.generateNewCoupledStates(status);
 
         model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
 
-        Action newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        CoupledActions newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
         if (newAction != null) {
+            if ((action == null) || !action.equals(newAction)) {
+                // System.out.println("NEW action thrust = " + newAction.getDouble("thrust"));
+                //System.out.println("NEW action name = " + newAction.definition.get("meta").get("name"));
+                //System.out.println("NEW action hashCode = " + newAction.hashCode());
+                if (action != null) {
+                    //System.out.println("OLD action thrust = " + action.getDouble("thrust"));
+                    //System.out.println("OLD action name = " + action.definition.get("meta").get("name"));
+                    //System.out.println("OLD action hashCode = " + action.hashCode());
+                }
+            }
             action = newAction;
-            // System.out.println("Action thrust = " + action.getDouble("thrust"));
         }
-
         return true;
     }
 
@@ -91,12 +97,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
+        double posX = calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation);
+        posX = 0;
+        double posY = calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation);
+        posY = 0;
+        double posZ = calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation);
+
         // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(new Coordinate(
-                calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation),
-                calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation),
-                calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation)
-        ));
+        status.setRocketPosition(new Coordinate(posX, posY, posZ));
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation)));
         //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
 
@@ -104,11 +112,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + variation, variation))));
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
+        // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
         double dx = calculateNumberWithIntegerVariation(0, variation * 3);
         double dy = calculateNumberWithIntegerVariation(0, variation * 3);
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
         status.setLaunchRodCleared(true);
 
@@ -144,15 +153,20 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
+        setRollToZero(status);  // prevent rocket from spinning
         if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
         } else if(model.simulationType == SimulationType._2D) {
+            /*
             Quaternion currentQuaternion = status.getRocketOrientationQuaternion();
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
             Quaternion newQuaternion = new Quaternion(0, rocketDirection.x / 2, 0, rocketDirection.z).normalizeIfNecessary();
             status.setRocketOrientationQuaternion(newQuaternion);
+             */
+            // force the stabilizer to be trained here!
+            status.setRocketPosition(new Coordinate(0, 0, status.getRocketPosition().z));
         } else if(model.simulationType == SimulationType._3D) {
-            setRollToZero(status); // prevent rocket from spinning
+            // already set the roll to zero
         }
     }
 
@@ -198,7 +212,13 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         //action = new Action(60.0, move_gimbal_to_y, move_gimbal_to_z);
         RLVectoringThrust *= (action.getDouble("thrust"));
-        return calculateAcceleration(status, action.getDouble("gimbalX"), action.getDouble("gimbalY"));
+        double gimbalX = action.getDouble("gimbalX");
+        double gimbalY = action.getDouble("gimbalY");
+        if (model.simulationType == SimulationType._1D) {
+            gimbalX = 0.0;
+            gimbalY = 0.0;
+        }
+        return calculateAcceleration(status, gimbalX, gimbalY);
     }
 
     @Override
@@ -213,15 +233,24 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
          */
 
-        if (addedStateActionTuple)
-            model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, lastStepUpdateSizes);
+        lastStepUpdateSizes = new int[]{episodeStateActionsPrimary.size(), episodeStateActionsGimbalX.size(), episodeStateActionsGimbalY.size()};
     }
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
 
-        terminationBooleanTuple = model.getValueFunctionTable().alterTerminalStateIfFailure(new State(status));
+        /*
+        System.out.print("Thrusts: ");
+        for (int i = 0; i < episodeStateActionsPrimary.size(); i ++) {
+            StateActionTuple stateActionTuple = episodeStateActionsPrimary.get(i);
+            System.out.print("(" + i + ")" +  stateActionTuple.action + " ");
+        }
+        System.out.println("");
+         */
+
+        terminationBooleanTuple = model.getValueFunctionTable().getTerminationValidity(model.generateNewCoupledStates(status));
         if (!hasCompletedTerminalUpdate) {
             model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleanTuple);
             hasCompletedTerminalUpdate = true;
@@ -256,18 +285,18 @@ public class RocketLanderListener extends AbstractSimulationListener {
         /*
         double gimbalComponentX = Math.sin(gimbalZ) * Math.cos(gimbalY);
         double gimbalComponentY = Math.sin(gimbalZ) * Math.sin(gimbalY);
-        double gimbalComponentZ = -Math.cos(gimbalZ);
+        double gimbalComponentZ = Math.cos(gimbalZ);
          */
         double gimbalComponentX = Math.sin(gimbalX);
         double gimbalComponentY = Math.sin(gimbalY);
-        double gimbalComponentZ = 1.0 - Math.sqrt(gimbalComponentX * gimbalComponentX + gimbalComponentY * gimbalComponentY);
+        double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
 
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
         double forceX = -RLVectoringThrust * gimbalComponentX;
         double forceY = -RLVectoringThrust * gimbalComponentY;
-        double forceZ = -RLVectoringThrust * gimbalComponentZ;  // note double negative
+        double forceZ = RLVectoringThrust * gimbalComponentZ;  // note double negative
 
         // System.out.println(gimbalComponentX + " " + gimbalComponentY + " " + gimbalComponentZ);
 
@@ -289,6 +318,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 finalForceY / RLVectoringStructureMassData.getMass(),
                 finalForceZ / RLVectoringStructureMassData.getMass()
         );
+        if (linearAcceleration.isNaN()) {
+            System.out.println("NAN PARAMETER PRESENT");
+        }
 
         // TODO: Note this is disabled because we disabled roll.  No rotation is required.
         // linearAcceleration = new Rotation2D(RLVectoringFlightConditions.getTheta()).rotateZ(linearAcceleration);
@@ -296,14 +328,26 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // Convert into rocket world coordinates
         linearAcceleration = status.getRocketOrientationQuaternion().rotate(linearAcceleration);
 
+        if (linearAcceleration.isNaN()) {
+            System.out.println("NAN PARAMETER PRESENT");
+        }
+
         // add effect of gravity
         double gravity = status.getSimulationConditions().getGravityModel().getGravity(status.getRocketWorldPosition());
         linearAcceleration = linearAcceleration.sub(0, 0, gravity);
+
+        if (linearAcceleration.isNaN()) {
+            System.out.println("NAN PARAMETER PRESENT");
+        }
 
         // add effect of Coriolis acceleration
         Coordinate coriolisAcceleration = status.getSimulationConditions().getGeodeticComputation()
                 .getCoriolisAcceleration(status.getRocketWorldPosition(), status.getRocketVelocity());
         linearAcceleration = linearAcceleration.add(coriolisAcceleration);
+
+        if (linearAcceleration.isNaN()) {
+            System.out.println("NAN PARAMETER PRESENT");
+        }
 
         // Shift moments to CG
         double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
