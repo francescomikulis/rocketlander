@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
 import java.lang.reflect.Constructor;
@@ -12,6 +13,7 @@ import java.util.function.Function;
 import static java.lang.Float.NaN;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
+import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.generateFormula;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 /**
@@ -120,6 +122,11 @@ public class OptimizedMap {
         generateAndIndecesToDefinition(landerDefinition);
         generateAndIndecesToDefinition(reacherDefinition);
         generateAndIndecesToDefinition(stabilizerDefinition);
+
+        convertStringFormulasToFormulas(generalDefinition);
+        convertStringFormulasToFormulas(landerDefinition);
+        convertStringFormulasToFormulas(reacherDefinition);
+        convertStringFormulasToFormulas(stabilizerDefinition);
     }
 
     public float get(StateActionTuple stateActionTuple) {
@@ -220,6 +227,25 @@ public class OptimizedMap {
             new HashMap<String, int[]>() {{
                 put("indeces", indeces);
         }});
+    }
+
+    public static void convertStringFormulasToFormulas(HashMap<String, HashMap> MDPDefinition){
+        HashMap<String, Formula> formulaHashMap = new HashMap<>();
+        if (!MDPDefinition.containsKey("formulas")) return;
+        for (Object entryObject : MDPDefinition.get("formulas").entrySet()) {
+            Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+            String assignToField = entry.getKey();
+            try {
+                String formula = entry.getValue();
+            } catch (ClassCastException e) {
+                // already ran this code and converted formulas
+                // happens rarely but it means we already did the conversions
+                return;
+            }
+            String formula = entry.getValue();
+            formulaHashMap.put(assignToField, generateFormula(formula));
+        }
+        MDPDefinition.put("formulas", formulaHashMap);
     }
 
     public static int indexProduct(int[] indeces) {

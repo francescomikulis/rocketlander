@@ -20,7 +20,7 @@ public class RLModel {
     private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-    public SimulationType simulationType = SimulationType._1D;
+    public SimulationType simulationType = SimulationType._2D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -366,8 +366,10 @@ public class RLModel {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             primaryMethod.updateTerminalFunction(SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landerSucceeded())) {
-                System.out.println("Number of unique lander states: " + SAPrimary.size());
+            // if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landerSucceeded())) {
+            if (true) {
+                if (terminationBooleanTuple.landerSucceeded())
+                    System.out.println("Number of unique lander states: " + SAPrimary.size());
                 primaryMethod.updateTerminalLanderFunction(SAPrimary);
             }
             if (simulationType != SimulationType._1D) {

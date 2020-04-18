@@ -2,6 +2,8 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import java.io.Serializable;
 import net.sf.openrocket.simulation.SimulationStatus;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
@@ -11,6 +13,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static java.lang.Math.abs;
+import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 public class StateActionTuple implements Serializable {
@@ -37,7 +40,6 @@ public class StateActionTuple implements Serializable {
 
             String stateSym = state.symmetry;
             String actionSym = action.symmetry;
-
             if ((stateSym == null) && (actionSym == null)) {
                 System.out.println("SYMMETRY MUST BE SET IN EITHER ACTION OR STATE!");
                 return;
@@ -51,61 +53,23 @@ public class StateActionTuple implements Serializable {
         }
 
         for (Object entryObject : definition.get("formulas").entrySet()) {
-            Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+            Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
             String assignToField = entry.getKey();
-            String formula = entry.getValue();
-            if (!formula.contains("(")) {
-                String term = formula;
+            Formula formula = entry.getValue();
+            String stringFormula = formula.toString();
+            if (!stringFormula.contains("(")) {
+                // assignmentFormula - need to check symmetry value and axis
                 if ((symmetryAxes != null) && (symmetryAxes.contains(assignToField))) {
-                    String formulaAxis = term.substring(term.length() - 1);
+                    String formulaAxis = stringFormula.substring(stringFormula.length() - 1);
                     if ((this.state.symmetry != null) && (!formulaAxis.equals(this.state.symmetry)))
                         continue;  // attempting to override a symmetry assignment (e.g. X, Y)
+                    if ((this.action.symmetry != null) && (!formulaAxis.equals(this.action.symmetry)))
+                        continue;  // attempting to override a symmetry assignment (e.g. X, Y)
                 }
-                double value = bestGuessTermFromString(term, state, action);
-                this.state.setDouble(assignToField, value);
-                value = bestGuessTermFromString(term, action, state);
-                this.action.setDouble(assignToField, value);
-            } else if (formula.equals("add(abs(positionX),abs(positionY))")) {
-                double posX = bestGuessTermFromString("positionX", state, action);
-                double posY = bestGuessTermFromString("positionY", state, action);
-                this.state.setDouble(assignToField, abs(posX) + abs(posY));
-                posX = bestGuessTermFromString("positionX", action, state);
-                posY = bestGuessTermFromString("positionY", action, state);
-                this.action.setDouble(assignToField, abs(posX) + abs(posY));
-            } else if (formula.equals("log8(add(positionZ,1))")) {
-                int log_base = extractLogBase(formula);
-                double posZ = bestGuessTermFromString("positionZ", state, action);
-                this.state.setDouble(assignToField, log_base(posZ + 1, log_base));
-                posZ = bestGuessTermFromString("positionZ", action, state);
-                this.action.setDouble(assignToField, log_base(posZ + 1, log_base));
-            } else if (formula.equals("signum(velocityZ)*log8(add(abs(velocityZ),1))")) {
-                int log_base = extractLogBase(formula);
-                double velZ = bestGuessTermFromString("velocityZ", state, action);
-                this.state.setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
-                velZ = bestGuessTermFromString("velocityZ", action, state);
-                this.action.setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
-            }  else {
-                System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
             }
+            this.state.setDouble(assignToField, evaluateFormulaBestGuess(formula, state, action));
+            this.action.setDouble(assignToField, evaluateFormulaBestGuess(formula, action, state));
         }
-    }
-
-    private static int extractLogBase(String formula) {
-        int log_base_index = formula.indexOf("log") + 3;
-        int end_log_index = formula.indexOf("(", log_base_index);
-        return Integer.parseInt(formula.substring(log_base_index, end_log_index));
-    }
-
-    private static double log_base(double input, int base) { return Math.log(input) / Math.log(base); }
-
-    private double bestGuessTermFromString(String term, StateActionClass primary, StateActionClass fallback) {
-        double value = 0;
-        if (primary.valueMap.containsKey(term)) value = primary.getDouble(term);
-        else {
-            if (fallback.valueMap.containsKey(term)) value = fallback.getDouble(term);
-            else System.out.println("MAJOR ISSUE IN MISSING PROPERTY: " + term);
-        }
-        return value;
     }
 
     @Override
@@ -151,26 +115,10 @@ public class StateActionTuple implements Serializable {
         protected void runMDPDefinitionFormulas() {
             if (!definition.containsKey("formulas")) return;
             for (Object entryObject : definition.get("formulas").entrySet()) {
-                Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+                Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
                 String assignToField = entry.getKey();
-                String formula = entry.getValue();
-                if (!formula.contains("(")) {
-                    setDouble(assignToField, getDouble(formula));
-                } else if (formula.equals("add(abs(positionX),abs(positionY))")) {
-                    double posX = getDouble("positionX");
-                    double posY = getDouble("positionY");
-                    setDouble(assignToField, abs(posX) + abs(posY));
-                } else if (formula.equals("log8(add(positionZ,1))")) {
-                    int log_base = extractLogBase(formula);
-                    double posZ = getDouble("positionZ");
-                    setDouble(assignToField, log_base(posZ + 1, log_base));
-                } else if (formula.equals("signum(velocityZ)*log8(add(abs(velocityZ),1))")) {
-                    int log_base = extractLogBase(formula);
-                    double velZ = getDouble("velocityZ");
-                    setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
-                } else {
-                    System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
-                }
+                Formula formula = entry.getValue();
+                setDouble(assignToField, evaluateFormula(formula, this));
             }
         }
 
@@ -182,7 +130,7 @@ public class StateActionTuple implements Serializable {
             if (!definition.containsKey("formulas")) {
                 definition.put("formulas", new HashMap<String, String>());
             }
-            definition.get("formulas").put(copyToField, originalField);
+            definition.get("formulas").put(copyToField, generateAssignmentFormula(originalField));
             runMDPDefinitionFormulas();
         }
 

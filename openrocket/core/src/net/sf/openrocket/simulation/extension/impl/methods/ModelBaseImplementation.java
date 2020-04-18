@@ -3,6 +3,7 @@ package net.sf.openrocket.simulation.extension.impl.methods;
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,7 +141,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         System.out.println("    actionDefinitionIntegers=" + ((HashMap<String, float[]>)definition.get("actionDefinitionIntegers")).toString());
         System.out.println("    indeces=" + ((int[])definition.get("indeces").get("indeces")).toString());
         if (definition.containsKey("formulas"))
-            System.out.println("    formulas=" + ((HashMap<String, String>)definition.get("formulas")).toString());
+            System.out.println("    formulas=" + ((HashMap<String, Formula>)definition.get("formulas")).toString());
         System.out.println("}");
     }
 
@@ -172,21 +173,26 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
     public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>() {{
         put("stateDefinition",  new HashMap<String, float[]>() {{
-            put("position", new float[]{0, 8, 2});
+            put("angle", new float[]{-35, 35, 5});
+            // put("position", new float[]{0, 8, 2});
+
             // put("positionZ", new float[]{0, 50, 1});  // 2.5
-            // put("log2PositionZ", new float[]{0, 5.6f, 0.3f});
-            put("log8PositionZ", new float[]{0, 1.9f, 0.05f});
+            put("log2PositionZ", new float[]{0, 5.6f, 0.3f});
+            // put("log8PositionZ", new float[]{0, 1.9f, 0.05f});
             // put("velocityZ", new float[]{-30, 5, 2.5f});  // 5
-            // put("log2VelocityZ", new float[]{-5, 2.3f, 0.3f});
-            put("log8VelocityZ", new float[]{-1.6f, 0.8f, 0.05f});
+            put("log2VelocityZ", new float[]{-5, 2.3f, 0.3f});
+            // put("log8VelocityZ", new float[]{-1.6f, 0.8f, 0.05f});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
         }});
         put("formulas", new HashMap<String, String>() {{
-            put("position", "add(abs(positionX),abs(positionY))");
-            put("log8PositionZ", "log8(add(positionZ,1))");
-            put("log8VelocityZ", "signum(velocityZ)*log8(add(abs(velocityZ),1))");
+            put("position", "Add(Abs(positionX),Abs(positionY))");
+            put("angle", "Add(Abs(angleX),Abs(angleY))");
+            put("log2PositionZ", "Log2(Add(positionZ,1))");
+            put("log8PositionZ", "Log8(Add(positionZ,1))");
+            put("log2VelocityZ", "Mult(Signum(velocityZ),Log2(Add(Abs(velocityZ),1)))");
+            put("log8VelocityZ", "Mult(Signum(velocityZ),Log8(Add(Abs(velocityZ),1)))");
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "lander");
