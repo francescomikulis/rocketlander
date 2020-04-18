@@ -173,14 +173,20 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>() {{
         put("stateDefinition",  new HashMap<String, float[]>() {{
             put("position", new float[]{0, 8, 2});
-            put("positionZ", new float[]{0, 50, 1});  // 2.5
-            put("velocityZ", new float[]{-30, 5, 2.5f});  // 5
+            // put("positionZ", new float[]{0, 50, 1});  // 2.5
+            // put("log2PositionZ", new float[]{0, 5.6f, 0.3f});
+            put("log8PositionZ", new float[]{0, 1.9f, 0.05f});
+            // put("velocityZ", new float[]{-30, 5, 2.5f});  // 5
+            // put("log2VelocityZ", new float[]{-5, 2.3f, 0.3f});
+            put("log8VelocityZ", new float[]{-1.6f, 0.8f, 0.05f});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
         }});
         put("formulas", new HashMap<String, String>() {{
             put("position", "add(abs(positionX),abs(positionY))");
+            put("log8PositionZ", "log8(add(positionZ,1))");
+            put("log8VelocityZ", "signum(velocityZ)*log8(add(abs(velocityZ),1))");
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "lander");

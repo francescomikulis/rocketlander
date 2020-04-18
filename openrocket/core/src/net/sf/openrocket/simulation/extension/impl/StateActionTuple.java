@@ -72,11 +72,31 @@ public class StateActionTuple implements Serializable {
                 posX = bestGuessTermFromString("positionX", action, state);
                 posY = bestGuessTermFromString("positionY", action, state);
                 this.action.setDouble(assignToField, abs(posX) + abs(posY));
-            } else {
+            } else if (formula.equals("log8(add(positionZ,1))")) {
+                int log_base = extractLogBase(formula);
+                double posZ = bestGuessTermFromString("positionZ", state, action);
+                this.state.setDouble(assignToField, log_base(posZ + 1, log_base));
+                posZ = bestGuessTermFromString("positionZ", action, state);
+                this.action.setDouble(assignToField, log_base(posZ + 1, log_base));
+            } else if (formula.equals("signum(velocityZ)*log8(add(abs(velocityZ),1))")) {
+                int log_base = extractLogBase(formula);
+                double velZ = bestGuessTermFromString("velocityZ", state, action);
+                this.state.setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
+                velZ = bestGuessTermFromString("velocityZ", action, state);
+                this.action.setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
+            }  else {
                 System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
             }
         }
     }
+
+    private static int extractLogBase(String formula) {
+        int log_base_index = formula.indexOf("log") + 3;
+        int end_log_index = formula.indexOf("(", log_base_index);
+        return Integer.parseInt(formula.substring(log_base_index, end_log_index));
+    }
+
+    private static double log_base(double input, int base) { return Math.log(input) / Math.log(base); }
 
     private double bestGuessTermFromString(String term, StateActionClass primary, StateActionClass fallback) {
         double value = 0;
@@ -140,6 +160,14 @@ public class StateActionTuple implements Serializable {
                     double posX = getDouble("positionX");
                     double posY = getDouble("positionY");
                     setDouble(assignToField, abs(posX) + abs(posY));
+                } else if (formula.equals("log8(add(positionZ,1))")) {
+                    int log_base = extractLogBase(formula);
+                    double posZ = getDouble("positionZ");
+                    setDouble(assignToField, log_base(posZ + 1, log_base));
+                } else if (formula.equals("signum(velocityZ)*log8(add(abs(velocityZ),1))")) {
+                    int log_base = extractLogBase(formula);
+                    double velZ = getDouble("velocityZ");
+                    setDouble(assignToField, Math.signum(velZ)*log_base(abs(velZ) + 1, log_base));
                 } else {
                     System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS");
                 }
