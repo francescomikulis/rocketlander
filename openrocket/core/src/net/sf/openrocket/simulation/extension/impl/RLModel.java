@@ -20,7 +20,7 @@ public class RLModel {
     private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-    public SimulationType simulationType = SimulationType._2D;
+    public SimulationType simulationType = SimulationType._3D;
 
     enum SimulationType {
         _1D, _2D, _3D

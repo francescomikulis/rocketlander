@@ -97,9 +97,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
-        double posX = calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation);
+        double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
         posX = 0;
-        double posY = calculateNumberWithIntegerVariation(MAX_POSITION - variation, variation);
+        double posY = calculateNumberWithIntegerVariation(0, MAX_POSITION);
         posY = 0;
         double posZ = calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation);
 
@@ -112,12 +112,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + variation, variation))));
         //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
 
-        // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
         double dx = calculateNumberWithIntegerVariation(0, variation * 3);
         double dy = calculateNumberWithIntegerVariation(0, variation * 3);
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
         status.setLaunchRodCleared(true);
 

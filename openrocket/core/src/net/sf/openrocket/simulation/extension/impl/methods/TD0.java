@@ -73,8 +73,13 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
 
     public float rewardReaching(StateActionTuple.State state) {
-        float positionReward = rewardPositionStabilizer(state.getDouble("positionX"), state.getDouble("positionY"));
-        return positionReward;
+        //float positionReward = rewardPositionStabilizer(state.getDouble("position"), state.getDouble("positionY"));
+        float position = (float)Math.abs(state.getDouble("position"));
+        float velocity = (float)Math.abs(state.getDouble("velocity"));
+        return - position - (velocity/10.0f) / position;
+
+        // float positionReward = -(float)(Math.abs(state.getDouble("position" + state.symmetry)));
+        // return positionReward;
     }
 
     private float rewardPositionStabilizer(double positionX, double positionY){
