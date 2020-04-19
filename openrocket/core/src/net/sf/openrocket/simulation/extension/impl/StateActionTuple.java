@@ -2,6 +2,7 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import java.io.Serializable;
 import net.sf.openrocket.simulation.SimulationStatus;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.util.ArrayList;
@@ -122,6 +123,16 @@ public class StateActionTuple implements Serializable {
             }
         }
 
+        public void setAllSymmetries(String symmetryAxis) {
+            if (definition.get("meta").containsKey("symmetry")) {
+                String axes = (String)definition.get("meta").get("symmetry");
+                String[] symmetryAxes = axes.split(",");
+                for (String axis: symmetryAxes) {
+                    setSymmetry(axis, symmetryAxis);
+                }
+            }
+        }
+
         public void setSymmetry(String field, String axis) {
             symmetry = axis;
 
@@ -130,7 +141,7 @@ public class StateActionTuple implements Serializable {
             if (!definition.containsKey("formulas")) {
                 definition.put("formulas", new HashMap<String, String>());
             }
-            definition.get("formulas").put(copyToField, generateAssignmentFormula(originalField));
+            definition.get("formulas").put(copyToField, ExpressionEvaluator.getInstance().generateAssignmentFormula(originalField));
             runMDPDefinitionFormulas();
         }
 

@@ -32,10 +32,14 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         float oldValue = valueFunction(old);
         float currentValue = valueFunction(current);
         float rewardValue = reward.apply(current.state);
+        if (Float.isNaN(rewardValue))
+            System.out.println("NAN REWARD!");
 
-        valueFunctionTable.put(old,
-                oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue)
-        );
+        float newValue = oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue);
+        if (Float.isNaN(newValue))
+            System.out.println("NAN UPDATE!");
+
+        valueFunctionTable.put(old, newValue);
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }
@@ -76,7 +80,14 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         //float positionReward = rewardPositionStabilizer(state.getDouble("position"), state.getDouble("positionY"));
         float position = (float)Math.abs(state.getDouble("position"));
         float velocity = (float)Math.abs(state.getDouble("velocity"));
-        return - position - (velocity/10.0f) / position;
+
+        float reward;
+        if (position != 0.0) {
+            reward = - position - (velocity/10.0f) / position;
+        } else {
+            reward = - position - (velocity/10.0f);
+        }
+        return reward;
 
         // float positionReward = -(float)(Math.abs(state.getDouble("position" + state.symmetry)));
         // return positionReward;

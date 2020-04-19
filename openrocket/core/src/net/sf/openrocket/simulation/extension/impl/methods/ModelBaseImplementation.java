@@ -193,6 +193,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("log8PositionZ", "Log8(Add(positionZ,1))");
             put("log2VelocityZ", "Mult(Signum(velocityZ),Log2(Add(Abs(velocityZ),1)))");
             put("log8VelocityZ", "Mult(Signum(velocityZ),Log8(Add(Abs(velocityZ),1)))");
+
+            // put("MDPDecision", "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))");
         }});
         put("meta", new HashMap<String, String>() {{
             put("name", "lander");

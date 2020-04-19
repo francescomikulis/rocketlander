@@ -4,10 +4,7 @@ import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.StateActionClass;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.Math.abs;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.landerDefinition;
@@ -36,24 +33,21 @@ public class ExpressionEvaluator {
         }
     }
 
-    public static double generateEvaluateFormula(String stringFormula, StateActionClass object) {
+    public Formula generateFormula(String stringFormula) {
+        if (memoizedFormulas.containsKey(stringFormula)) return memoizedFormulas.get(stringFormula);
         stringFormula = stringFormula.replaceAll(" ", "");
         Formula formula = new Formula(generate_terms_from_sentence(stringFormula));
-        return generateFormula(stringFormula).evaluate(object);
-    }
-
-    public static Formula generateFormula(String stringFormula) {
-        stringFormula = stringFormula.replaceAll(" ", "");
-        return new Formula(generate_terms_from_sentence(stringFormula));
+        memoizedFormulas.put(stringFormula, formula);
+        return formula;
     }
 
     public static double evaluateFormula(Formula formula, StateActionClass object) {
         return formula.evaluate(object);
     }
 
-    public static Formula generateAssignmentFormula(String stringFormula) {
+    public Formula generateAssignmentFormula(String stringFormula) {
         stringFormula = stringFormula.replaceAll(" ", "");
-        Formula formula = new Formula(generate_terms_from_sentence(stringFormula));
+        Formula formula = generateFormula(stringFormula);
         assert (!formula.toString().contains("("));
         return formula;
     }
@@ -62,7 +56,21 @@ public class ExpressionEvaluator {
         return formula.evaluateBestGuess(primary, fallback);
     }
 
+    private static volatile ExpressionEvaluator instance;
+    private HashMap<String, Formula> memoizedFormulas = new HashMap<>();
 
+    private ExpressionEvaluator(){}
+
+    public static ExpressionEvaluator getInstance() {
+        if (instance == null) { // first time lock
+            synchronized (ExpressionEvaluator.class) {
+                if (instance == null) {  // second time lock
+                    instance = new ExpressionEvaluator();
+                }
+            }
+        }
+        return instance;
+    }
 
     private double bestGuessTermFromString(String term, StateActionClass primary, StateActionClass fallback) {
         double value = 0;
@@ -210,10 +218,29 @@ public class ExpressionEvaluator {
         else if (method.equals("Div")) return inputs.get(0) / inputs.get(1);
         else if (method.equals("Abs")) return Math.abs(inputs.get(0));
         else if (method.equals("Signum")) return Math.signum(inputs.get(0));
+        else if (method.equals("Sin")) return Math.sin(inputs.get(0));
+        else if (method.equals("Asin")) return Math.asin(inputs.get(0));
+        else if (method.equals("Cos")) return Math.cos(inputs.get(0));
+        else if (method.equals("Acos")) return Math.acos(inputs.get(0));
+        else if (method.equals("Tan")) return Math.tan(inputs.get(0));
+        else if (method.equals("Atan")) return Math.atan(inputs.get(0));
+        else if (method.equals("Atan2")) return Math.atan2(inputs.get(0), inputs.get(1));
+
+        else if (method.equals("And")) return ((inputs.get(0) != 0) && (inputs.get(1) != 0)) ? 1 : 0;
+        else if (method.equals("Or")) return ((inputs.get(0) != 0) || (inputs.get(1) != 0)) ? 1 : 0;
+
+        else if (method.equals("Lt")) return (inputs.get(0) < inputs.get(1)) ? 1 : 0;
+        else if (method.equals("Le")) return (inputs.get(0) <= inputs.get(1)) ? 1 : 0;
+        else if (method.equals("Gt")) return (inputs.get(0) > inputs.get(1)) ? 1 : 0;
+        else if (method.equals("Ge")) return (inputs.get(0) >= inputs.get(1)) ? 1 : 0;
+
+        else if (method.contains("Pow")) return Math.pow(inputs.get(0), inputs.get(1));
+        else if (method.contains("Exp")) return Math.exp(inputs.get(0));
         else if (method.contains("Log")) {
-            int logBase = Integer.parseInt(method.substring(3));
+            double logBase = Double.parseDouble(method.substring(3));
             return Math.log(inputs.get(0)) / Math.log(logBase);
         }
+
         System.out.println("EQUATION NOT DEFINED IN STATE ACTION TUPLE CLASS: " + method);
         return -1.0;
     }
@@ -229,6 +256,17 @@ public class ExpressionEvaluator {
         }
         assert false;
         return counter; // never gets hit
+    }
+
+    private static boolean function_is_valid_format(String input_string) {
+        int delta = 0;
+        for (int i = 0; i < input_string.length(); i++) {
+            String character = String.valueOf(input_string.charAt(i));
+            if (character.equals("(")) delta +=1;
+            else if (character.equals(")")) delta -=1;
+        }
+        System.out.println("Delta" + delta);
+        return delta == 0;
     }
 
     private static boolean is_function_arguments_format(String input_string) {
@@ -266,6 +304,11 @@ public class ExpressionEvaluator {
     }
 
     private static Function generate_terms_from_sentence(String sentence) {
+        if (!function_is_valid_format(sentence)) {
+            System.out.println("Inputted string formula has mismatched number of open and closed parenthesis!");
+        }
+        System.out.println(sentence);
+
         Term resultingTerm = recursively_generate_terms(sentence);
         if (resultingTerm.getClass().equals(Constant.class))
             return new Function("", new ArrayList<Term>(Arrays.asList(resultingTerm)));
@@ -284,8 +327,8 @@ public class ExpressionEvaluator {
         }
 
         // first letter is digit means it's a number
-        if (Character.isDigit(firstCharacter)) {
-            return_term = new Constant(partial_input, Double.parseDouble(partial_input));
+        if (Character.isDigit(firstCharacter) || partial_input.equals("PI")) {
+            return_term = new Constant(partial_input, parseConstant(partial_input));
             return_term.sign = sign;
             return return_term;
         } else if (Character.isLowerCase(firstCharacter)) {  // first letter is lower means it's a variable of state
@@ -298,7 +341,7 @@ public class ExpressionEvaluator {
         int parenthesis_index = partial_input.indexOf("(");
         if (parenthesis_index == -1) {
             // TODO: CHECK THIS CASE!!!!!!
-            return_term = new Constant(partial_input, Double.parseDouble(partial_input));
+            return_term = new Constant(partial_input, parseConstant(partial_input));
             return_term.sign = sign;
             return return_term;
         }
@@ -362,23 +405,32 @@ public class ExpressionEvaluator {
         return return_term;
     }
 
+    private static double parseConstant(String partial_input) {
+        if (partial_input.equals("PI")) return Math.PI;
+        else if (partial_input.equals("e")) return Math.exp(1);
+        return Double.parseDouble(partial_input);
+    }
 
 
     public static void main(String[] args) {
         String formula = "Add(Abs(positionX),Abs(positionY))";
 
         formula = "Mult(Signum(velocityZ),Log8(Add(Abs(velocityZ),1)))";
+        formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";
 
         StateActionClass object = new StateActionTuple.State(null);
         object.definition = landerDefinition;
         object.setDouble("velocityZ", 25.0);
         object.setDouble("positionX", 25.0);
         object.setDouble("positionY", 10.0);
-        generateEvaluateFormula(formula, object);
+        object.setDouble("angleX", 100);
+        ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
 
         OptimizedMap.convertStringFormulasToFormulas(object.definition);
         object.setSymmetry("position", "X");
         System.out.println(object.definition);
+
+        System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
     }
 }

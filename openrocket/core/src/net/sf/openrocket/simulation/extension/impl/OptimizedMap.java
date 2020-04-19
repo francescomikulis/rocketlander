@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
@@ -13,7 +14,6 @@ import java.util.function.Function;
 import static java.lang.Float.NaN;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
-import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.generateFormula;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 /**
@@ -243,7 +243,7 @@ public class OptimizedMap {
                 return;
             }
             String formula = entry.getValue();
-            formulaHashMap.put(assignToField, generateFormula(formula));
+            formulaHashMap.put(assignToField, ExpressionEvaluator.getInstance().generateFormula(formula));
         }
         MDPDefinition.put("formulas", formulaHashMap);
     }

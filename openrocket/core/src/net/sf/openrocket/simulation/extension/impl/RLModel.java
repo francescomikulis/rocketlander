@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
+import static java.lang.Math.PI;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 
@@ -20,7 +21,7 @@ public class RLModel {
     private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-    public SimulationType simulationType = SimulationType._3D;
+    public SimulationType simulationType = SimulationType._2D;
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -103,16 +104,14 @@ public class RLModel {
                 possibleThrustValues = generatePossibleActionValues(currentThrust, actionDefinition.get("thrust"));
         }
 
-        String symmetryAxis = "";
-
         HashSet<Double> possibleGimbalXValues = new HashSet<>(Collections.singletonList(0.0));
         if (overrideGimbalXValues.size() > 0) possibleGimbalXValues = overrideGimbalXValues;
         else {
             if (actionFields.contains("gimbalX"))
                 possibleGimbalXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbalX"));
             if (actionFields.contains("gimbal")) {
-                symmetryAxis = "X";
-                possibleGimbalXValues = generatePossibleActionValues((float) state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
+                if (state.symmetry.equals("X"))
+                    possibleGimbalXValues = generatePossibleActionValues((float) state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
             }
         }
 
@@ -122,8 +121,8 @@ public class RLModel {
             if (actionFields.contains("gimbalY"))
                 possibleGimbalYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbalY"));
             if (actionFields.contains("gimbal")) {
-                symmetryAxis = "Y";
-                possibleGimbalYValues = generatePossibleActionValues((float) state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
+                if (state.symmetry.equals("Y"))
+                    possibleGimbalYValues = generatePossibleActionValues((float) state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
             }
         }
 
@@ -131,13 +130,7 @@ public class RLModel {
             for (double possibleGimbalX: possibleGimbalXValues) {
                 for (double possibleGimbalY: possibleGimbalYValues) {
                     Action action = new Action(possibleThrust, possibleGimbalX, possibleGimbalY, state.definition);
-                    if (action.definition.get("meta").containsKey("symmetry")) {
-                        String axes = (String)action.definition.get("meta").get("symmetry");
-                        String[] symmetryAxes = axes.split(",");
-                        for (String axis: symmetryAxes) {
-                            action.setSymmetry(axis, symmetryAxis);
-                        }
-                    }
+                    action.setAllSymmetries(state.symmetry);
                     possibleActions.add(action);
                 }
             }
@@ -168,11 +161,18 @@ public class RLModel {
                 addStateActionTupleIfNotDuplicate(new StateActionTuple(landerState, bestLanderAction), SAPrimary);
             }
 
-            // propagate thrust selection
+            // propagate selection
+            for (Object entryObject: bestLanderAction.definition.get("actionDefinition").entrySet()) {
+                Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+                String field = entry.getKey();
+                double value = bestLanderAction.getDouble(field);
+
+                coupledStates.get(0).setDouble(field, value);
+                coupledStates.get(1).setDouble(field, value);
+                coupledStates.get(2).setDouble(field, value);
+            }
+
             double thrust = bestLanderAction.getDouble("thrust");
-            coupledStates.get(0).setDouble("thrust", thrust);
-            coupledStates.get(1).setDouble("thrust", thrust);
-            coupledStates.get(2).setDouble("thrust", thrust);
 
             // gimbal action selection below
 
@@ -181,8 +181,8 @@ public class RLModel {
             // calculate gimbalX
             State gimbalXState = coupledStates.get(1);
             if (!OptimizedMap.equivalentState(gimbalXState, lastGimbalXState)) {
-                HashSet<Action> possibleActions = generatePossibleActions(gimbalXState, new HashSet<>(Arrays.asList(thrust)), new HashSet<>(), new HashSet<>(Arrays.asList(0.0)));
-                if (Math.abs(coupledStates.get(0).getDouble("positionX")) >= 4.0) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalXState, new HashSet<>(Arrays.asList(thrust)));
+                if (conditionsForSecondaryMethod(coupledStates.get(0), "X")) {
                     bestGimbalXAction = policy(gimbalXState, possibleActions, secondaryMethod);
                 } else {
                     bestGimbalXAction = policy(gimbalXState, possibleActions, tertiaryMethod);
@@ -196,8 +196,8 @@ public class RLModel {
             // calculate gimbalY
             State gimbalYState = coupledStates.get(2);
             if (!OptimizedMap.equivalentState(gimbalYState, lastGimbalYState)) {
-                HashSet<Action> possibleActions = generatePossibleActions(gimbalYState, new HashSet<>(Arrays.asList(thrust)), new HashSet<>(Arrays.asList(0.0)), new HashSet<>());
-                if (Math.abs(coupledStates.get(0).getDouble("positionY")) >= 4.0) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalYState, new HashSet<>(Arrays.asList(thrust)));
+                if (conditionsForSecondaryMethod(coupledStates.get(0), "Y")) {
                     bestGimbalYAction = policy(gimbalYState, possibleActions, secondaryMethod);
                 } else {
                     bestGimbalYAction = policy(gimbalYState, possibleActions, tertiaryMethod);
@@ -229,17 +229,24 @@ public class RLModel {
         State primaryState = new State(status, primaryMethod.definition);
         State secondaryState = null;
         State tertiaryState = null;
-        if (Math.abs(primaryState.getDouble("positionX")) >= 4.0)
-            secondaryState =  new State(status, secondaryMethod.definition);
+        if (conditionsForSecondaryMethod(primaryState, "X")) {
+            secondaryState = new State(status, secondaryMethod.definition);
+        } else
+            secondaryState = new State(status, tertiaryMethod.definition);
+        if (conditionsForSecondaryMethod(primaryState, "Y"))
+            tertiaryState = new State(status, secondaryMethod.definition);
         else
-            secondaryState =  new State(status, tertiaryMethod.definition);
-        if (Math.abs(primaryState.getDouble("positionY")) >= 4.0)
-            tertiaryState =  new State(status, secondaryMethod.definition);
-        else
-            tertiaryState =  new State(status, tertiaryMethod.definition);
+            tertiaryState = new State(status, tertiaryMethod.definition);
 
+        secondaryState.setAllSymmetries("X");
+        tertiaryState.setAllSymmetries("Y");
         return new CoupledStates(primaryState, secondaryState, tertiaryState);
     }
+
+    private boolean conditionsForSecondaryMethod(StateActionClass stateActionClass, String axis) {
+        return ((Math.abs(stateActionClass.getDouble("position" + axis)) >= 5.0) && (Math.abs(stateActionClass.getDouble("angle" + axis)) <= Math.asin(PI/8)));
+    }
+
 
     public void updateStateBeforeNextAction(CoupledStates coupledStates, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
