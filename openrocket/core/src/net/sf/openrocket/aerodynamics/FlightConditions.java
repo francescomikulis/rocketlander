@@ -69,7 +69,7 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 	private double yawRate = 0;
 
 	private double RLThrust = 0;
-	private Coordinate gimbal = Coordinate.NUL;
+	private Coordinate RLGimbal = Coordinate.NUL;
 	
 	private Coordinate pitchCenter = Coordinate.NUL;
 	
@@ -380,7 +380,7 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 	}
 
 	/**
-	 * @param RLThrust the gimbal to set
+	 * @param RLThrust the RLThrust to set
 	 */
 	public void setRLThrust(double RLThrust) {
 		if (this.RLThrust == (RLThrust))
@@ -392,20 +392,20 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 
 
 	/**
-	 * @return the gimbal
+	 * @return the RLGimbal
 	 */
-	public Coordinate getGimbal() {
-		return gimbal;
+	public Coordinate getRLGimbal() {
+		return RLGimbal;
 	}
 
 
 	/**
-	 * @param gimbal the gimbal to set
+	 * @param RLGimbal the RLGimbal to set
 	 */
-	public void setGimbal(Coordinate gimbal) {
-		if (this.gimbal.equals(gimbal))
+	public void setRLGimbal(Coordinate RLGimbal) {
+		if (this.RLGimbal.equals(RLGimbal))
 			return;
-		this.gimbal = gimbal;
+		this.RLGimbal = RLGimbal;
 		fireChangeEvent();
 	}
 	

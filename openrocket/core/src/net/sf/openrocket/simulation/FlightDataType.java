@@ -172,19 +172,19 @@ public class FlightDataType implements Comparable<FlightDataType> {
 
 	//// Orientation Angles
 	//// AngleX
-	public static final FlightDataType TYPE_ANGLE_X = newType(trans.get("FlightDataType.TYPE_ANGLE_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+	public static final FlightDataType TYPE_RL_ANGLE_X = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
 	//// AngleY
-	public static final FlightDataType TYPE_ANGLE_Y = newType(trans.get("FlightDataType.TYPE_ANGLE_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+	public static final FlightDataType TYPE_RL_ANGLE_Y = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
 	//// AngleZ
-	public static final FlightDataType TYPE_ANGLE_Z = newType(trans.get("FlightDataType.TYPE_ANGLE_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+	public static final FlightDataType TYPE_RL_ANGLE_Z = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
 
 	//// Gimbal Angles
 	//// Gimbal X
-	public static final FlightDataType TYPE_GIMBAL_X = newType(trans.get("FlightDataType.TYPE_GIMBAL_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
+	public static final FlightDataType TYPE_RL_GIMBAL_X = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
 	//// Gimbal Y
-	public static final FlightDataType TYPE_GIMBAL_Y = newType(trans.get("FlightDataType.TYPE_GIMBAL_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
+	public static final FlightDataType TYPE_RL_GIMBAL_Y = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
 	//// Gimbal Y
-	public static final FlightDataType TYPE_GIMBAL_Z = newType(trans.get("FlightDataType.TYPE_GIMBAL_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
+	public static final FlightDataType TYPE_RL_GIMBAL_Z = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 104);
 	
 	////  Orientation
 	//// Vertical orientation (zenith)
@@ -258,9 +258,13 @@ public class FlightDataType implements Comparable<FlightDataType> {
 		TYPE_CORIOLIS_ACCELERATION,
 		TYPE_REFERENCE_LENGTH,
 		TYPE_REFERENCE_AREA,
-		TYPE_GIMBAL_X,
-		TYPE_GIMBAL_Y,
-		TYPE_GIMBAL_Z,
+		TYPE_RL_THRUST,
+		TYPE_RL_ANGLE_X,
+		TYPE_RL_ANGLE_Y,
+		TYPE_RL_ANGLE_Z,
+		TYPE_RL_GIMBAL_X,
+		TYPE_RL_GIMBAL_Y,
+		TYPE_RL_GIMBAL_Z,
 		TYPE_ORIENTATION_THETA,
 		TYPE_ORIENTATION_PHI,
 		TYPE_WIND_VELOCITY,

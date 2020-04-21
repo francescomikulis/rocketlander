@@ -568,9 +568,9 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		data.setValue(FlightDataType.TYPE_POSITION_Y, status.getRocketPosition().y);
 
 		// MODIFIED CODE HERE
-		data.setValue(FlightDataType.TYPE_ANGLE_X, Math.asin(status.getRocketOrientationQuaternion().rotateZ().x));
-		data.setValue(FlightDataType.TYPE_ANGLE_Y, Math.asin(status.getRocketOrientationQuaternion().rotateZ().y));
-		data.setValue(FlightDataType.TYPE_ANGLE_Z, Math.asin(status.getRocketOrientationQuaternion().rotateZ().z));
+		data.setValue(FlightDataType.TYPE_RL_ANGLE_X, Math.asin(status.getRocketOrientationQuaternion().rotateZ().x));
+		data.setValue(FlightDataType.TYPE_RL_ANGLE_Y, Math.asin(status.getRocketOrientationQuaternion().rotateZ().y));
+		data.setValue(FlightDataType.TYPE_RL_ANGLE_Z, Math.asin(status.getRocketOrientationQuaternion().rotateZ().z));
 		
 		data.setValue(FlightDataType.TYPE_LATITUDE, status.getRocketWorldPosition().getLatitudeRad());
 		data.setValue(FlightDataType.TYPE_LONGITUDE, status.getRocketWorldPosition().getLongitudeRad());
@@ -675,6 +675,12 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 			data.setValue(FlightDataType.TYPE_ROLL_RATE, store.flightConditions.getRollRate());
 			
 			data.setValue(FlightDataType.TYPE_AOA, store.flightConditions.getAOA());
+
+			// CUSTOM DATA STORING HERE!  MODIFIED CODE HERE
+			data.setValue(FlightDataType.TYPE_RL_THRUST, store.flightConditions.getRLThrust());
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_X, store.flightConditions.getRLGimbal().x);
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_Y, store.flightConditions.getRLGimbal().y);
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_Z, store.flightConditions.getRLGimbal().z);
 		}
 		
 
@@ -686,14 +692,6 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 				phi = Math.PI;
 			data.setValue(FlightDataType.TYPE_ORIENTATION_THETA, theta);
 			data.setValue(FlightDataType.TYPE_ORIENTATION_PHI, phi);
-
-			// CUSTOM DATA STORING HERE!  MODIFIED CODE HERE
-
-			data.setValue(FlightDataType.TYPE_RL_THRUST, store.flightConditions.getRLThrust());
-
-			data.setValue(FlightDataType.TYPE_GIMBAL_X, store.flightConditions.getGimbal().x);
-			data.setValue(FlightDataType.TYPE_GIMBAL_Y, store.flightConditions.getGimbal().y);
-			data.setValue(FlightDataType.TYPE_GIMBAL_Z, store.flightConditions.getGimbal().z);
 		}
 		
 		data.setValue(FlightDataType.TYPE_WIND_VELOCITY, store.windSpeed);

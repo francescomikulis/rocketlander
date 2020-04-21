@@ -191,7 +191,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             double gimbalX = action.getDouble("gimbalX");
             double gimbalY = action.getDouble("gimbalY");
             double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
-            this.RLVectoringFlightConditions.setGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
+            this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
         }
         return flightConditions;
     }
