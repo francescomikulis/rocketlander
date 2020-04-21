@@ -58,7 +58,8 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public float rewardStabilizer(StateActionTuple.State state) {
         float angleInDegrees = (float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
         float angleVelocityInDegrees = (float)Math.abs(state.getDouble("angleVelocity") * (180.0f / Math.PI));
-        return - (10 * (angleInDegrees * angleInDegrees) + (angleVelocityInDegrees * angleVelocityInDegrees)) + 100;
+        // return - (10 * (angleInDegrees * angleInDegrees) + (angleVelocityInDegrees * angleVelocityInDegrees)) + 100;
+        return - (angleInDegrees * angleInDegrees) + 1;
 
         //float rewardValue = -(float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
 

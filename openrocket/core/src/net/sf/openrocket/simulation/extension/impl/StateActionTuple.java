@@ -34,7 +34,6 @@ public class StateActionTuple implements Serializable {
 
     private void tupleRunAllDefinitionSpecial(HashMap<String, HashMap> definition) {
         // formula logic
-        if (!definition.containsKey("formulas")) return;
 
         HashSet<String> symmetryAxes = null;
         if (definition.get("meta").containsKey("symmetry")) {
@@ -45,33 +44,35 @@ public class StateActionTuple implements Serializable {
             String actionSym = action.symmetry;
             if ((stateSym == null) && (actionSym == null)) {
                 System.out.println("SYMMETRY MUST BE SET IN EITHER ACTION OR STATE!");
-                return;
             }
-            if ((stateSym != null) && (actionSym != null) && (!stateSym.equals(actionSym))){
+            else if ((stateSym != null) && (actionSym != null) && (!stateSym.equals(actionSym))){
                 System.out.println("DIFFERENT VALUES OF SYMMETRY ARE INCOMPATIBLE!");
-                return;
             }
-            if (stateSym != null) action.symmetry = state.symmetry;
+            else if (stateSym != null) action.symmetry = state.symmetry;
             else if (actionSym != null) state.symmetry = action.symmetry;
         }
 
-        for (Object entryObject : definition.get("formulas").entrySet()) {
-            Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
-            String assignToField = entry.getKey();
-            Formula formula = entry.getValue();
-            if (formula.isAssignmentFormula()) {  // assignmentFormula
-                // assignmentFormula - need to check symmetry value and axis
-                if ((symmetryAxes != null) && (symmetryAxes.contains(assignToField))) {
-                    String formulaAxis = formula.getSymmetry();
-                    if (formulaAxis == null) continue;
-                    if ((this.state.symmetry != null) && (!formulaAxis.equals(this.state.symmetry)))
-                        continue;  // attempting to override a symmetry assignment (e.g. X, Y)
-                    if ((this.action.symmetry != null) && (!formulaAxis.equals(this.action.symmetry)))
-                        continue;  // attempting to override a symmetry assignment (e.g. X, Y)
+        if (state.symmetry != null) {
+            String formulaFieldName = "symmetryFormulas" + state.symmetry;
+            if (definition.containsKey(formulaFieldName)) {  // assignment formulas
+                for (Object entryObject : definition.get(formulaFieldName).entrySet()) {
+                    Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
+                    String assignToField = entry.getKey();
+                    Formula formula = entry.getValue();
+                    this.state.setDouble(assignToField, evaluateFormulaBestGuess(formula, state, action));
+                    this.action.setDouble(assignToField, evaluateFormulaBestGuess(formula, action, state));
                 }
             }
-            this.state.setDouble(assignToField, evaluateFormulaBestGuess(formula, state, action));
-            this.action.setDouble(assignToField, evaluateFormulaBestGuess(formula, action, state));
+        }
+
+        if (definition.containsKey("formulas")) {
+            for (Object entryObject : definition.get("formulas").entrySet()) {
+                Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
+                String assignToField = entry.getKey();
+                Formula formula = entry.getValue();
+                this.state.setDouble(assignToField, evaluateFormulaBestGuess(formula, state, action));
+                this.action.setDouble(assignToField, evaluateFormulaBestGuess(formula, action, state));
+            }
         }
     }
 
@@ -99,6 +100,10 @@ public class StateActionTuple implements Serializable {
         return this.action.equals(other.action) && this.state.equals(other.state);
     }
 
+    public StateActionTuple deepcopy() {
+        return new StateActionTuple(state.deepcopy(), action.deepcopy());
+    }
+
     public static class StateActionClass implements Serializable {
         public HashMap<String, Integer> valueMap = new HashMap<>();
         public HashMap<String, HashMap> definition;
@@ -116,12 +121,25 @@ public class StateActionTuple implements Serializable {
         }
 
         protected void runMDPDefinitionFormulas() {
-            if (!definition.containsKey("formulas")) return;
-            for (Object entryObject : definition.get("formulas").entrySet()) {
-                Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
-                String assignToField = entry.getKey();
-                Formula formula = entry.getValue();
-                setDouble(assignToField, evaluateFormula(formula, this));
+            if (symmetry != null) {
+                String formulaFieldName = "symmetryFormulas" + symmetry;
+                if (definition.containsKey(formulaFieldName)) {  // assignment formulas
+                    for (Object entryObject : definition.get(formulaFieldName).entrySet()) {
+                        Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
+                        String assignToField = entry.getKey();
+                        Formula formula = entry.getValue();
+                        setDouble(assignToField, evaluateFormula(formula, this));
+                    }
+                }
+            }
+
+            if (definition.containsKey("formulas")) {
+                for (Object entryObject : definition.get("formulas").entrySet()) {
+                    Map.Entry<String, Formula> entry = (Map.Entry<String, Formula>) entryObject;
+                    String assignToField = entry.getKey();
+                    Formula formula = entry.getValue();
+                    setDouble(assignToField, evaluateFormula(formula, this));
+                }
             }
         }
 
@@ -140,10 +158,15 @@ public class StateActionTuple implements Serializable {
 
             String originalField = field + axis;
             String copyToField = field;
-            if (!definition.containsKey("formulas")) {
-                definition.put("formulas", new HashMap<String, String>());
+
+            String formulaFieldName = "symmetryFormulas" + symmetry;
+
+            if (!definition.containsKey(formulaFieldName)) {
+                definition.put(formulaFieldName, new HashMap<String, Formula>());
             }
-            definition.get("formulas").put(copyToField, ExpressionEvaluator.getInstance().generateAssignmentFormula(originalField));
+            if (!definition.get(formulaFieldName).containsKey(copyToField)) {
+                definition.get(formulaFieldName).put(copyToField, ExpressionEvaluator.getInstance().generateAssignmentFormula(originalField));
+            }
             runMDPDefinitionFormulas();
         }
 
@@ -290,6 +313,21 @@ public class StateActionTuple implements Serializable {
             String resultString = stringBuilder.toString();
             return resultString.replace(", )", ")");
         }
+
+        public static void applyDeepcopy(StateActionClass fromObject, StateActionClass toObject, HashMap<String, HashMap> definition) {
+            toObject.definition = definition;
+            toObject.valueMap = new HashMap<>();
+            if (fromObject.symmetry != null)
+                toObject.symmetry = fromObject.symmetry + "";
+            for (Map.Entry<String, Integer> entry: fromObject.valueMap.entrySet()) {
+                toObject.valueMap.put(entry.getKey() + "", entry.getValue() + 0);
+            }
+            if (fromObject.definition == toObject.definition) {
+                toObject.runMDPDefinitionFormulas();
+            } else {
+                System.out.println("NEVER DO THIS!!!");
+            }
+        }
     }
 
     // Required data structures.
@@ -375,14 +413,13 @@ public class StateActionTuple implements Serializable {
             return stringifyStateOrAction();
         }
 
+        public State deepcopy() {
+            return deepcopy(this.definition);
+        }
+
         public State deepcopy(HashMap<String, HashMap> definition) {
             State newState = new State(null);
-            newState.definition = definition;
-            newState.valueMap = new HashMap<>();
-            for (Map.Entry<String, Integer> entry: this.valueMap.entrySet()) {
-                newState.valueMap.put(entry.getKey(), entry.getValue());
-            }
-            newState.runALLMDPDefinitionFormulas();
+            applyDeepcopy(this, newState, definition);
             return newState;
         }
     }
@@ -443,14 +480,13 @@ public class StateActionTuple implements Serializable {
             return stringifyStateOrAction();
         }
 
+        public Action deepcopy() {
+            return deepcopy(this.definition);
+        }
+
         public Action deepcopy(HashMap<String, HashMap> definition) {
             Action newAction = new Action(0, 0,0 , this.definition);
-            newAction.definition = definition;
-            newAction.valueMap = new HashMap<>();
-            for (Map.Entry<String, Integer> entry: this.valueMap.entrySet()) {
-                newAction.valueMap.put(entry.getKey(), entry.getValue());
-            }
-            newAction.runALLMDPDefinitionFormulas();
+            applyDeepcopy(this, newAction, definition);
             return newAction;
         }
 
@@ -463,10 +499,16 @@ public class StateActionTuple implements Serializable {
 
             for (Object objectField : definition.get("actionDefinition").keySet()) {
                 String actionField = (String)objectField;
-                int actionFieldInt = get(actionField);
-                state.set(actionField, actionFieldInt);
+                double actionFieldValue = get(actionField);
                 if (symmetryAxes.contains(actionField)) {  // double setting the value for certainty
-                    state.set(actionField + symmetry, actionFieldInt);
+                    state.setDouble(actionField + symmetry, actionFieldValue);
+                }
+
+                if (state.definition == definition) {
+                    state.setDouble(actionField, actionFieldValue);
+                } else { // different definitions! DO NOT OVERRIDE THE VALUE unless not part of the actionDefinition
+                    if (!state.definition.get("actionDefinition").containsKey(actionField))
+                        state.setDouble(actionField, actionFieldValue);
                 }
             }
         }
@@ -477,6 +519,29 @@ public class StateActionTuple implements Serializable {
             for (State s : _states) {
                 super.add(s);
             }
+        }
+        public CoupledStates deepcopy() {
+            ArrayList<State> copiedStateArrayList = new ArrayList<>();
+            for (State s: this) {
+                copiedStateArrayList.add(s.deepcopy());
+            }
+            return new CoupledStates(copiedStateArrayList.toArray(new State[copiedStateArrayList.size()]));
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            CoupledStates other = (CoupledStates) obj;
+            if (this.size() != other.size()) return false;
+
+            boolean equals = true;
+            for (int i = 0; i < this.size(); i++)
+                equals = equals && this.get(i).equals(other.get(i));
+            return equals;
         }
     }
 
@@ -516,7 +581,7 @@ public class StateActionTuple implements Serializable {
             if (getClass() != obj.getClass())
                 return false;
             CoupledActions other = (CoupledActions) obj;
-            return (thrustAction == other.thrustAction && gimbalXAction == other.gimbalXAction && gimbalYAction == other.gimbalYAction);
+            return (thrustAction.equals(other.thrustAction) && gimbalXAction.equals(other.gimbalXAction) && gimbalYAction.equals(other.gimbalYAction));
         }
     }
 

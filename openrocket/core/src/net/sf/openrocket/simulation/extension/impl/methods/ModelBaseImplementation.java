@@ -140,8 +140,16 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         System.out.println("    stateDefinitionIntegers=" + ((HashMap<String, float[]>)definition.get("stateDefinitionIntegers")).toString());
         System.out.println("    actionDefinitionIntegers=" + ((HashMap<String, float[]>)definition.get("actionDefinitionIntegers")).toString());
         System.out.println("    indeces=" + ((int[])definition.get("indeces").get("indeces")).toString());
+        if (definition.containsKey("symmetryFormulasX"))
+            System.out.println("    symmetryFormulasX=" + ((HashMap<String, Formula>)definition.get("symmetryFormulasX")).toString());
+        if (definition.containsKey("symmetryFormulasY"))
+            System.out.println("    symmetryFormulasY=" + ((HashMap<String, Formula>)definition.get("symmetryFormulasY")).toString());
         if (definition.containsKey("formulas"))
             System.out.println("    formulas=" + ((HashMap<String, Formula>)definition.get("formulas")).toString());
+        if (definition.containsKey("noActionState"))
+            System.out.println("    noActionState=" + ((HashMap<String, float[]>)definition.get("noActionState")).toString());
+        if (definition.containsKey("successConditions"))
+            System.out.println("    successConditions=" + ((HashMap<String, float[]>)definition.get("successConditions")).toString());
         System.out.println("}");
     }
 
@@ -245,7 +253,8 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         put("stateDefinition",  new HashMap<String, float[]>() {{
             put("time", new float[]{0, 5, 1});
             put("thrust", new float[]{0, 1, 0.25f});
-            put("angle", new float[]{-12, 12, 2});
+            // put("angle", new float[]{-12, 12, 2});
+            put("log2AngleX", new float[]{-2.195f, 2.195f, 0.16887f});
             put("angleVelocity", new float[]{-12, 12, 4});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
@@ -253,6 +262,9 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         }});
         put("noActionState", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0.0f});
+        }});
+        put("formulas", new HashMap<String, String>() {{
+            put("log2AngleX", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
         }});
         put("successConditions", new HashMap<String, float[]>() {{
             put("angle", new float[]{-8, 8});
