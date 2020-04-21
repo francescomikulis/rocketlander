@@ -46,6 +46,18 @@ public class RLObjectFileStore {
         return new OptimizedMap(landerActionValueFunction, reacherActionValueFunction, stabilizerActionValueFunction);
     }
 
+    // starting to attempt to move the actionValueFunction to the MDP Definition
+
+    public void storeDefinition(HashMap<String, HashMap> definition, String fileName) {
+        storeObject(definition, fileName);
+    }
+
+    public HashMap<String, HashMap> readDefinition(String fileName){
+        HashMap<String, HashMap> definition = (HashMap<String, HashMap>) readObjects(fileName);
+        return definition;
+        // return new OptimizedMap(null, null, null);
+    }
+
     public void storeActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
         storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
     }

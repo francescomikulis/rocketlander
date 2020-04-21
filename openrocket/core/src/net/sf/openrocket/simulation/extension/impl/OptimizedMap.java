@@ -2,18 +2,10 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.function.Function;
 
-import static java.lang.Float.NaN;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import static net.sf.openrocket.simulation.extension.impl.DynamicValueFunctionTable.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 /**
@@ -55,6 +47,39 @@ public class OptimizedMap {
 
     public OptimizedMap(float[] newValueFunctionTable) {
         constructorTraditional(newValueFunctionTable);
+    }
+
+    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, HashMap> fromHashMap, HashMap<String, HashMap> destinationHashMap) {
+        destinationHashMap.put("meta", deepCopyStringHashMap(fromHashMap.get("meta")));
+        destinationHashMap.put("stateDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("stateDefinition")));
+        destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
+        if (fromHashMap.containsKey("formulas"))
+            destinationHashMap.put("formulas", deepCopyStringHashMap(fromHashMap.get("formulas")));
+        if (fromHashMap.containsKey("noActionState"))
+            destinationHashMap.put("noActionState", deepCopyFloatArrayHashMap(fromHashMap.get("noActionState")));
+        destinationHashMap.put("successConditions", deepCopyFloatArrayHashMap(fromHashMap.get("successConditions")));
+    }
+
+    private HashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
+        HashMap<String, String> destination = new HashMap<>();
+        for (Map.Entry<String, String> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            String newStringValue = String.valueOf(entry.getValue());
+            destination.put(newStringKey, newStringValue);
+        }
+        return destination;
+    }
+
+    private HashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
+        HashMap<String, float[]> destination = new HashMap<>();
+        for (Map.Entry<String, float[]> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            int size = entry.getValue().length;
+            float[] duplicatedFloatArray = new float[size];
+            for (int i = 0; i < size; i++) duplicatedFloatArray[i] = entry.getValue()[i] + 0.0f;
+            destination.put(newStringKey, duplicatedFloatArray);
+        }
+        return destination;
     }
 
     private void constructorTraditional(float[] newValueFunctionTable) {
@@ -107,7 +132,11 @@ public class OptimizedMap {
     }
 
     private void constructorCode() {
-        System.out.println("Hit constructor code for OptimizedMap");
+        deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
+
         convertAnglesToRadians(generalDefinition);
         convertAnglesToRadians(landerDefinition);
         convertAnglesToRadians(reacherDefinition);
@@ -137,8 +166,34 @@ public class OptimizedMap {
         return DynamicValueFunctionTable.put(this, stateActionTuple, newValue);
     }
 
+    public static boolean needToChooseNewAction(State newState, State oldState, Action lastAction) {
+        if (lastAction == null) return true;
+        if (isNoActionState(newState)) return false;
+        if (equivalentState(newState, oldState)) return false;
+        return true;
+    }
+
+    public static boolean isNoActionState(State state) {
+        if (state == null) return true;
+
+        if (state.definition.containsKey("noActionState")) {
+            for (Object entryObject : state.definition.get("noActionState").entrySet()) {
+                Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+                String field = entry.getKey();
+                for (int i = 0; i < entry.getValue().length; i++) {
+                    float equivalentValue = entry.getValue()[i];
+                    if (state.getDouble(field) == equivalentValue)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean equivalentState(State state_a, State state_b) {
         if (state_a == null || state_b == null) return false;
+        if (state_a.definition != state_b.definition) return false;
+
         boolean equivalent = true;
         for (Object objectField : state_a.definition.get("stateDefinition").keySet()) {
             String stateField = (String)objectField;
@@ -166,42 +221,27 @@ public class OptimizedMap {
         return minMax[1];
     }
 
-    public TerminationBooleanTuple getTerminationValidity(CoupledStates coupledStates) {
-        boolean verticalSuccess = true;
-        boolean angleSuccess = true;
+    public TerminationBooleans getTerminationValidity(CoupledStates coupledStates) {
+        if (coupledStates == null) return new TerminationBooleans(null);
 
-        if (coupledStates == null) return new TerminationBooleanTuple(true, true);
-
-        State landerState = coupledStates.get(0);
-        for (Object entryObject : landerState.definition.get("stateDefinition").entrySet()) {
-            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
-            String field = entry.getKey();
-            double currentValue = landerState.getDouble(field);
-            float[] minMaxPrecision = entry.getValue();
-            if (currentValue < minMaxPrecision[0]) { verticalSuccess = false; break; }
-            if (currentValue > minMaxPrecision[1]) { verticalSuccess = false; break; }
+        ArrayList<Boolean> successBooleans = new ArrayList<>();
+        for (State state: coupledStates) {
+            successBooleans.add(_getTerminationValidity(state));
         }
 
-        State reacherState = coupledStates.get(1);
-        for (Object entryObject : reacherState.definition.get("stateDefinition").entrySet()) {
-            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
-            String field = entry.getKey();
-            double currentValue = reacherState.getDouble(field);
-            float[] minMaxPrecision = entry.getValue();
-            if (currentValue < minMaxPrecision[0]) { angleSuccess = false; break; }
-            if (currentValue > minMaxPrecision[1]) { angleSuccess = false; break; }
-        }
+        return new TerminationBooleans(successBooleans);
+    }
 
-        State stabilizerState = coupledStates.get(2);
-        for (Object entryObject : stabilizerState.definition.get("stateDefinition").entrySet()) {
+    private boolean _getTerminationValidity(State state) {
+        for (Object entryObject : state.definition.get("successConditions").entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
             String field = entry.getKey();
-            double currentValue = stabilizerState.getDouble(field);
-            float[] minMaxPrecision = entry.getValue();
-            if (currentValue < minMaxPrecision[0]) { angleSuccess = false; break; }
-            if (currentValue > minMaxPrecision[1]) { angleSuccess = false; break; }
+            double currentValue = state.getDouble(field);
+            float[] minMax = entry.getValue();
+            if (currentValue < minMax[0]) { return false; }
+            if (currentValue > minMax[1]) { return false; }
         }
-        return new TerminationBooleanTuple(verticalSuccess, angleSuccess);
+        return true;
     }
 
     private float[] allocateNewValueFunctionTable(int[] indeces) {
@@ -285,31 +325,24 @@ public class OptimizedMap {
     }
 
     private void convertAnglesToRadians(HashMap<String, HashMap> MDPDefinition) {
-        State state = new State(null);
-        state.definition = MDPDefinition;
-        for (Object entryObject : MDPDefinition.get("stateDefinition").entrySet()) {
+        _convertAnglesToRadians(MDPDefinition, "stateDefinition");
+        _convertAnglesToRadians(MDPDefinition, "actionDefinition");
+        _convertAnglesToRadians(MDPDefinition, "successConditions");
+    }
+
+    private void _convertAnglesToRadians(HashMap<String, HashMap> definition, String definitionField) {
+        for (Object entryObject : definition.get(definitionField).entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
             String field = entry.getKey();
             if (field.contains("angle") || field.contains("gimbal")) {
-                float precision = entry.getValue()[2];
-                if (precision >= 0.1) {
+                boolean convert = false;
+                int size = entry.getValue().length;
+                if (size == 3) convert = entry.getValue()[2] >= 0.1;
+                else if (size == 2) convert = Math.abs(entry.getValue()[0]) >= 2 || Math.abs(entry.getValue()[1]) >= 2;
+                if (convert) {
                     float[] definitionValues = entry.getValue();
-                    definitionValues[0] *= (Math.PI / 180);
-                    definitionValues[1] *= (Math.PI / 180);
-                    definitionValues[2] *= (Math.PI / 180);
-                }
-            }
-        }
-        for (Object entryObject : MDPDefinition.get("actionDefinition").entrySet()) {
-            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
-            String field = entry.getKey();
-            if (field.contains("angle") || field.contains("gimbal")) {
-                float precision = entry.getValue()[2];
-                if (precision >= 0.1) {
-                    float[] definitionValues = entry.getValue();
-                    definitionValues[0] *= (Math.PI / 180);
-                    definitionValues[1] *= (Math.PI / 180);
-                    definitionValues[2] *= (Math.PI / 180);
+                    for (int i = 0; i < size; i++)
+                        definitionValues[i] *= (Math.PI / 180);
                 }
             }
         }

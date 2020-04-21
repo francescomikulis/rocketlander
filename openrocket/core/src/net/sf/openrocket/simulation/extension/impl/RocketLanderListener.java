@@ -6,7 +6,6 @@ import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
@@ -18,8 +17,6 @@ import net.sf.openrocket.util.Quaternion;
 
 import java.util.ArrayList;
 import java.util.Random;
-
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
@@ -36,7 +33,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private Random random;
     private CoupledStates state;
     private CoupledActions action;
-    TerminationBooleanTuple terminationBooleanTuple;
+    TerminationBooleans terminationBooleans;
     private int[] lastStepUpdateSizes = new int[]{0, 0, 0};
     private static double variation = 2;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
@@ -228,7 +225,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         boolean addedStateActionTuple = setupStateActionAndStore(status);
 
         /*
-        if (terminationBooleanTuple.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
+        if (terminationBooleans.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
          */
@@ -250,9 +247,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         System.out.println("");
          */
 
-        terminationBooleanTuple = model.getValueFunctionTable().getTerminationValidity(model.generateNewCoupledStates(status));
+        terminationBooleans = model.getValueFunctionTable().getTerminationValidity(model.generateNewCoupledStates(status));
         if (!hasCompletedTerminalUpdate) {
-            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleanTuple);
+            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleans);
             hasCompletedTerminalUpdate = true;
         }
     }

@@ -4,12 +4,12 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.methods.*;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import static java.lang.Math.PI;
+import static net.sf.openrocket.simulation.extension.impl.OptimizedMap.combineCoupledTripleActions;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 
@@ -48,17 +48,25 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
-    private HashSet<Double> generatePossibleActionValues(double value, float[] definition) {
+    private HashSet<Integer> generatePossibleActionValuesInts(int value, int[] definition) {
+        HashSet<Integer> possibleActionValues = new HashSet<>();
+        for (int i = definition[0]; i <= definition[1]; i++) {
+            possibleActionValues.add(i);
+        }
+        return possibleActionValues;
+    }
+
+    private HashSet<Float> generatePossibleActionValues(float value, float[] definition) {
         return generatePossibleActionValues(value, definition[0], definition[1], definition[2], definition[1] - definition[0]);
     }
 
-    private HashSet<Double> generatePossibleActionValues(double value, double MIN_VAL, double MAX_VAL, double smallest_increment, double max_increment) {
-        HashSet<Double> possibleActionValues = new HashSet<>();
+    private HashSet<Float> generatePossibleActionValues(float value, float MIN_VAL, float MAX_VAL, float smallest_increment, float max_increment) {
+        HashSet<Float> possibleActionValues = new HashSet<>();
 
         int number_of_loops = (int) (2.0 * max_increment / smallest_increment) + 1;
-        double starting_low_value =  value - max_increment;
+        float starting_low_value =  value - max_increment;
         for (int i = 0; i < number_of_loops; i++) {
-            double possibleValue = starting_low_value + i * smallest_increment;
+            float possibleValue = starting_low_value + i * smallest_increment;
             if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL)) {
                 possibleActionValues.add(possibleValue);
             }
@@ -67,75 +75,69 @@ public class RLModel {
         return possibleActionValues;
     }
 
+    private boolean incrementIndeces(int[] indeces, int[] maxIndeces) {
+        return _incrementIndeces(indeces, maxIndeces, indeces.length - 1);
+    }
+
+    public boolean _incrementIndeces(int[] indeces, int[] maxIndeces, int position) {
+        if (position == -1) return false;
+        if (indeces[position] < maxIndeces[position]) {
+            indeces[position] += 1;
+            return true;
+        }
+        indeces[position] = 0;
+        return _incrementIndeces(indeces, maxIndeces, position - 1);
+    }
+
     /***
     In the future need to also consider the state and the velocity we are currently at.
      ***/
+
     public HashSet<Action> generatePossibleActions(State state) {
-        return generatePossibleActions(state, new HashSet<>(), new HashSet<>(), new HashSet<>());
-    }
+        HashMap<String, int[]> actionDefinition = state.definition.get("actionDefinitionIntegers");
+        ArrayList<String> actionFields = new ArrayList<>(actionDefinition.keySet());
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues) {
-        return generatePossibleActions(state, overrideThrustValues, new HashSet<>(), new HashSet<>());
-    }
+        ArrayList<ArrayList<Integer>> possibleActionInts = new ArrayList<>();
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> possibleGimbalXValues, HashSet<Double> possibleGimbalYValues) {
-        return generatePossibleActions(state, new HashSet<>(), possibleGimbalXValues, possibleGimbalYValues);
-    }
+        HashSet<String> symmetryAxes = null;
+        if (state.definition.get("meta").containsKey("symmetry")) {
+            String[] symmetryAxesArray = ((String) state.definition.get("meta").get("symmetry")).split(",");
+            symmetryAxes = new HashSet<>(Arrays.asList(symmetryAxesArray));
+        }
 
-    public HashSet<Action> generatePossibleActions(State state, HashSet<Double> overrideThrustValues, HashSet<Double> overrideGimbalXValues, HashSet<Double> overrideGimbalYValues) {
-        double currentThrust = state.getDouble("thrust");
+        ArrayList<String> actionStrings = new ArrayList<>();
+        for (String actionField: actionFields) {
+            String realField = actionField;
+            if (symmetryAxes != null) {
+                if (symmetryAxes.contains(actionField))
+                    realField += state.symmetry;
+            }
+            actionStrings.add(realField);
+            possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), actionDefinition.get(actionField))));
+        }
+
+        int size = actionStrings.size();
+        int[] indeces = new int[size];
+        int[] maxIndeces = new int[size];
+        for (int i = 0; i < size; i++) {
+            indeces[i] = 0;
+            maxIndeces[i] = possibleActionInts.get(i).size() - 1;
+        }
+
         HashSet<Action> possibleActions = new HashSet<>();
+        while (true) {
+            HashMap<String, Integer> actionValueMap = new HashMap<>();
+            for (int i = 0; i < size; i++) {
+                actionValueMap.put(actionStrings.get(i), possibleActionInts.get(i).get(indeces[i]));
+            }
+            Action action = new Action(actionValueMap, state.definition);
+            action.setAllSymmetries(state.symmetry);
+            possibleActions.add(action);
 
-        if (simulationType == SimulationType._1D) {
-            overrideGimbalXValues = new HashSet<>(Arrays.asList(0.0));
-            overrideGimbalYValues = new HashSet<>(Arrays.asList(0.0));
-        } else if (simulationType == SimulationType._2D) {
-            // overrideGimbalYValues = new HashSet<>(Arrays.asList(0.0, Math.PI + 0.00001f));
-        }
-
-        HashMap<String, float[]> actionDefinition = state.definition.get("actionDefinition");
-
-        Set<String> actionFields = (actionDefinition).keySet();
-
-        HashSet<Double> possibleThrustValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideThrustValues.size() > 0) possibleThrustValues = overrideThrustValues;
-        else {
-            if (actionFields.contains("thrust"))
-                possibleThrustValues = generatePossibleActionValues(currentThrust, actionDefinition.get("thrust"));
-        }
-
-        HashSet<Double> possibleGimbalXValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideGimbalXValues.size() > 0) possibleGimbalXValues = overrideGimbalXValues;
-        else {
-            if (actionFields.contains("gimbalX"))
-                possibleGimbalXValues = generatePossibleActionValues((float)state.getDouble("gimbalX"), actionDefinition.get("gimbalX"));
-            if (actionFields.contains("gimbal")) {
-                if (state.symmetry.equals("X"))
-                    possibleGimbalXValues = generatePossibleActionValues((float) state.getDouble("gimbalX"), actionDefinition.get("gimbal"));
+            if (!incrementIndeces(indeces, maxIndeces)) {
+                break;
             }
         }
-
-        HashSet<Double> possibleGimbalYValues = new HashSet<>(Collections.singletonList(0.0));
-        if (overrideGimbalYValues.size() > 0) possibleGimbalYValues = overrideGimbalYValues;
-        else {
-            if (actionFields.contains("gimbalY"))
-                possibleGimbalYValues = generatePossibleActionValues((float)state.getDouble("gimbalY"), actionDefinition.get("gimbalY"));
-            if (actionFields.contains("gimbal")) {
-                if (state.symmetry.equals("Y"))
-                    possibleGimbalYValues = generatePossibleActionValues((float) state.getDouble("gimbalY"), actionDefinition.get("gimbal"));
-            }
-        }
-
-        for (double possibleThrust: possibleThrustValues) {
-            for (double possibleGimbalX: possibleGimbalXValues) {
-                for (double possibleGimbalY: possibleGimbalYValues) {
-                    Action action = new Action(possibleThrust, possibleGimbalX, possibleGimbalY, state.definition);
-                    action.setAllSymmetries(state.symmetry);
-                    possibleActions.add(action);
-                }
-            }
-        }
-
         return possibleActions;
     }
 
@@ -149,7 +151,7 @@ public class RLModel {
             State state = coupledStates.get(0);
             if (state.equals(lastState)) { return null; }
             Action action = policy(state, generatePossibleActions(state), primaryMethod);
-            coupledActions = new CoupledActions(action, action, action);
+            coupledActions = combineCoupledTripleActions(action, action, action);
             addStateActionTupleIfNotDuplicate(new StateActionTuple(state, action), SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
 
@@ -172,16 +174,14 @@ public class RLModel {
                 coupledStates.get(2).setDouble(field, value);
             }
 
-            double thrust = bestLanderAction.getDouble("thrust");
-
             // gimbal action selection below
 
             State lastGimbalXState = getLastStateOrNull(SAGimbalX);
             Action bestGimbalXAction = getLastActionOrNull(SAGimbalX);
             // calculate gimbalX
             State gimbalXState = coupledStates.get(1);
-            if (!OptimizedMap.equivalentState(gimbalXState, lastGimbalXState)) {
-                HashSet<Action> possibleActions = generatePossibleActions(gimbalXState, new HashSet<>(Arrays.asList(thrust)));
+            if (OptimizedMap.needToChooseNewAction(gimbalXState, lastGimbalXState, bestGimbalXAction)) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalXState);
                 if (conditionsForSecondaryMethod(coupledStates.get(0), "X")) {
                     bestGimbalXAction = policy(gimbalXState, possibleActions, secondaryMethod);
                 } else {
@@ -195,8 +195,8 @@ public class RLModel {
             Action bestGimbalYAction = getLastActionOrNull(SAGimbalY);
             // calculate gimbalY
             State gimbalYState = coupledStates.get(2);
-            if (!OptimizedMap.equivalentState(gimbalYState, lastGimbalYState)) {
-                HashSet<Action> possibleActions = generatePossibleActions(gimbalYState, new HashSet<>(Arrays.asList(thrust)));
+            if (OptimizedMap.needToChooseNewAction(gimbalYState, lastGimbalYState, bestGimbalYAction)) {
+                HashSet<Action> possibleActions = generatePossibleActions(gimbalYState);
                 if (conditionsForSecondaryMethod(coupledStates.get(0), "Y")) {
                     bestGimbalYAction = policy(gimbalYState, possibleActions, secondaryMethod);
                 } else {
@@ -212,7 +212,7 @@ public class RLModel {
             if ((bestGimbalYAction != null) && (Math.abs(bestGimbalYAction.getDouble("gimbal")) > 200.0)) {
                 System.out.println("Something is fucked up with this gimbal (Y): " + bestGimbalYAction.getDouble("gimbal"));
             }
-            coupledActions = OptimizedMap.combineCoupledTripleActions(bestLanderAction, bestGimbalXAction, bestGimbalYAction);
+            coupledActions = combineCoupledTripleActions(bestLanderAction, bestGimbalXAction, bestGimbalYAction);
         }
         return coupledActions;
     }
@@ -369,20 +369,22 @@ public class RLModel {
         }
     }
 
-    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY, TerminationBooleanTuple terminationBooleanTuple) {
+    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY, TerminationBooleans terminationBooleans) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             primaryMethod.updateTerminalFunction(SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            // if ((simulationType == SimulationType._1D) || (terminationBooleanTuple.landerSucceeded())) {
-            if (true) {
-                if (terminationBooleanTuple.landerSucceeded())
-                    System.out.println("Number of unique lander states: " + SAPrimary.size());
-                primaryMethod.updateTerminalLanderFunction(SAPrimary);
-            }
-            if (simulationType != SimulationType._1D) {
 
-                ArrayList<StateActionTuple> SAGimbalXReacher = new ArrayList<>();
-                ArrayList<StateActionTuple> SAGimbalXStabilizer = new ArrayList<>();
+            // if ((simulationType == SimulationType._1D) || (terminationBooleans.landerSucceeded())) {
+
+            primaryMethod.updateTerminalLanderFunction(SAPrimary);
+
+            ArrayList<StateActionTuple> SAGimbalXReacher = new ArrayList<>();
+            ArrayList<StateActionTuple> SAGimbalXStabilizer = new ArrayList<>();
+
+            ArrayList<StateActionTuple> SAGimbalYReacher = new ArrayList<>();
+            ArrayList<StateActionTuple> SAGimbalYStabilizer = new ArrayList<>();
+
+            if (simulationType != SimulationType._1D) {
                 for (StateActionTuple stateActionTuple: SAGimbalX) {
                     String MDPName = (String)stateActionTuple.action.definition.get("meta").get("name");
                     if (MDPName.equals("reacher"))
@@ -390,10 +392,7 @@ public class RLModel {
                     else if (MDPName.equals("stabilizer"))
                         SAGimbalXStabilizer.add(stateActionTuple);
                 }
-
-                ArrayList<StateActionTuple> SAGimbalYReacher = new ArrayList<>();
-                ArrayList<StateActionTuple> SAGimbalYStabilizer = new ArrayList<>();
-                for (StateActionTuple stateActionTuple: SAGimbalX) {
+                for (StateActionTuple stateActionTuple: SAGimbalY) {
                     String MDPName = (String)stateActionTuple.action.definition.get("meta").get("name");
                     if (MDPName.equals("reacher"))
                         SAGimbalYReacher.add(stateActionTuple);
@@ -403,24 +402,26 @@ public class RLModel {
 
                 double updateOrder = randomGenerator.nextDouble();
                 if (updateOrder < 0.5) {
-                    terminalUpdateLogic(secondaryMethod, "X", SAGimbalXReacher);
-                    terminalUpdateLogic(tertiaryMethod, "X", SAGimbalXStabilizer);
-                    terminalUpdateLogic(secondaryMethod, "Y", SAGimbalYReacher);
-                    terminalUpdateLogic(tertiaryMethod, "Y", SAGimbalYStabilizer);
+                    secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
+                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
+                    secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
+                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
                 } else {
-                    terminalUpdateLogic(secondaryMethod, "Y", SAGimbalYReacher);
-                    terminalUpdateLogic(tertiaryMethod, "Y", SAGimbalYStabilizer);
-                    terminalUpdateLogic(secondaryMethod, "X", SAGimbalXReacher);
-                    terminalUpdateLogic(tertiaryMethod, "X", SAGimbalXStabilizer);
+                    secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
+                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
+                    secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
+                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
                 }
             }
-        }
-    }
 
-    private void terminalUpdateLogic(ModelBaseImplementation method, String axis, ArrayList<StateActionTuple> SA) {
-        String methodName = (String)method.definition.get("meta").get("name");
-        // System.out.println("Number of unique " + methodName + " states (" + axis + "): " + SA.size());
-        method.updateTerminalReachingFunction(SA);
+            if (terminationBooleans.totalSuccess()) {
+                System.out.println("Number of unique lander states: " + SAPrimary.size());
+                System.out.println("Number of gimbal X reacher states: " + SAGimbalXReacher.size());
+                System.out.println("Number of gimbal X stabilizer states: " + SAGimbalXStabilizer.size());
+                System.out.println("Number of gimbal Y reacher states: " + SAGimbalYReacher.size());
+                System.out.println("Number of gimbal Y stabilizer states: " + SAGimbalYStabilizer.size());
+            }
+        }
     }
 
     public void resetValueFunctionTable() {
@@ -457,9 +458,9 @@ public class RLModel {
         CoupledActions coupledActions = null;
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
             Action action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
-            coupledActions = new CoupledActions(action, action, action);
+            coupledActions = combineCoupledTripleActions(action, action, action);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            coupledActions = OptimizedMap.combineCoupledTripleActions(
+            coupledActions = combineCoupledTripleActions(
                     episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
                     episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
                     episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action

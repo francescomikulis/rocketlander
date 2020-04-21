@@ -1,12 +1,14 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
+import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.StateActionClass;
 
 import java.util.*;
 
 import static java.lang.Math.abs;
+import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation._landerDefinition;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.landerDefinition;
 
 public class ExpressionEvaluator {
@@ -31,11 +33,20 @@ public class ExpressionEvaluator {
             if (functionString.equals("")) { functionString = function.toString(); }
             return functionString;
         }
+        public boolean isAssignmentFormula() {
+            return (String.valueOf(this.toString().charAt(0)).equals("("));
+        }
+        public String getSymmetry() {
+            if (!isAssignmentFormula()) return null;
+            String stringFormula = toString();
+            return stringFormula.substring(stringFormula.length() - 2, stringFormula.length() - 1);
+        }
     }
 
     public Formula generateFormula(String stringFormula) {
-        if (memoizedFormulas.containsKey(stringFormula)) return memoizedFormulas.get(stringFormula);
         stringFormula = stringFormula.replaceAll(" ", "");
+        if (memoizedFormulas.containsKey(stringFormula))
+            return memoizedFormulas.get(stringFormula);
         Formula formula = new Formula(generate_terms_from_sentence(stringFormula));
         memoizedFormulas.put(stringFormula, formula);
         return formula;
@@ -46,9 +57,8 @@ public class ExpressionEvaluator {
     }
 
     public Formula generateAssignmentFormula(String stringFormula) {
-        stringFormula = stringFormula.replaceAll(" ", "");
         Formula formula = generateFormula(stringFormula);
-        assert (!formula.toString().contains("("));
+        // assert (String.valueOf(formula.toString().charAt(0)).equals("("));
         return formula;
     }
 
@@ -173,19 +183,15 @@ public class ExpressionEvaluator {
 
         @Override
         public String toString() {
-            String string = "";
+            String string = identifier;
             if (sign == -1) string = "-";
 
             if (inputs != null) {
-                if (inputs.size() == 1) {
-                    string += inputs.get(0).toString();
-                } else {
-                    ArrayList<String> stringArrayList = new ArrayList<>();
-                    for (Term input : inputs) {
-                        stringArrayList.add(input.toString());
-                    }
-                    string = string + "(" + String.join(",", stringArrayList) + ")";
+                ArrayList<String> stringArrayList = new ArrayList<>();
+                for (Term input : inputs) {
+                    stringArrayList.add(input.toString());
                 }
+                string = string + "(" + String.join(",", stringArrayList) + ")";
             }
             return string;
         }
@@ -413,6 +419,8 @@ public class ExpressionEvaluator {
 
 
     public static void main(String[] args) {
+        new OptimizedMap();
+
         String formula = "Add(Abs(positionX),Abs(positionY))";
 
         formula = "Mult(Signum(velocityZ),Log8(Add(Abs(velocityZ),1)))";
@@ -426,11 +434,33 @@ public class ExpressionEvaluator {
         object.setDouble("angleX", 100);
         ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
-
+        // test - assigning a symmetry formula creates formula
         OptimizedMap.convertStringFormulasToFormulas(object.definition);
         object.setSymmetry("position", "X");
-        System.out.println(object.definition);
+        assert object.definition.get("formulas").containsKey("position");
+        assert object.definition.get("formulas").get("position").equals("(positionX)");
 
-        System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
+        // test - input string equals output string
+        formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";
+        String stringFormula = ExpressionEvaluator.getInstance().generateFormula(formula).toString();
+        assert stringFormula.equals(formula.replace(" ", ""));
+
+        RLObjectFileStore.getInstance().storeDefinition(_landerDefinition, "sampleMap");
+        System.out.println(RLObjectFileStore.getInstance().readDefinition("sampleMap"));
+
+        // System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
+
+        // precision verification test - ensure correct rounding
+        double[] values = new double[]{0.4, 0.5, 0.6};
+        double[] multipliers = new double[]{1, -1};
+        double[] precisions = new double[]{1};
+        for (double precision: precisions) {
+            for (double multiplier: multipliers) {
+                for (double val: values) {
+                    int result = StateActionClass.group_by_precision(multiplier * val, precision);
+                    System.out.println(multiplier * val + " by " + precision + " = " + result);
+                }
+            }
+        }
     }
 }

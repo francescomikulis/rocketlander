@@ -56,12 +56,21 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     }
 
     public float rewardStabilizer(StateActionTuple.State state) {
-        float rewardValue = -(float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
+        float angleInDegrees = (float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
+        float angleVelocityInDegrees = (float)Math.abs(state.getDouble("angleVelocity") * (180.0f / Math.PI));
+        return - ((angleInDegrees * angleInDegrees) + (angleVelocityInDegrees));
+
+        //float rewardValue = -(float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
+
         // force positive reward for gimbal angle that helps stabilize
+        /*
         if (Math.signum(state.getDouble("angle")) != Math.signum(state.getDouble("gimbal"))) {
             rewardValue = Math.abs(rewardValue);
         }
+
         return rewardValue;
+         */
+
         /*
         float realAngleX = (float)(Math.asin(state.getDouble("angleX")) * (180.0f / Math.PI));
         float realAngleY = (float)(Math.asin(state.getDouble("angleY")) * (180.0f / Math.PI));
