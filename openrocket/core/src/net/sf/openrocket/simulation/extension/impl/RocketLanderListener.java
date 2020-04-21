@@ -184,6 +184,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (flightConditions != null) {
             this.RLVectoringFlightConditions = flightConditions;
             this.RLVectoringFlightConditions.setTheta(0.0);
+
+            // multiplication is for visualization purposes
+            this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
+
+            double gimbalX = action.getDouble("gimbalX");
+            double gimbalY = action.getDouble("gimbalY");
+            double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
+            this.RLVectoringFlightConditions.setGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
         }
         return flightConditions;
     }

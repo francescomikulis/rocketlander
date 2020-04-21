@@ -566,6 +566,11 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		data.setValue(FlightDataType.TYPE_ALTITUDE, status.getRocketPosition().z);
 		data.setValue(FlightDataType.TYPE_POSITION_X, status.getRocketPosition().x);
 		data.setValue(FlightDataType.TYPE_POSITION_Y, status.getRocketPosition().y);
+
+		// MODIFIED CODE HERE
+		data.setValue(FlightDataType.TYPE_ANGLE_X, Math.asin(status.getRocketOrientationQuaternion().rotateZ().x));
+		data.setValue(FlightDataType.TYPE_ANGLE_Y, Math.asin(status.getRocketOrientationQuaternion().rotateZ().y));
+		data.setValue(FlightDataType.TYPE_ANGLE_Z, Math.asin(status.getRocketOrientationQuaternion().rotateZ().z));
 		
 		data.setValue(FlightDataType.TYPE_LATITUDE, status.getRocketWorldPosition().getLatitudeRad());
 		data.setValue(FlightDataType.TYPE_LONGITUDE, status.getRocketWorldPosition().getLongitudeRad());
@@ -681,6 +686,14 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 				phi = Math.PI;
 			data.setValue(FlightDataType.TYPE_ORIENTATION_THETA, theta);
 			data.setValue(FlightDataType.TYPE_ORIENTATION_PHI, phi);
+
+			// CUSTOM DATA STORING HERE!  MODIFIED CODE HERE
+
+			data.setValue(FlightDataType.TYPE_RL_THRUST, store.flightConditions.getRLThrust());
+
+			data.setValue(FlightDataType.TYPE_GIMBAL_X, store.flightConditions.getGimbal().x);
+			data.setValue(FlightDataType.TYPE_GIMBAL_Y, store.flightConditions.getGimbal().y);
+			data.setValue(FlightDataType.TYPE_GIMBAL_Z, store.flightConditions.getGimbal().z);
 		}
 		
 		data.setValue(FlightDataType.TYPE_WIND_VELOCITY, store.windSpeed);
