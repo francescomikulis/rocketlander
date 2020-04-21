@@ -114,7 +114,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
         // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
+
+        dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
 
         status.setLaunchRodCleared(true);
 

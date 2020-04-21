@@ -339,7 +339,7 @@ public class StateActionTuple implements Serializable {
             //setDouble("angleZ", Math.acos(rocketDirection.z));
 
             // NOTE THAT THIS IS INTENTIONALLY FLIPPED!!!
-            setDouble("angleVelocityX", status.getRocketRotationVelocity().y);
+            setDouble("angleVelocityX", -status.getRocketRotationVelocity().y);
             setDouble("angleVelocityY", status.getRocketRotationVelocity().x);
 
             setDouble("time", status.getSimulationTime());

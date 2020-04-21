@@ -14,7 +14,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public TD0 (HashMap<String, HashMap> definition) {
         this.definition = definition;
     }
-    public float getExplorationPercentage() { return 0.05f; }
+    public float getExplorationPercentage() { return 0.03f; }
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
          Function<StateActionTuple.State, Float> reward
     ) {
@@ -58,7 +58,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public float rewardStabilizer(StateActionTuple.State state) {
         float angleInDegrees = (float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
         float angleVelocityInDegrees = (float)Math.abs(state.getDouble("angleVelocity") * (180.0f / Math.PI));
-        return - ((angleInDegrees * angleInDegrees) + (angleVelocityInDegrees));
+        return - (10 * (angleInDegrees * angleInDegrees) + (angleVelocityInDegrees * angleVelocityInDegrees)) + 100;
 
         //float rewardValue = -(float)Math.abs(state.getDouble("angle") * (180.0f / Math.PI));
 

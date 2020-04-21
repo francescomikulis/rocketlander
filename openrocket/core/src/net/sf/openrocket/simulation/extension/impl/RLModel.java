@@ -415,11 +415,16 @@ public class RLModel {
             }
 
             if (terminationBooleans.totalSuccess()) {
+                System.out.print("+");
+                /*
                 System.out.println("Number of unique lander states: " + SAPrimary.size());
                 System.out.println("Number of gimbal X reacher states: " + SAGimbalXReacher.size());
                 System.out.println("Number of gimbal X stabilizer states: " + SAGimbalXStabilizer.size());
                 System.out.println("Number of gimbal Y reacher states: " + SAGimbalYReacher.size());
                 System.out.println("Number of gimbal Y stabilizer states: " + SAGimbalYStabilizer.size());
+                 */
+            } else {
+                System.out.print("-");
             }
         }
     }
