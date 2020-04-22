@@ -16,6 +16,7 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
@@ -64,6 +65,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean setupStateActionAndStore(SimulationStatus status) {
         CoupledStates oldState = state;
         state = model.generateNewCoupledStates(status);
+        if (dataStoreStateIndexField.size() == 0) {  // 'lazy' initialization of data storage format
+            memoizeSmartGuesses();
+        }
 
         model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
 
@@ -223,114 +227,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return calculateAcceleration(status, gimbalX, gimbalY);
     }
 
-    private void applyCustomFlightConditions(FlightConditions toConditions) {
-        if (this.RLVectoringFlightConditions == null) return;
-        toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
-        toConditions.setRLVelocity(this.RLVectoringFlightConditions.getRLVelocity());
-        toConditions.setRLAngle(this.RLVectoringFlightConditions.getRLAngle());
-        toConditions.setRLAngleVelocity(this.RLVectoringFlightConditions.getRLAngleVelocity());
-        toConditions.setRLThrust(this.RLVectoringFlightConditions.getRLThrust());
-        toConditions.setRLGimbal(this.RLVectoringFlightConditions.getRLGimbal());
-    }
-
-    private Double bestGuessField(String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
-        for (State s: state) {
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet())
-                    if (definitionField.toLowerCase().equals(lowercaseField))
-                        return s.getDouble(definitionField);
-            }
-        }
-        for (State s: state) {
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
-                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
-                        continue;
-                    if (definitionField.toLowerCase().contains(lowercaseField))
-                        return s.getDouble(definitionField);
-                }
-            }
-        }
-        return null;
-    }
-
-
-    private Double getBestGuessCoordinateComponent(String field, String axis, boolean preferSymmetry, String skipContainsString) {
-        String lowercaseField = field.toLowerCase();
-        Double result = null;
-        if (preferSymmetry) {
-            for (State s: state)
-                if (s.definition.get("stateDefinition").containsKey(field) && axis.equals(s.symmetry))
-                    return s.getDouble(field);
-            return bestGuessField(lowercaseField, axis, skipContainsString);
-        } else {
-            // lowercaseField has the required axis
-            return bestGuessField(lowercaseField, null, skipContainsString);
-        }
-    }
-
-    private Double getBestGuess(String originalField, String skipContainsString) {
-        String field = originalField + "";
-        String potentialAxis = field.substring(field.length() - 1);
-        boolean preferSymmetry = false;
-        if (potentialAxis.equals("X") || potentialAxis.equals("Y")) {
-            preferSymmetry = true;
-            field = field.substring(0, field.length() - 1);
-        } else {
-            if (!potentialAxis.equals("Z")) potentialAxis = null;
-        }
-        Double result = getBestGuessCoordinateComponent(field, potentialAxis, preferSymmetry, skipContainsString);
-        if (result == null) {
-            // System.out.println("DID NOT FIND IT: " + originalField);
-            result = state.get(0).getDouble(originalField);
-        }
-        return result;
-    }
-
-    private Double getBestGuess(String originalField) {
-        return getBestGuess(originalField, null);
-    }
-
-    private void storeUpdatedFlightConditions() {
-        HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
-        HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
-
-        Coordinate RLPosition = new Coordinate(state.get(1).getDouble("positionX"), state.get(2).getDouble("positionY"), state.get(0).getDouble("log2PositionZ"));
-        this.RLVectoringFlightConditions.setRLPosition(RLPosition);
-        Coordinate TestRLPosition = new Coordinate(getBestGuess("positionX"), getBestGuess("positionY"), getBestGuess("positionZ"));
-        if (!RLPosition.equals(TestRLPosition)) {
-            System.out.println("DIFFERENT COORDINATES!");
-        }
-
-        Coordinate RLVelocity = new Coordinate(state.get(1).getDouble("velocityX"), state.get(2).getDouble("velocityY"), state.get(0).getDouble("log2VelocityZ"));
-        this.RLVectoringFlightConditions.setRLVelocity(RLVelocity);
-        Coordinate TestRLVelocity = new Coordinate(getBestGuess("velocityX", "angle"), getBestGuess("velocityY", "angle"), getBestGuess("velocityZ", "angle"));
-        if (!RLVelocity.equals(TestRLVelocity)) {
-            System.out.println("DIFFERENT COORDINATES!");
-        }
-
-        Coordinate RLAngle = new Coordinate(state.get(1).getDouble("log2Angle"), state.get(2).getDouble("log2Angle"), state.get(1).getDouble("angleZ"));
-        this.RLVectoringFlightConditions.setRLAngle(RLAngle);
-        Coordinate TestRLAngle = new Coordinate(getBestGuess("angleX"), getBestGuess("angleY"), getBestGuess("angleZ"));
-        if (!RLAngle.equals(TestRLAngle)) {
-            System.out.println("DIFFERENT COORDINATES!");
-        }
-
-        Coordinate RLAngleVelocity = new Coordinate(state.get(1).getDouble("angleVelocity"), state.get(2).getDouble("angleVelocity"), 0.0);
-        this.RLVectoringFlightConditions.setRLAngleVelocity(RLAngleVelocity);
-        Coordinate TestAngleVelocity = new Coordinate(getBestGuess("angleVelocityX"), getBestGuess("angleVelocityY"), getBestGuess("angleVelocityZ"));
-        if (!RLAngleVelocity.equals(TestAngleVelocity)) {
-            System.out.println("DIFFERENT COORDINATES!");
-        }
-
-        // multiplication is for visualization purposes
-        this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
-
-        double gimbalX = action.getDouble("gimbalX");
-        double gimbalY = action.getDouble("gimbalY");
-        double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
-        this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
-    }
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
@@ -486,9 +382,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // Compute acceleration in rocket coordinates
         angularAcceleration = new Coordinate(momX / RLVectoringStructureMassData.getLongitudinalInertia(),
                 momY / RLVectoringStructureMassData.getLongitudinalInertia(),
-                momZ / RLVectoringStructureMassData.getRotationalInertia());
-
-        // System.out.println(angularAcceleration.x + " " + angularAcceleration.y + " " + angularAcceleration.z);
+                0);
+        // AngularAccZ is 0 because no roll.  If not, this should be: momZ / RLVectoringStructureMassData.getRotationalInertia()
 
         double rollAcceleration = angularAcceleration.z;
         // TODO: LOW: This should be hypot, but does it matter?
@@ -502,5 +397,132 @@ public class RocketLanderListener extends AbstractSimulationListener {
         OLD_RLVectoringStructureMassData = RLVectoringStructureMassData;
         RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
+    }
+
+
+
+    /**
+     * Below here is code related to the storing of data for the flight status.  Used for plotting.
+     * Very magical code - auto-parses the values even when non-traditional nomenclature is used.
+     *
+     * Initialize the hashmaps with memoizeSmartGuesses()
+     * Then simply call the storeUpdatedFlightConditions() and applyCustomFlightConditions()
+     * This will modify the flightStatus and trigger the data storage for plotting.
+     * **/
+
+    HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
+    HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
+
+    private void applyCustomFlightConditions(FlightConditions toConditions) {
+        if (this.RLVectoringFlightConditions == null) return;
+        toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
+        toConditions.setRLVelocity(this.RLVectoringFlightConditions.getRLVelocity());
+        toConditions.setRLAngle(this.RLVectoringFlightConditions.getRLAngle());
+        toConditions.setRLAngleVelocity(this.RLVectoringFlightConditions.getRLAngleVelocity());
+        toConditions.setRLThrust(this.RLVectoringFlightConditions.getRLThrust());
+        toConditions.setRLGimbal(this.RLVectoringFlightConditions.getRLGimbal());
+    }
+
+    private void storeUpdatedFlightConditions() {
+        this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate("position"));
+        this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate("velocity"));
+        this.RLVectoringFlightConditions.setRLAngle(getSmartGuessCoordinate("angle"));
+        this.RLVectoringFlightConditions.setRLAngleVelocity(getSmartGuessCoordinate("angleVelocity"));
+
+        // multiplication is for visualization purposes
+        this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
+
+        double gimbalX = action.getDouble("gimbalX");
+        double gimbalY = action.getDouble("gimbalY");
+        double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
+        this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
+    }
+
+    private Coordinate getSmartGuessCoordinate(String field) {
+        return new Coordinate(getSmartGuess(field + "X"), getSmartGuess(field + "Y"), getSmartGuess(field + "Z"));
+    }
+
+    private Double getSmartGuess(String originalField) {
+        if (!dataStoreStateIndexField.containsKey(originalField)) {
+            return state.get(0).getDouble(originalField);  // no MDP has that field defined!
+        }
+        return state.get(dataStoreStateIndexField.get(originalField)).getDouble(dataStoreStateFieldName.get(originalField));
+    }
+
+    private void memoizeSmartGuesses() {
+        storeSmartGuess("positionX");
+        storeSmartGuess("positionY");
+        storeSmartGuess("positionZ");
+        storeSmartGuess("angleX");
+        storeSmartGuess("angleY");
+        storeSmartGuess("angleZ");
+        storeSmartGuess("angleVelocityX");
+        storeSmartGuess("angleVelocityY");
+        storeSmartGuess("angleVelocityZ");
+        storeSmartGuess("velocityX", "angle");
+        storeSmartGuess("velocityY", "angle");
+        storeSmartGuess("velocityZ", "angle");
+    }
+
+    private Double storeSmartGuess(String originalField) {
+        return storeSmartGuess(originalField, null);
+    }
+
+    private Double storeSmartGuess(String originalField, String skipContainsString) {
+        String field = originalField + "";
+        String potentialAxis = field.substring(field.length() - 1);
+        boolean preferSymmetry = false;
+        if (potentialAxis.equals("X") || potentialAxis.equals("Y")) {
+            preferSymmetry = true;
+            field = field.substring(0, field.length() - 1);
+        } else {
+            if (!potentialAxis.equals("Z")) potentialAxis = null;
+        }
+        Double result = storeSmartGuessCoordinateComponent(originalField, field, potentialAxis, preferSymmetry, skipContainsString);
+        if (result == null) {
+            // no MDP has that field defined!
+            result = state.get(0).getDouble(originalField);
+        }
+        return result;
+    }
+
+    private Double storeSmartGuessCoordinateComponent(String originalField, String field, String enforceSymmetryAxis, boolean preferSymmetry, String skipContainsString) {
+        String lowercaseField = field.toLowerCase();
+        if (preferSymmetry) {
+            return storeBestGuessField(originalField, lowercaseField, enforceSymmetryAxis, skipContainsString);
+        } else {
+            // lowercaseField has the required axis
+            return storeBestGuessField(originalField, lowercaseField, null, skipContainsString);
+        }
+    }
+
+    private Double storeBestGuessField(String originalField, String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
+        for (int i = 0; i < state.size(); i++) {
+            State s = state.get(i);
+            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
+                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
+                    if (definitionField.toLowerCase().equals(lowercaseField)) {
+                        dataStoreStateIndexField.put(originalField, i);
+                        dataStoreStateFieldName.put(originalField, definitionField);
+                        return s.getDouble(definitionField);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < state.size(); i++) {
+            State s = state.get(i);
+            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
+                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
+                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
+                        continue;
+                    if (definitionField.toLowerCase().contains(lowercaseField)) {
+                        dataStoreStateIndexField.put(originalField, i);
+                        dataStoreStateFieldName.put(originalField, definitionField);
+                        return s.getDouble(definitionField);
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
