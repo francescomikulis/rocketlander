@@ -566,11 +566,6 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 		data.setValue(FlightDataType.TYPE_ALTITUDE, status.getRocketPosition().z);
 		data.setValue(FlightDataType.TYPE_POSITION_X, status.getRocketPosition().x);
 		data.setValue(FlightDataType.TYPE_POSITION_Y, status.getRocketPosition().y);
-
-		// MODIFIED CODE HERE
-		data.setValue(FlightDataType.TYPE_RL_ANGLE_X, Math.asin(status.getRocketOrientationQuaternion().rotateZ().x));
-		data.setValue(FlightDataType.TYPE_RL_ANGLE_Y, Math.asin(status.getRocketOrientationQuaternion().rotateZ().y));
-		data.setValue(FlightDataType.TYPE_RL_ANGLE_Z, Math.asin(status.getRocketOrientationQuaternion().rotateZ().z));
 		
 		data.setValue(FlightDataType.TYPE_LATITUDE, status.getRocketWorldPosition().getLatitudeRad());
 		data.setValue(FlightDataType.TYPE_LONGITUDE, status.getRocketWorldPosition().getLongitudeRad());
@@ -677,6 +672,18 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 			data.setValue(FlightDataType.TYPE_AOA, store.flightConditions.getAOA());
 
 			// CUSTOM DATA STORING HERE!  MODIFIED CODE HERE
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_X, store.flightConditions.getRLVelocity().x);
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_Y, store.flightConditions.getRLVelocity().y);
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_Z, store.flightConditions.getRLVelocity().z);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_X, store.flightConditions.getRLPosition().x);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_Y, store.flightConditions.getRLPosition().y);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_Z, store.flightConditions.getRLPosition().z);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_X, store.flightConditions.getRLAngle().x);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_Y, store.flightConditions.getRLAngle().y);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_Z, store.flightConditions.getRLAngle().z);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_X, store.flightConditions.getRLAngleVelocity().x);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_Y, store.flightConditions.getRLAngleVelocity().y);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_Z, store.flightConditions.getRLAngleVelocity().z);
 			data.setValue(FlightDataType.TYPE_RL_THRUST, store.flightConditions.getRLThrust());
 			data.setValue(FlightDataType.TYPE_RL_GIMBAL_X, store.flightConditions.getRLGimbal().x);
 			data.setValue(FlightDataType.TYPE_RL_GIMBAL_Y, store.flightConditions.getRLGimbal().y);

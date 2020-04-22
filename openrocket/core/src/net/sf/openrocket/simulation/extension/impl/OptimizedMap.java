@@ -334,7 +334,7 @@ public class OptimizedMap {
         for (Object entryObject : definition.get(definitionField).entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
             String field = entry.getKey();
-            if (field.contains("angle") || field.contains("gimbal")) {
+            if (field.toLowerCase().contains("angle") || field.toLowerCase().contains("gimbal")) {
                 boolean convert = false;
                 int size = entry.getValue().length;
                 if (size == 3) convert = entry.getValue()[2] >= 0.1;

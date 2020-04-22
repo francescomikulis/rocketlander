@@ -254,17 +254,17 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("time", new float[]{0, 5, 1});
             put("thrust", new float[]{0, 1, 0.25f});
             // put("angle", new float[]{-12, 12, 2});
-            put("log2AngleX", new float[]{-2.195f, 2.195f, 0.16887f});
+            put("log2Angle", new float[]{-2.195f, 2.195f, 0.3659f});
             put("angleVelocity", new float[]{-12, 12, 4});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
-            put("gimbal", new float[]{-3, 3, 0.5f});
+            put("gimbal", new float[]{-3, 3, 1f});
         }});
         put("noActionState", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0.0f});
         }});
         put("formulas", new HashMap<String, String>() {{
-            put("log2AngleX", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
+            put("log2Angle", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
         }});
         put("successConditions", new HashMap<String, float[]>() {{
             put("angle", new float[]{-8, 8});

@@ -242,13 +242,13 @@ public class SimulationPanel extends JPanel {
 					return;
 				}
 
-				int trainMinutes = 1;
+				double trainMinutes = 1.0;
 				JPanel repPanel = new JPanel(new MigLayout());
-				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, 1);
+				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, 1.0);
 				try {
 					if (trainMinutesFromPanel == null)
 						return;
-					trainMinutes = Integer.parseInt(trainMinutesFromPanel);
+					trainMinutes = Double.parseDouble(trainMinutesFromPanel);
 				} catch (Exception exc) {
 					return;
 				}

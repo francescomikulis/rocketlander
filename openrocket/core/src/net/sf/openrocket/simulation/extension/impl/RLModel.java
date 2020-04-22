@@ -196,6 +196,10 @@ public class RLModel {
             methodCounter += 1;
         }
 
+        // need to update the formulas after getting the new data
+        for (State s: coupledStates)
+            s.runMDPDefinitionFormulas();
+
         if (actions.size() == 1) {
             coupledActions = combineCoupledTripleActions(actions.get(0), actions.get(0), actions.get(0));
         } else if (actions.size() == 2) {

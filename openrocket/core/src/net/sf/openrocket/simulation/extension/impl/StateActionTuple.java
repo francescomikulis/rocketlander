@@ -371,14 +371,15 @@ public class StateActionTuple implements Serializable {
             }
             setDouble("angleX", angleX);
             setDouble("angleY", angleY);
+            setDouble("angleZ", Math.sqrt(1.0 - angleX * angleX - angleY * angleY));
 
             // original angle approach
             //setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));
             //setDouble("angleZ", Math.acos(rocketDirection.z));
 
             // NOTE THAT THIS IS INTENTIONALLY FLIPPED!!!
-            setDouble("angleVelocityX", -status.getRocketRotationVelocity().y);
-            setDouble("angleVelocityY", status.getRocketRotationVelocity().x);
+            setDouble("angleVelocityX", status.getRocketRotationVelocity().y);
+            setDouble("angleVelocityY", -status.getRocketRotationVelocity().x);
 
             setDouble("time", status.getSimulationTime());
 
@@ -567,9 +568,12 @@ public class StateActionTuple implements Serializable {
             return null;
         }
 
-        @Override
         public double getDouble(String field) {
             return getAction(field).getDouble(field);
+        }
+
+        public double getDouble(String field, String axis) {
+            return getAction(field + axis).getDouble(field);
         }
 
         @Override

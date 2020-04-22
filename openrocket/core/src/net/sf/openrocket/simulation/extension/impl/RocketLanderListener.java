@@ -6,6 +6,7 @@ import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
@@ -15,8 +16,7 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.*;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
@@ -182,16 +182,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) {
         if (flightConditions != null) {
+            applyCustomFlightConditions(flightConditions);
             this.RLVectoringFlightConditions = flightConditions;
             this.RLVectoringFlightConditions.setTheta(0.0);
-
-            // multiplication is for visualization purposes
-            this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
-
-            double gimbalX = action.getDouble("gimbalX");
-            double gimbalY = action.getDouble("gimbalY");
-            double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
-            this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
         }
         return flightConditions;
     }
@@ -230,11 +223,120 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return calculateAcceleration(status, gimbalX, gimbalY);
     }
 
+    private void applyCustomFlightConditions(FlightConditions toConditions) {
+        if (this.RLVectoringFlightConditions == null) return;
+        toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
+        toConditions.setRLVelocity(this.RLVectoringFlightConditions.getRLVelocity());
+        toConditions.setRLAngle(this.RLVectoringFlightConditions.getRLAngle());
+        toConditions.setRLAngleVelocity(this.RLVectoringFlightConditions.getRLAngleVelocity());
+        toConditions.setRLThrust(this.RLVectoringFlightConditions.getRLThrust());
+        toConditions.setRLGimbal(this.RLVectoringFlightConditions.getRLGimbal());
+    }
+
+    private Double bestGuessField(String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
+        for (State s: state) {
+            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
+                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet())
+                    if (definitionField.toLowerCase().equals(lowercaseField))
+                        return s.getDouble(definitionField);
+            }
+        }
+        for (State s: state) {
+            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
+                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
+                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
+                        continue;
+                    if (definitionField.toLowerCase().contains(lowercaseField))
+                        return s.getDouble(definitionField);
+                }
+            }
+        }
+        return null;
+    }
+
+
+    private Double getBestGuessCoordinateComponent(String field, String axis, boolean preferSymmetry, String skipContainsString) {
+        String lowercaseField = field.toLowerCase();
+        Double result = null;
+        if (preferSymmetry) {
+            for (State s: state)
+                if (s.definition.get("stateDefinition").containsKey(field) && axis.equals(s.symmetry))
+                    return s.getDouble(field);
+            return bestGuessField(lowercaseField, axis, skipContainsString);
+        } else {
+            // lowercaseField has the required axis
+            return bestGuessField(lowercaseField, null, skipContainsString);
+        }
+    }
+
+    private Double getBestGuess(String originalField, String skipContainsString) {
+        String field = originalField + "";
+        String potentialAxis = field.substring(field.length() - 1);
+        boolean preferSymmetry = false;
+        if (potentialAxis.equals("X") || potentialAxis.equals("Y")) {
+            preferSymmetry = true;
+            field = field.substring(0, field.length() - 1);
+        } else {
+            if (!potentialAxis.equals("Z")) potentialAxis = null;
+        }
+        Double result = getBestGuessCoordinateComponent(field, potentialAxis, preferSymmetry, skipContainsString);
+        if (result == null) {
+            // System.out.println("DID NOT FIND IT: " + originalField);
+            result = state.get(0).getDouble(originalField);
+        }
+        return result;
+    }
+
+    private Double getBestGuess(String originalField) {
+        return getBestGuess(originalField, null);
+    }
+
+    private void storeUpdatedFlightConditions() {
+        HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
+        HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
+
+        Coordinate RLPosition = new Coordinate(state.get(1).getDouble("positionX"), state.get(2).getDouble("positionY"), state.get(0).getDouble("log2PositionZ"));
+        this.RLVectoringFlightConditions.setRLPosition(RLPosition);
+        Coordinate TestRLPosition = new Coordinate(getBestGuess("positionX"), getBestGuess("positionY"), getBestGuess("positionZ"));
+        if (!RLPosition.equals(TestRLPosition)) {
+            System.out.println("DIFFERENT COORDINATES!");
+        }
+
+        Coordinate RLVelocity = new Coordinate(state.get(1).getDouble("velocityX"), state.get(2).getDouble("velocityY"), state.get(0).getDouble("log2VelocityZ"));
+        this.RLVectoringFlightConditions.setRLVelocity(RLVelocity);
+        Coordinate TestRLVelocity = new Coordinate(getBestGuess("velocityX", "angle"), getBestGuess("velocityY", "angle"), getBestGuess("velocityZ", "angle"));
+        if (!RLVelocity.equals(TestRLVelocity)) {
+            System.out.println("DIFFERENT COORDINATES!");
+        }
+
+        Coordinate RLAngle = new Coordinate(state.get(1).getDouble("log2Angle"), state.get(2).getDouble("log2Angle"), state.get(1).getDouble("angleZ"));
+        this.RLVectoringFlightConditions.setRLAngle(RLAngle);
+        Coordinate TestRLAngle = new Coordinate(getBestGuess("angleX"), getBestGuess("angleY"), getBestGuess("angleZ"));
+        if (!RLAngle.equals(TestRLAngle)) {
+            System.out.println("DIFFERENT COORDINATES!");
+        }
+
+        Coordinate RLAngleVelocity = new Coordinate(state.get(1).getDouble("angleVelocity"), state.get(2).getDouble("angleVelocity"), 0.0);
+        this.RLVectoringFlightConditions.setRLAngleVelocity(RLAngleVelocity);
+        Coordinate TestAngleVelocity = new Coordinate(getBestGuess("angleVelocityX"), getBestGuess("angleVelocityY"), getBestGuess("angleVelocityZ"));
+        if (!RLAngleVelocity.equals(TestAngleVelocity)) {
+            System.out.println("DIFFERENT COORDINATES!");
+        }
+
+        // multiplication is for visualization purposes
+        this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
+
+        double gimbalX = action.getDouble("gimbalX");
+        double gimbalY = action.getDouble("gimbalY");
+        double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
+        this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
+    }
+
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
         stabilizeRocketBasedOnSimType(status);
-
-        boolean addedStateActionTuple = setupStateActionAndStore(status);
+        setupStateActionAndStore(status);
+        storeUpdatedFlightConditions();
 
         /*
         if (terminationBooleans.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
