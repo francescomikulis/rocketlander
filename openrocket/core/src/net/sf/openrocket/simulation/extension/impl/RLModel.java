@@ -19,16 +19,34 @@ public class RLModel {
     private RLEpisodeManager episodeManager = null;
 
     // MonteCarlo or TD0
+
+    //  MapMethod.Traditional
+    /*
+    private ModelBaseImplementation primaryMethod = new MonteCarlo(generalDefinition);
+    private ModelBaseImplementation secondaryMethod = null;
+    private ModelBaseImplementation tertiaryMethod = null;
+
+    private HashMap<String, ModelBaseImplementation> methods = new HashMap<String, ModelBaseImplementation>() {{
+            put("general", primaryMethod);
+    }};
+     */
+
+    //  MapMethod.Coupled
+
     private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-    public SimulationType simulationType = SimulationType._2D;
 
     private HashMap<String, ModelBaseImplementation> methods = new HashMap<String, ModelBaseImplementation>() {{
         put("lander", primaryMethod);
         put("reacher", secondaryMethod);
         put("stabilizer", tertiaryMethod);
     }};
+
+    public String symmetryAxis2D = "X";
+    public String symmetryAxis3D = "Y";
+    public SimulationType simulationType = SimulationType._3D;
+
 
     enum SimulationType {
         _1D, _2D, _3D
@@ -51,6 +69,10 @@ public class RLModel {
 
 
     public void initializeModel() {
+        if (symmetryAxis2D.equals(symmetryAxis3D)) {
+            System.out.println("ISSUES IN SYMMETRY AXIS ASSIGNMENT!!!!");
+            System.out.println("YOU MUST SELECT 2 DIFFERENT SYMMETRY AXIS FOR 2D AND 3D");
+        }
         episodeManager = RLEpisodeManager.getInstance();
         episodeManager.safeActionValueFunctionInitialization();
     }
@@ -60,25 +82,6 @@ public class RLModel {
         for (int i = definition[0]; i <= definition[1]; i++) {
             possibleActionValues.add(i);
         }
-        return possibleActionValues;
-    }
-
-    private HashSet<Float> generatePossibleActionValues(float value, float[] definition) {
-        return generatePossibleActionValues(value, definition[0], definition[1], definition[2], definition[1] - definition[0]);
-    }
-
-    private HashSet<Float> generatePossibleActionValues(float value, float MIN_VAL, float MAX_VAL, float smallest_increment, float max_increment) {
-        HashSet<Float> possibleActionValues = new HashSet<>();
-
-        int number_of_loops = (int) (2.0 * max_increment / smallest_increment) + 1;
-        float starting_low_value =  value - max_increment;
-        for (int i = 0; i < number_of_loops; i++) {
-            float possibleValue = starting_low_value + i * smallest_increment;
-            if ((possibleValue >= MIN_VAL) && (possibleValue <= MAX_VAL)) {
-                possibleActionValues.add(possibleValue);
-            }
-        }
-
         return possibleActionValues;
     }
 
@@ -153,17 +156,28 @@ public class RLModel {
         ArrayList<Action> actions = new ArrayList<>();
         CoupledActions coupledActions = null;
 
-        // select the order of the actions
-        ArrayList<String> methodNameOrder = new ArrayList<>(Collections.singletonList("lander"));
-        if (conditionsForSecondaryMethod(coupledStates.get(0), "X")) {
-            methodNameOrder.add("reacher");
-        } else {
-            methodNameOrder.add("stabilizer");
-        }
-        if (conditionsForSecondaryMethod(coupledStates.get(0), "Y")) {
-            methodNameOrder.add("reacher");
-        } else {
-            methodNameOrder.add("stabilizer");
+        ArrayList<String> methodNameOrder = new ArrayList<>();
+
+        if (mapMethod == MapMethod.Traditional) {
+            methodNameOrder.add("general");
+        } if (mapMethod == MapMethod.Coupled) {
+            // select the order of the actions
+            methodNameOrder.add("lander");
+
+            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
+                if (conditionsForSecondaryMethod(coupledStates.get(0), symmetryAxis2D)) {
+                    methodNameOrder.add("reacher");
+                } else {
+                    methodNameOrder.add("stabilizer");
+                }
+            }
+            if (simulationType == SimulationType._3D) {
+                if (conditionsForSecondaryMethod(coupledStates.get(0), symmetryAxis3D)) {
+                    methodNameOrder.add("reacher");
+                } else {
+                    methodNameOrder.add("stabilizer");
+                }
+            }
         }
 
         int methodCounter = 0;
@@ -222,25 +236,39 @@ public class RLModel {
     }
 
     public CoupledStates generateNewCoupledStates(SimulationStatus status) {
-        State primaryState = new State(status, primaryMethod.definition);
-        State secondaryState = null;
-        State tertiaryState = null;
-        if (conditionsForSecondaryMethod(primaryState, "X")) {
-            secondaryState = new State(status, secondaryMethod.definition);
-        } else
-            secondaryState = new State(status, tertiaryMethod.definition);
-        if (conditionsForSecondaryMethod(primaryState, "Y"))
-            tertiaryState = new State(status, secondaryMethod.definition);
-        else
-            tertiaryState = new State(status, tertiaryMethod.definition);
+        ArrayList<State> states = new ArrayList<>();
 
-        secondaryState.setAllSymmetries("X");
-        tertiaryState.setAllSymmetries("Y");
-        return new CoupledStates(primaryState, secondaryState, tertiaryState);
+        State primaryState = new State(status, primaryMethod.definition);
+        states.add(primaryState);
+        if (OptimizedMap.mapMethod == MapMethod.Traditional) {
+            return new CoupledStates(states.toArray(new State[states.size()]));
+        }
+
+        if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
+            State secondaryState = null;
+            if (conditionsForSecondaryMethod(primaryState, symmetryAxis2D))
+                secondaryState = new State(status, secondaryMethod.definition);
+            else
+                secondaryState = new State(status, tertiaryMethod.definition);
+            secondaryState.setAllSymmetries(symmetryAxis2D);
+            states.add(secondaryState);
+        }
+
+        if (simulationType == SimulationType._3D) {
+            State tertiaryState = null;
+            if (conditionsForSecondaryMethod(primaryState, symmetryAxis3D))
+                tertiaryState = new State(status, secondaryMethod.definition);
+            else
+                tertiaryState = new State(status, tertiaryMethod.definition);
+            tertiaryState.setAllSymmetries(symmetryAxis3D);
+            states.add(tertiaryState);
+        }
+        return new CoupledStates(states.toArray(new State[states.size()]));
     }
 
     private boolean conditionsForSecondaryMethod(StateActionClass stateActionClass, String axis) {
-        return ((Math.abs(stateActionClass.getDouble("position" + axis)) >= 5.0) && (Math.abs(stateActionClass.getDouble("angle" + axis)) <= Math.asin(PI/8)));
+        // return false;
+        return ((Math.abs(stateActionClass.getDouble("position" + axis)) >= 3.0) && (Math.abs(stateActionClass.getDouble("angle" + axis)) <= Math.asin(PI/16)));
     }
 
 
@@ -250,9 +278,6 @@ public class RLModel {
                 Action lastAction = SAPrimary.get(SAPrimary.size() - 1).action;
                 State state = coupledStates.get(0);
                 lastAction.applyDefinitionValuesToState(state);
-                state.set("thrust", lastAction.get("thrust"));
-                state.set("gimbalX", lastAction.get("gimbalX"));
-                state.set("gimbalY", lastAction.get("gimbalY"));
             }
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
             if (!SAPrimary.isEmpty()) {
@@ -289,7 +314,6 @@ public class RLModel {
 
     private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
         HashSet<Action> bestActions = new HashSet<>();
-        //bestActions.add(new Action(state.getDouble("thrust"), state.getDouble("gimbalX"), state.getDouble("gimbalY")));
 
         float explorationPercentage = method.getExplorationPercentage();
 
@@ -301,24 +325,20 @@ public class RLModel {
         }
 
         for (Action action: possibleActions) {
-            //try {
-                float v = method.valueFunction(state, action);
-                if (greedy) {
-                    if (v > val) {
-                        // value is best compared to all previous encounters.  Reset bestAction ArrayList.
-                        val = v;
-                        bestActions = new HashSet<>();
-                        bestActions.add(action);
-                    } else if (v == val) {
-                        // value is equal to other best value.  Add to bestAction ArrayList.
-                        bestActions.add(action);
-                    }
-                } else {
+            float v = method.valueFunction(state, action);
+            if (greedy) {
+                if (v > val) {
+                    // value is best compared to all previous encounters.  Reset bestAction ArrayList.
+                    val = v;
+                    bestActions = new HashSet<>();
+                    bestActions.add(action);
+                } else if (v == val) {
+                    // value is equal to other best value.  Add to bestAction ArrayList.
                     bestActions.add(action);
                 }
-            //} catch (Exception e) {
-            //    System.out.println("Failed to compute the value in the hashmap");
-            //}
+            } else {
+                bestActions.add(action);
+            }
         }
         if (bestActions.size() == 0) {
             System.out.println("Size of best actions is 0.  This will cause failure - WHY IS IT HAPPENING?");
@@ -337,8 +357,7 @@ public class RLModel {
             if (stateHasChanged(SAPrimary, lastUpdateSizes[0]))
                 primaryMethod.updateStepLanderFunction(SAPrimary);
 
-            if (simulationType != SimulationType._1D) {
-
+            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
                 Action lastActionX = getLastActionOrNull(SAGimbalX);
                 if ((lastActionX != null) && (stateHasChanged(SAGimbalX, lastUpdateSizes[1]))) {
                     String MDPName = (String) lastActionX.definition.get("meta").get("name");
@@ -349,7 +368,9 @@ public class RLModel {
                     else
                         System.out.println("Something is fucked up in the value function (X)");
                 }
+            }
 
+            if (simulationType == SimulationType._3D) {
                 Action lastActionY = getLastActionOrNull(SAGimbalY);
                 if ((lastActionY != null) && (stateHasChanged(SAGimbalY, lastUpdateSizes[2]))) {
                     String MDPName = (String) lastActionY.definition.get("meta").get("name");
@@ -370,8 +391,6 @@ public class RLModel {
             primaryMethod.updateTerminalFunction(SAPrimary);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
 
-            // if ((simulationType == SimulationType._1D) || (terminationBooleans.landerSucceeded())) {
-
             primaryMethod.updateTerminalLanderFunction(SAPrimary);
 
             ArrayList<StateActionTuple> SAGimbalXReacher = new ArrayList<>();
@@ -380,48 +399,51 @@ public class RLModel {
             ArrayList<StateActionTuple> SAGimbalYReacher = new ArrayList<>();
             ArrayList<StateActionTuple> SAGimbalYStabilizer = new ArrayList<>();
 
-            if (simulationType != SimulationType._1D) {
-                for (StateActionTuple stateActionTuple: SAGimbalX) {
-                    String MDPName = (String)stateActionTuple.action.definition.get("meta").get("name");
+            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
+                for (StateActionTuple stateActionTuple : SAGimbalX) {
+                    String MDPName = (String) stateActionTuple.action.definition.get("meta").get("name");
                     if (MDPName.equals("reacher"))
                         SAGimbalXReacher.add(stateActionTuple);
                     else if (MDPName.equals("stabilizer"))
                         SAGimbalXStabilizer.add(stateActionTuple);
                 }
-                for (StateActionTuple stateActionTuple: SAGimbalY) {
-                    String MDPName = (String)stateActionTuple.action.definition.get("meta").get("name");
+            }
+            if (simulationType == SimulationType._3D) {
+                for (StateActionTuple stateActionTuple : SAGimbalY) {
+                    String MDPName = (String) stateActionTuple.action.definition.get("meta").get("name");
                     if (MDPName.equals("reacher"))
                         SAGimbalYReacher.add(stateActionTuple);
                     else if (MDPName.equals("stabilizer"))
                         SAGimbalYStabilizer.add(stateActionTuple);
                 }
-
-                double updateOrder = randomGenerator.nextDouble();
-                if (updateOrder < 0.5) {
-                    secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
-                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
-                    secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
-                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
-                } else {
-                    secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
-                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
-                    secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
-                    tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
-                }
             }
 
-            if (terminationBooleans.totalSuccess()) {
-                System.out.print("+");
-                /*
-                System.out.println("Number of unique lander states: " + SAPrimary.size());
-                System.out.println("Number of gimbal X reacher states: " + SAGimbalXReacher.size());
-                System.out.println("Number of gimbal X stabilizer states: " + SAGimbalXStabilizer.size());
-                System.out.println("Number of gimbal Y reacher states: " + SAGimbalYReacher.size());
-                System.out.println("Number of gimbal Y stabilizer states: " + SAGimbalYStabilizer.size());
-                 */
+            double updateOrder = randomGenerator.nextDouble();
+            if (updateOrder < 0.5) {
+                secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
+                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
+                secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
+                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
             } else {
-                System.out.print("-");
+                secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
+                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
+                secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
+                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
             }
+
+            /*
+            System.out.println("Number of unique lander states: " + SAPrimary.size());
+            System.out.println("Number of gimbal X reacher states: " + SAGimbalXReacher.size());
+            System.out.println("Number of gimbal X stabilizer states: " + SAGimbalXStabilizer.size());
+            System.out.println("Number of gimbal Y reacher states: " + SAGimbalYReacher.size());
+            System.out.println("Number of gimbal Y stabilizer states: " + SAGimbalYStabilizer.size());
+            */
+        }
+
+        if (terminationBooleans.totalSuccess()) {
+            System.out.print("+");
+        } else {
+            System.out.print("-");
         }
     }
 
@@ -434,26 +456,9 @@ public class RLModel {
     }
 
     public void setValueFunctionTable(OptimizedMap valueFunctionTable) {
-        primaryMethod.setValueFunctionTable(valueFunctionTable);
-        secondaryMethod.setValueFunctionTable(valueFunctionTable);
-        tertiaryMethod.setValueFunctionTable(valueFunctionTable);
-
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             entry.getValue().setValueFunctionTable(valueFunctionTable);
         }
-    }
-
-    public ModelBaseImplementation getPrimaryMethod() {
-        return primaryMethod;
-    }
-
-    public void setPrimaryMethod(ModelBaseImplementation method) {
-        // conserve the instance of the OptimizedMap
-        OptimizedMap valueFunctionTable = primaryMethod.getValueFunctionTable();
-        primaryMethod = method;
-        secondaryMethod = primaryMethod;
-        tertiaryMethod = primaryMethod;
-        method.setValueFunctionTable(valueFunctionTable);
     }
 
     public CoupledActions getLastAction(ArrayList<StateActionTuple> episodeStateActionsPrimary, ArrayList<StateActionTuple> episodeStateActionsGimbalX, ArrayList<StateActionTuple> episodeStateActionsGimbalY) {
@@ -465,11 +470,26 @@ public class RLModel {
             Action action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
             coupledActions = combineCoupledTripleActions(action, action, action);
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            coupledActions = combineCoupledTripleActions(
-                    episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
-                    episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
-                    episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action
-            );
+
+            if (simulationType == SimulationType._1D) {
+                coupledActions = combineCoupledTripleActions(
+                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
+                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
+                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action
+                );
+            } else if (simulationType == SimulationType._2D) {
+                coupledActions = combineCoupledTripleActions(
+                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
+                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
+                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action
+                );
+            } else if (simulationType == SimulationType._3D) {
+                coupledActions = combineCoupledTripleActions(
+                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
+                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
+                        episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action
+                );
+            }
         }
         return coupledActions;
     }

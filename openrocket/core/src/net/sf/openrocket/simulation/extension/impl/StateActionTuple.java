@@ -565,7 +565,7 @@ public class StateActionTuple implements Serializable {
                     return this.gimbalYAction;
             }
             System.out.println("attempting to pull field not contained in actions: " + field);
-            return null;
+            return this.thrustAction;
         }
 
         public double getDouble(String field) {

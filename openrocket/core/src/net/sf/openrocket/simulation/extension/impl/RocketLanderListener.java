@@ -19,6 +19,8 @@ import net.sf.openrocket.util.Quaternion;
 import java.lang.reflect.Array;
 import java.util.*;
 
+import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
+
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
@@ -99,9 +101,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.getSimulationConditions().setTimeStep(timeStep);
 
         double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        posX = 0;
         double posY = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        posY = 0;
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                posY = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                posX = 0;
+            }
+        }
         double posZ = calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation);
 
         // set the rocket position at the launch altitude as defined by the extension
@@ -116,12 +123,26 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double dx = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
         double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
         double dz = 90;
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                dy = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                dx = 0;
+            }
+        }
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
         // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
         dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
         dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                dx = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                dy = 0;
+            }
+        }
         status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
 
         status.setLaunchRodCleared(true);
@@ -162,14 +183,29 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
         } else if(model.simulationType == SimulationType._2D) {
-            /*
             Quaternion currentQuaternion = status.getRocketOrientationQuaternion();
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
-            Quaternion newQuaternion = new Quaternion(0, rocketDirection.x / 2, 0, rocketDirection.z).normalizeIfNecessary();
-            status.setRocketOrientationQuaternion(newQuaternion);
-             */
+            Quaternion newQuaternion = null;
+            Coordinate pos = status.getRocketPosition();
+            Coordinate rotVel = status.getRocketRotationVelocity();
+            Coordinate vel = status.getRocketVelocity();
+            if (model.symmetryAxis2D.equals("X")) {
+                pos = pos.setY(0.0);
+                vel = vel.setY(0.0);
+                rotVel = rotVel.setX(0.0);
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                pos = pos.setX(0.0);
+                vel = vel.setX(0.0);
+                rotVel = rotVel.setY(0.0);
+            } else {
+                System.out.println("INVALID SYMMETRY AXIS!!!");
+            }
+            status.setRocketPosition(pos);
+            status.setRocketVelocity(vel);
+            status.setRocketRotationVelocity(rotVel);
+
             // force the stabilizer to be trained here!
-            status.setRocketPosition(new Coordinate(0, 0, status.getRocketPosition().z));
+            // status.setRocketPosition(new Coordinate(0, 0, status.getRocketPosition().z));
         } else if(model.simulationType == SimulationType._3D) {
             // already set the roll to zero
         }
@@ -223,6 +259,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (model.simulationType == SimulationType._1D) {
             gimbalX = 0.0;
             gimbalY = 0.0;
+        } else if (model.simulationType == SimulationType._1D) {
+            gimbalY = 0.0;
         }
         return calculateAcceleration(status, gimbalX, gimbalY);
     }
@@ -230,7 +268,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        stabilizeRocketBasedOnSimType(status);
+        // DO NOT USE THIS LINE OF CODE IT BREAKS THE SIMULATOR STEPS  (if used in postStep)--> stabilizeRocketBasedOnSimType(status);
         setupStateActionAndStore(status);
         storeUpdatedFlightConditions();
 

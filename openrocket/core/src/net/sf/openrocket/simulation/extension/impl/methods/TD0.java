@@ -93,10 +93,14 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
 
         float reward;
         if (position != 0.0) {
-            reward = - position - (velocity/10.0f) / position;
+            reward = - position * 10 - velocity;  // velocity / position
         } else {
-            reward = - position - (velocity/10.0f);
+            reward = - position * 10 - velocity;
         }
+        if (Math.signum(state.getDouble("position")) != Math.signum(state.getDouble("gimbal"))) {
+            reward = reward + 30;
+        }
+
         return reward;
 
         // float positionReward = -(float)(Math.abs(state.getDouble("position" + state.symmetry)));

@@ -160,26 +160,29 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("name", "general");
         }});
         put("stateDefinition",  new HashMap<String, float[]>() {{
-            put("positionX", new float[]{0, 1, 0.25f});
-            put("positionY", new float[]{0, 1, 0.25f});
-            put("positionZ", new float[]{0, 1, 0.25f});
-            put("velocityZ", new float[]{0, 1, 0.25f});
-            put("time", new float[]{0, 1, 0.25f});
-            put("angleX", new float[]{0, 1, 0.25f});
-            put("angleZ", new float[]{0, 1, 0.25f});
-            put("thrust", new float[]{0, 1, 0.25f});
-            put("gimbalX", new float[]{0, 1, 0.25f});
-            put("gimbalY", new float[]{0, 1, 0.25f});
+            //put("positionX", new float[]{0, 1, 0.25f});
+            //put("positionY", new float[]{0, 1, 0.25f});
+            put("log2PositionZ", new float[]{0, 5.6f, 0.6f});
+            put("log2VelocityZ", new float[]{-5, 2.3f, 0.6f});
+            // put("time", new float[]{0, 5, 1});
+            put("log2AngleX", new float[]{-2, 2, 0.5f});
+            put("log2AngleY", new float[]{-2, 2, 0.5f});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
-            put("thrust", new float[]{-6, 6, 2});
-            put("gimbalX", new float[]{-6, 6, 2});
-            put("gimbalY", new float[]{-6, 6, 2});
+            put("thrust", new float[]{0, 1, 0.25f});
+            put("gimbalX", new float[]{-3, 3, 1f});
+            put("gimbalY", new float[]{-3, 3, 1f});
+        }});
+        put("formulas", new HashMap<String, String>() {{
+            put("log2AngleX", "Mult(Signum(angleX),Log2(Add(Abs(angleX),1)))");
+            put("log2AngleY", "Mult(Signum(angleY),Log2(Add(Abs(angleY),1)))");
+            put("log2PositionZ", "Log2(Add(positionZ,1))");
+            put("log2VelocityZ", "Mult(Signum(velocityZ),Log2(Add(Abs(velocityZ),1)))");
         }});
         put("successConditions", new HashMap<String, float[]>() {{
             put("velocityZ", new float[]{-2, 2});
-            put("position", new float[]{-4, 4});
-            put("angle", new float[]{-12, 12});
+            // put("position", new float[]{-4, 4});
+            put("angle", new float[]{-8, 8});
         }});
     }};
 
@@ -227,8 +230,10 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         }});
         put("stateDefinition",  new HashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
-            put("angle", new float[]{-15, 15, 5});
-            put("position", new float[]{-8, 8, 4});
+            // put("angle", new float[]{-15, 15, 5});
+            put("log2Angle", new float[]{-2, 2, 0.5f});
+            put("position", new float[]{-9, 9, 3});
+            // put("log2Position", new float[]{-4, 4, 1f});
             put("velocity", new float[]{-3, 3, 1});
         }});
         put("actionDefinition", new HashMap<String, float[]>() {{
@@ -237,8 +242,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         put("noActionState", new HashMap<String, float[]>() {{
             put("thrust", new float[]{0.0f});
         }});
+        put("formulas", new HashMap<String, String>() {{
+            put("log2Angle", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
+            put("log2Position", "Mult(Signum(position),Log2(Add(Abs(position),1)))");
+        }});
         put("successConditions", new HashMap<String, float[]>() {{
-            put("position", new float[]{-4, 4});
+            put("position", new float[]{-10, 10});
             put("angle", new float[]{-12, 12});
         }});
     }};

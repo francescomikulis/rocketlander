@@ -64,10 +64,8 @@ public class RLObjectFileStore {
 
     public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, RLModel.SimulationType symType, String filenameExtension){
         storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander" + filenameExtension);
-        if ((symType == RLModel.SimulationType._2D) || (symType == RLModel.SimulationType._3D))
-            storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
-        if (symType == RLModel.SimulationType._3D)
-            storeObject(optimizedMap.getReacherValueFunctionArray(), actionValueFunctionFileName + "reacher" + filenameExtension);
+        storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
+        storeObject(optimizedMap.getReacherValueFunctionArray(), actionValueFunctionFileName + "reacher" + filenameExtension);
     }
 
     /*
