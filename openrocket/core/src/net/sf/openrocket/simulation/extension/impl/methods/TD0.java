@@ -19,6 +19,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
          Function<StateActionTuple.State, Float> reward
     ) {
+        if(SA == null) { return; }
         if(SA.size() <= 2) { return; }
 
         StateActionTuple old = SA.get(SA.size() - 2);

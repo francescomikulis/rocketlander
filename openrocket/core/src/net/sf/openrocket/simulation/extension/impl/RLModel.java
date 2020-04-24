@@ -89,6 +89,44 @@ public class RLModel {
         return possibleActionValues;
     }
 
+    private HashSet<Integer> generatePossibleActionValuesMDPInts(State state, String MDPActionSelectionField) {
+        HashMap<String, LinkedHashMap> definition = state.definition;
+        HashSet<Integer> possibleActionValues = new HashSet<>();
+
+        if (definition.containsKey("MDPSelectionFormulas") && definition.get("MDPSelectionFormulas").containsKey(MDPActionSelectionField)) {
+            ArrayList<String> advancedIfElseFormula = (ArrayList<String>)(definition.get("MDPSelectionFormulas").get(MDPActionSelectionField));
+
+            String selectedMDPName = null;
+            for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
+                String formulaConditions = advancedIfElseFormula.get(i);
+                ExpressionEvaluator.Formula formula = ExpressionEvaluator.getInstance().generateFormula(formulaConditions);
+                if (formula.evaluate(state) != 0) {  // 0 is false, 1 is true
+                    selectedMDPName = advancedIfElseFormula.get(i + 1);
+                    break;
+                }
+            }
+            if (selectedMDPName == null) {
+                if (advancedIfElseFormula.size() == 0) {
+                    System.out.println("Unable to generate MDP selection!");
+                } else {
+                    // default to last one!
+                    selectedMDPName = advancedIfElseFormula.get(advancedIfElseFormula.size() - 1);
+                }
+            }
+            // overrides the traditional options calculations of that MDP Field Name
+            if (selectedMDPName != null)
+                possibleActionValues.add((Integer)definition.get("childrenMDPIntegerOptions").get(selectedMDPName));
+        } else {
+            String stringMDPNames = (String) definition.get("childrenMDPOptions").get(MDPActionSelectionField);
+            String[] MDPNames = stringMDPNames.split(",");
+            for (String MDPName : MDPNames) {
+                // convert MDPName to fixed integer number
+                possibleActionValues.add((Integer) definition.get("childrenMDPIntegerOptions").get(MDPName));
+            }
+        }
+        return possibleActionValues;
+    }
+
     private boolean incrementIndeces(int[] indeces, int[] maxIndeces) {
         return _incrementIndeces(indeces, maxIndeces, indeces.length - 1);
     }
@@ -126,7 +164,15 @@ public class RLModel {
                     realField += state.symmetry;
             }
             actionStrings.add(realField);
-            possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), actionDefinition.get(actionField))));
+            if (state.definition.containsKey("childrenMDPOptions") && state.definition.get("childrenMDPOptions").containsKey(realField)) {
+                ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, realField));
+                possibleActionInts.add(childMDPOptions);
+                if (childMDPOptions.size() != 1) {
+                    System.out.println("Formula evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
+                }
+            } else {
+                possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), actionDefinition.get(actionField))));
+            }
         }
 
         int size = actionStrings.size();
@@ -154,47 +200,35 @@ public class RLModel {
         return possibleActions;
     }
 
-    private void addHierarchicalMDPSelection(SimulationStatus status, State currentState, CoupledStates coupledStates, Action action) {
-        if (action.definition.containsKey("MDPSelectionFormulas")) {
-            for (Object entryObject : action.definition.get("MDPSelectionFormulas").entrySet()) {
-                Map.Entry<String, ArrayList<String>> entry = (Map.Entry<String, ArrayList<String>>) entryObject;
-                String fieldName = entry.getKey();
-                ArrayList<String> advancedIfElseFormula = entry.getValue();
+    private void addHierarchicalMDPSelection(SimulationStatus status, CoupledStates coupledStates, Action action) {
+        if (action.definition.containsKey("childrenMDPOptions")) {
+            for (Object entryObject : action.definition.get("childrenMDPOptions").keySet()) {
+                String MDPActionSelectionField = (String)entryObject;
+                int SelectedMDPID = action.get(MDPActionSelectionField);
 
+                // reverse hashmap and find the MDP name
                 String selectedMDPName = null;
-                for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
-                    String formulaConditions = advancedIfElseFormula.get(i);
-                    ExpressionEvaluator.Formula formula = ExpressionEvaluator.getInstance().generateFormula(formulaConditions);
-                    if (formula.evaluate(currentState) != 0) {
-                        selectedMDPName = advancedIfElseFormula.get(i + 1);
-                        break;
-                    }
-                }
-                if (selectedMDPName == null) {
-                    if (advancedIfElseFormula.size() == 0) {
-                        System.out.println("Unable to generate MDP selection!");
-                    } else {
-                        // default to last one!
-                        selectedMDPName = advancedIfElseFormula.get(advancedIfElseFormula.size() - 1);
+                for (Object internalEntryObject : action.definition.get("childrenMDPIntegerOptions").entrySet()) {
+                    Map.Entry<String, Integer> internalEntry = (Map.Entry<String, Integer>) internalEntryObject;
+                    if (internalEntry.getValue() == SelectedMDPID) {
+                        selectedMDPName = internalEntry.getKey();
                     }
                 }
 
                 boolean actuallyCreateNewState = true;
                 String symmetryAxis = null;
-                if (fieldName.contains("X")) symmetryAxis = "X";
-                else if (fieldName.contains("Y")) symmetryAxis = "Y";
-
+                if (MDPActionSelectionField.contains("X")) symmetryAxis = "X";
+                else if (MDPActionSelectionField.contains("Y")) symmetryAxis = "Y";
                 if (symmetryAxis != null) {
                     if (simulationType == SimulationType._1D) {
                         actuallyCreateNewState = false;
                     }
                     if (simulationType == SimulationType._2D) {
-                        if (!fieldName.contains(symmetryAxis2D)) {
+                        if (!MDPActionSelectionField.contains(symmetryAxis2D)) {
                             actuallyCreateNewState = false;
                         }
                     }
                 }
-
                 if (selectedMDPName == null) actuallyCreateNewState = false;
 
                 if (actuallyCreateNewState) {
@@ -234,7 +268,7 @@ public class RLModel {
             }
 
             // dynamically adds entries to coupledStates - bad convention but required!
-            addHierarchicalMDPSelection(status, state, coupledStates, bestAction);
+            addHierarchicalMDPSelection(status, coupledStates, bestAction);
 
             // propagate selection
             for (State s: coupledStates)
@@ -268,8 +302,7 @@ public class RLModel {
 
         int methodCounter = 0;
         while (methodCounter != coupledStates.size()) {
-            State currentState = coupledStates.get(methodCounter);
-            addHierarchicalMDPSelection(status, currentState, coupledStates, coupledActions.get(methodCounter));
+            addHierarchicalMDPSelection(status, coupledStates, coupledActions.get(methodCounter));
             methodCounter += 1;
         }
 
@@ -317,39 +350,44 @@ public class RLModel {
     }
 
     public void updateStepStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, LinkedHashMap<String, Integer> lastUpdateSizes) {
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            if (stateHasChanged(SA.get("lander"), lastUpdateSizes.get("lander")))
-                methods.get("lander").updateStepFunction(SA.get("lander"));
+        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+            String methodName = entry.getKey();
+            ModelBaseImplementation method = entry.getValue();
+            ExpressionEvaluator.Formula reward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("reward"));
 
-        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if (stateHasChanged(SA.get("lander"), lastUpdateSizes.get("lander"))) {
-                methods.get("lander").updateStepLanderFunction(SA.get("lander"));
-            }
-            if (stateHasChanged(SA.get("stabilizerX"), lastUpdateSizes.get("stabilizerX"))) {
-                methods.get("stabilizer").updateStepStabilizerFunction(SA.get("stabilizerX"));
-            }
-            if (stateHasChanged(SA.get("stabilizerY"), lastUpdateSizes.get("stabilizerY"))) {
-                methods.get("stabilizer").updateStepStabilizerFunction(SA.get("stabilizerY"));
-            }
-            if (stateHasChanged(SA.get("reacherX"), lastUpdateSizes.get("reacherX"))) {
-                methods.get("reacher").updateStepReachingFunction(SA.get("reacherX"));
-            }
-            if (stateHasChanged(SA.get("reacherY"), lastUpdateSizes.get("reacherY"))) {
-                methods.get("reacher").updateStepReachingFunction(SA.get("reacherY"));
+            if (!methods.get(methodName).definition.get("meta").containsKey("symmetry")) {
+                methods.get(methodName).updateStepCustomFunction(SA.get(methodName), reward);
+            } else {
+                if (0.5 < randomGenerator.nextDouble()) {
+                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "X"), reward);
+                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "Y"), reward);
+                } else {
+                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "Y"), reward);
+                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "X"), reward);
+                }
             }
         }
     }
 
     public void updateTerminalStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, TerminationBooleans terminationBooleans) {
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            methods.get("lander").updateTerminalFunction(SA.get("lander"));
+        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+            String methodName = entry.getKey();
+            ModelBaseImplementation method = entry.getValue();
+            if (!method.definition.get("meta").containsKey("terminalReward")) continue;  // terminalReward not specified, skip method!
+            ExpressionEvaluator.Formula terminalReward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("terminalReward"));
+            ExpressionEvaluator.Formula reward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("reward"));
 
-        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            methods.get("lander").updateTerminalLanderFunction(SA.get("lander"));
-            methods.get("stabilizer").updateTerminalStabilizerFunction(SA.get("stabilizerX"));
-            methods.get("stabilizer").updateTerminalStabilizerFunction(SA.get("stabilizerY"));
-            methods.get("reacher").updateTerminalReachingFunction(SA.get("reacherX"));
-            methods.get("reacher").updateTerminalReachingFunction(SA.get("reacherY"));
+            if (!methods.get(methodName).definition.get("meta").containsKey("symmetry")) {
+                methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);
+            } else {
+                if (0.5 < randomGenerator.nextDouble()) {
+                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
+                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
+                } else {
+                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
+                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
+                }
+            }
         }
 
         if (terminationBooleans.totalSuccess()) {

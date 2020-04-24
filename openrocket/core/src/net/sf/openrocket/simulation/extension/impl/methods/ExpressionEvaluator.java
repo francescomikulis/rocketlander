@@ -20,6 +20,7 @@ public class ExpressionEvaluator {
             super("");
             this.function = function;
         }
+        public float evaluateFloat(StateActionClass object) { return (float)function.evaluate(object); }
         @Override
         public double evaluate(StateActionClass object) {
             return function.evaluate(object);
@@ -231,6 +232,7 @@ public class ExpressionEvaluator {
         else if (method.equals("Tan")) return Math.tan(inputs.get(0));
         else if (method.equals("Atan")) return Math.atan(inputs.get(0));
         else if (method.equals("Atan2")) return Math.atan2(inputs.get(0), inputs.get(1));
+        else if (method.equals("Todeg")) return inputs.get(0) * (180.0f / Math.PI);
 
         else if (method.equals("And")) return ((inputs.get(0) != 0) && (inputs.get(1) != 0)) ? 1 : 0;
         else if (method.equals("Or")) return ((inputs.get(0) != 0) || (inputs.get(1) != 0)) ? 1 : 0;
@@ -327,6 +329,7 @@ public class ExpressionEvaluator {
         if (firstString.equals("-")) {
             sign = -1;
             partial_input = partial_input.substring(1);
+            firstCharacter = partial_input.charAt(0);
         }
 
         // first letter is digit means it's a number

@@ -20,6 +20,8 @@ public class MonteCarlo extends ModelBaseImplementation {
             Function<State, Float> terminalReward,
             Function<State, Float> reward
     ) {
+        if(SA == null) { return; }
+
         int lastTimeStep = SA.size() - 1;
         StateActionTuple lastStateActionTuple = SA.get(lastTimeStep);
         int actualSteps = 0;

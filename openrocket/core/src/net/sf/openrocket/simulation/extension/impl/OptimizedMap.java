@@ -55,6 +55,8 @@ public class OptimizedMap {
         destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
         if (fromHashMap.containsKey("MDPSelectionFormulas"))
             destinationHashMap.put("MDPSelectionFormulas", deepCopyStringArrayListHashMap(fromHashMap.get("MDPSelectionFormulas")));
+        if (fromHashMap.containsKey("childrenMDPOptions"))
+            destinationHashMap.put("childrenMDPOptions", deepCopyStringHashMap(fromHashMap.get("childrenMDPOptions")));
         if (fromHashMap.containsKey("formulas"))
             destinationHashMap.put("formulas", deepCopyStringHashMap(fromHashMap.get("formulas")));
         if (fromHashMap.containsKey("noActionState"))
@@ -156,6 +158,11 @@ public class OptimizedMap {
         convertAnglesToRadians(landerDefinition);
         convertAnglesToRadians(reacherDefinition);
         convertAnglesToRadians(stabilizerDefinition);
+
+        buildChildrenMDPOptions(generalDefinition);
+        buildChildrenMDPOptions(landerDefinition);
+        buildChildrenMDPOptions(reacherDefinition);
+        buildChildrenMDPOptions(stabilizerDefinition);
 
         addIntegersToDefinition(generalDefinition);
         addIntegersToDefinition(landerDefinition);
@@ -262,6 +269,40 @@ public class OptimizedMap {
     private float[] allocateNewValueFunctionTable(int[] indeces) {
         System.out.println("Allocating stateSpace: " + indexProduct(indeces));
         return DynamicValueFunctionTable.callAllocation(indexProduct(indeces));
+    }
+
+    private void buildChildrenMDPOptions(HashMap<String, LinkedHashMap> MDPDefinition) {
+        if (!MDPDefinition.containsKey("childrenMDPOptions")) return;
+
+        LinkedHashMap<String, Integer> MDPIntegerHashMap = new LinkedHashMap<>();
+        for (Object entryObject : MDPDefinition.get("childrenMDPOptions").entrySet()) {
+            Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
+            String key = entry.getKey();
+            String[] MDPNames = ((String) entry.getValue()).split(",");
+            for (String MDPName: MDPNames) {
+                if (MDPIntegerHashMap.containsKey(MDPName)) continue;
+                MDPIntegerHashMap.put(MDPName, MDPIntegerHashMap.size());
+            }
+        }
+        MDPDefinition.put("childrenMDPIntegerOptions", MDPIntegerHashMap);
+
+        for (Object entryObject : MDPDefinition.get("actionDefinition").entrySet()) {
+            Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>) entryObject;
+            String key = entry.getKey();
+            if (key.contains("MDP")) {
+                LinkedHashMap<String, String> childrenMDPOptions = MDPDefinition.get("childrenMDPOptions");
+                String[] MDPNames = ((String) childrenMDPOptions.get(key)).split(",");
+                int minValue = MDPIntegerHashMap.size() - 1;
+                int maxValue = 0;
+                for (String MDPName: MDPNames) {
+                    minValue = Math.min(minValue, MDPIntegerHashMap.get(MDPName));
+                    maxValue = Math.max(maxValue, MDPIntegerHashMap.get(MDPName));
+                }
+                entry.getValue()[0] = minValue;
+                entry.getValue()[1] = maxValue;
+                entry.getValue()[2] = 1;
+            }
+        }
     }
 
     private void generateAndIndecesToDefinition(HashMap<String, LinkedHashMap> MDPDefinition){

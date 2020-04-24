@@ -69,6 +69,23 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         );
     }
 
+    /** Dynamic Implementation **/
+
+    public void updateStepCustomFunction(ArrayList<StateActionTuple> SA, Formula reward) {
+        //System.out.println("Step Combined method");
+        updateStepCommon(
+                SA,
+                reward::evaluateFloat
+        );
+    }
+    public void updateTerminalCustomFunction(ArrayList<StateActionTuple> SA, Formula terminalReward, Formula reward) {
+        updateTerminalCommon(
+                SA,
+                terminalReward::evaluateFloat,
+                reward::evaluateFloat
+        );
+    }
+
     /** Lander method references **/
 
     public void updateStepLanderFunction(ArrayList<StateActionTuple> SA) {
@@ -188,6 +205,9 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, LinkedHashMap> _landerDefinition = new HashMap<String, LinkedHashMap>() {{
         put("meta", new LinkedHashMap<String, String>() {{
             put("name", "lander");
+            put("methodName", "MC");
+            put("reward", "-Div(Abs(thrust),100.0)");
+            put("terminalReward", "-Abs(velocityZ)");
         }});
         put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             put("angle", new float[]{-35, 35, 5});
@@ -202,16 +222,24 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         }});
         put("actionDefinition", new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
+            //put("gimbalMDPX", new float[]{0, 0, 0});
+            //put("gimbalMDPY", new float[]{0, 0, 0});
         }});
+        // selection formulas override the traditionally available list of choices
         put("MDPSelectionFormulas", new LinkedHashMap<String, ArrayList<String>>() {{
-            put("gimbalXMDP", new ArrayList<>(Arrays.asList(
+            // format is like a swith case statement - last case is the default even if false!
+            put("gimbalMDPX", new ArrayList<>(Arrays.asList(
                     "And(Gt(Abs(positionX),3.0), FALSE)", "reacher",
                     "And(Le(Abs(positionX),3.0), Le(Abs(angleX),Asin(Div(PI,16))))", "stabilizer"
             )));
-            put("gimbalYMDP", new ArrayList<>(Arrays.asList(
+            put("gimbalMDPY", new ArrayList<>(Arrays.asList(
                     "And(Gt(Abs(positionY),3.0), FALSE)", "reacher",
                     "And(Le(Abs(positionY),3.0), Le(Abs(angleY),Asin(Div(PI,16))))", "stabilizer"
             )));
+        }});
+        put("childrenMDPOptions", new LinkedHashMap<String, String>() {{
+            put("gimbalMDPX", "stabilizer,reacher");
+            put("gimbalMDPY", "stabilizer,reacher");
         }});
         put("formulas", new LinkedHashMap<String, String>() {{
             put("position", "Add(Abs(positionX),Abs(positionY))");
@@ -233,6 +261,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, LinkedHashMap> _reacherDefinition = new HashMap<String, LinkedHashMap>() {{
         put("meta", new LinkedHashMap<String, String>() {{
             put("name", "reacher");
+            put("reward", "Add(-Mult(position, 10.0), -velocity)");
             put("symmetry", "angle,position,velocity,gimbal");
         }});
         put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
@@ -264,6 +293,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, LinkedHashMap> _stabilizerDefinition = new LinkedHashMap<String, LinkedHashMap>() {{
         put("meta", new LinkedHashMap<String, String>() {{
             put("name", "stabilizer");
+            put("reward", "Add(-Pow(Todeg(angle), 2.0), 1.0)");
             put("symmetry", "angle,angleVelocity,gimbal");
         }});
         put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
