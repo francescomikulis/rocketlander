@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import java.util.*;
 import java.io.Serializable;
 
 import com.sun.istack.internal.NotNull;
@@ -11,13 +12,9 @@ import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
-
-import java.lang.reflect.Field;
-import java.util.*;
-
-import static java.lang.Math.abs;
 import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
+
 
 public class StateActionTuple implements Serializable {
     public State state;
@@ -32,7 +29,7 @@ public class StateActionTuple implements Serializable {
         tupleRunAllDefinitionSpecial(this.state.definition);
     }
 
-    private void tupleRunAllDefinitionSpecial(HashMap<String, HashMap> definition) {
+    private void tupleRunAllDefinitionSpecial(HashMap<String, LinkedHashMap> definition) {
         // formula logic
 
         HashSet<String> symmetryAxes = null;
@@ -106,11 +103,11 @@ public class StateActionTuple implements Serializable {
 
     public static class StateActionClass implements Serializable {
         public HashMap<String, Integer> valueMap = new HashMap<>();
-        public HashMap<String, HashMap> definition;
+        public HashMap<String, LinkedHashMap> definition;
         public String symmetry = null;
 
         protected void runALLMDPDefinitionFormulas() {
-            HashMap<String, HashMap> originalDefinition = this.definition;
+            HashMap<String, LinkedHashMap> originalDefinition = this.definition;
             this.definition = landerDefinition;
             runMDPDefinitionFormulas();
             this.definition = reacherDefinition;
@@ -155,6 +152,7 @@ public class StateActionTuple implements Serializable {
 
         public void setSymmetry(String field, String axis) {
             symmetry = axis;
+            if (symmetry == null) return;
 
             String originalField = field + axis;
             String copyToField = field;
@@ -162,7 +160,7 @@ public class StateActionTuple implements Serializable {
             String formulaFieldName = "symmetryFormulas" + symmetry;
 
             if (!definition.containsKey(formulaFieldName)) {
-                definition.put(formulaFieldName, new HashMap<String, Formula>());
+                definition.put(formulaFieldName, new LinkedHashMap<String, Formula>());
             }
             if (!definition.get(formulaFieldName).containsKey(copyToField)) {
                 definition.get(formulaFieldName).put(copyToField, ExpressionEvaluator.getInstance().generateAssignmentFormula(originalField));
@@ -314,7 +312,7 @@ public class StateActionTuple implements Serializable {
             return resultString.replace(", )", ")");
         }
 
-        public static void applyDeepcopy(StateActionClass fromObject, StateActionClass toObject, HashMap<String, HashMap> definition) {
+        public static void applyDeepcopy(StateActionClass fromObject, StateActionClass toObject, HashMap<String, LinkedHashMap> definition) {
             toObject.definition = definition;
             toObject.valueMap = new HashMap<>();
             if (fromObject.symmetry != null)
@@ -339,12 +337,12 @@ public class StateActionTuple implements Serializable {
             runALLMDPDefinitionFormulas();
         }
 
-        public State(SimulationStatus status, HashMap<String, HashMap> definition) {
+        public State(SimulationStatus status, HashMap<String, LinkedHashMap> definition) {
             if (status == null) return;
             constructorCode(status, definition);
         }
 
-        private void constructorCode(SimulationStatus status, HashMap<String, HashMap> definition) {
+        private void constructorCode(SimulationStatus status, HashMap<String, LinkedHashMap> definition) {
             if (status == null) return;
             this.definition = definition;
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
@@ -418,7 +416,7 @@ public class StateActionTuple implements Serializable {
             return deepcopy(this.definition);
         }
 
-        public State deepcopy(HashMap<String, HashMap> definition) {
+        public State deepcopy(HashMap<String, LinkedHashMap> definition) {
             State newState = new State(null);
             applyDeepcopy(this, newState, definition);
             return newState;
@@ -426,11 +424,11 @@ public class StateActionTuple implements Serializable {
     }
 
     public static class Action extends StateActionClass {
-        public Action(HashMap<String, Integer> values, HashMap<String, HashMap> definition) {
+        public Action(HashMap<String, Integer> values, HashMap<String, LinkedHashMap> definition) {
             constructorCodeInts(values, definition);
         }
 
-        private Action(float thrust, float gimbalX, float gimbalY, HashMap<String, HashMap> definition) {
+        private Action(float thrust, float gimbalX, float gimbalY, HashMap<String, LinkedHashMap> definition) {
             HashMap<String, Float> values = new HashMap<String, Float>() {{
                 put("thrust", thrust);
                 put("gimbalX", gimbalX);
@@ -439,14 +437,14 @@ public class StateActionTuple implements Serializable {
             constructorCodeDoubles(values, definition);
         }
 
-        private void constructorCodeInts(HashMap<String, Integer> values, HashMap<String, HashMap> definition) {
+        private void constructorCodeInts(HashMap<String, Integer> values, HashMap<String, LinkedHashMap> definition) {
             this.definition = definition;
             for (Map.Entry<String, Integer> entry: values.entrySet())
                 set(entry.getKey(), entry.getValue());
             runMDPDefinitionFormulas();
         }
 
-        private void constructorCodeDoubles(HashMap<String, Float> values, HashMap<String, HashMap> definition) {
+        private void constructorCodeDoubles(HashMap<String, Float> values, HashMap<String, LinkedHashMap> definition) {
             System.out.println("This constructor is not recommended because it loses precision!!!");
             this.definition = definition;
             for (Map.Entry<String, Float> entry: values.entrySet())
@@ -485,7 +483,7 @@ public class StateActionTuple implements Serializable {
             return deepcopy(this.definition);
         }
 
-        public Action deepcopy(HashMap<String, HashMap> definition) {
+        public Action deepcopy(HashMap<String, LinkedHashMap> definition) {
             Action newAction = new Action(0, 0,0 , this.definition);
             applyDeepcopy(this, newAction, definition);
             return newAction;
@@ -500,7 +498,7 @@ public class StateActionTuple implements Serializable {
 
             for (Object objectField : definition.get("actionDefinition").keySet()) {
                 String actionField = (String)objectField;
-                double actionFieldValue = get(actionField);
+                double actionFieldValue = getDouble(actionField);
                 if (symmetryAxes.contains(actionField)) {  // double setting the value for certainty
                     state.setDouble(actionField + symmetry, actionFieldValue);
                 }
@@ -516,6 +514,8 @@ public class StateActionTuple implements Serializable {
     }
 
     public static class CoupledStates extends ArrayList<State> {
+        boolean frozen = false;
+        String toStringNames = null;
         public CoupledStates(State... _states) {
             for (State s : _states) {
                 super.add(s);
@@ -527,6 +527,28 @@ public class StateActionTuple implements Serializable {
                 copiedStateArrayList.add(s.deepcopy());
             }
             return new CoupledStates(copiedStateArrayList.toArray(new State[copiedStateArrayList.size()]));
+        }
+        public void freeze() { frozen = true; }
+        public String toStringNames() {
+            if (!frozen || toStringNames == null) {
+                StringBuilder tempNames = new StringBuilder();
+                for (State s: this)
+                    tempNames.append(s.definition.get("meta").get("name"));
+                toStringNames = tempNames.toString();
+            }
+            return toStringNames;
+        }
+        @Override
+        public String toString() {
+            return toStringNames();
+        }
+        @Override
+        public boolean add(State state) {
+            if (frozen) {
+                System.out.println("Cannot add state to a frozen CoupledStates!");
+                return false;
+            }
+            return super.add(state);
         }
         @Override
         public boolean equals(Object obj) {
@@ -546,15 +568,42 @@ public class StateActionTuple implements Serializable {
         }
     }
 
-    public static class CoupledActions extends StateActionClass {
-        private Action thrustAction;
-        private Action gimbalXAction;
-        private Action gimbalYAction;
-        public CoupledActions(@NotNull Action thrustAction, @NotNull Action gimbalXAction, @NotNull Action gimbalYAction) {
-            this.thrustAction = thrustAction;
-            this.gimbalXAction = gimbalXAction;
-            this.gimbalYAction = gimbalYAction;
+    public static class CoupledActions extends ArrayList<Action> {
+        private Action thrustAction = null;
+        private Action gimbalXAction = null;
+        private Action gimbalYAction = null;
+
+
+        public CoupledActions(Action... _actions) {
+            constructorCode(_actions);
         }
+
+        public CoupledActions(@NotNull Action thrustAction, @NotNull Action gimbalXAction, @NotNull Action gimbalYAction) {
+            ArrayList<Action> actions = new ArrayList<>();
+            actions.add(thrustAction);
+            actions.add(gimbalXAction);
+            actions.add(gimbalYAction);
+            constructorCode(actions.toArray(new Action[actions.size()]));
+        }
+
+        private void constructorCode(Action... _actions) {
+            for (Action a : _actions) {
+                add(a);
+            }
+        }
+
+        @Override
+        public boolean add(Action action) {
+            if (action.definition.get("actionDefinition").containsKey("thrust")) {
+                thrustAction = action;
+            } else if (action.definition.get("actionDefinition").containsKey("gimbalX") || (action.symmetry.equals("X") && action.definition.get("actionDefinition").containsKey("gimbal"))) {
+                gimbalXAction = action;
+            } else if (action.definition.get("actionDefinition").containsKey("gimbalY") || (action.symmetry.equals("Y") && action.definition.get("actionDefinition").containsKey("gimbal"))) {
+                gimbalYAction = action;
+            }
+            return super.add(action);
+        }
+
         private Action getAction(String field) {
             switch (field) {
                 case "thrust":
@@ -569,7 +618,9 @@ public class StateActionTuple implements Serializable {
         }
 
         public double getDouble(String field) {
-            return getAction(field).getDouble(field);
+            Action action = getAction(field);
+            if (action == null) return 0.0;
+            return action.getDouble(field);
         }
 
         public double getDouble(String field, String axis) {
@@ -585,7 +636,12 @@ public class StateActionTuple implements Serializable {
             if (getClass() != obj.getClass())
                 return false;
             CoupledActions other = (CoupledActions) obj;
-            return (thrustAction.equals(other.thrustAction) && gimbalXAction.equals(other.gimbalXAction) && gimbalYAction.equals(other.gimbalYAction));
+            if (this.size() != other.size()) return false;
+
+            boolean equals = true;
+            for (int i = 0; i < this.size(); i++)
+                equals = equals && this.get(i).equals(other.get(i));
+            return equals;
         }
     }
 

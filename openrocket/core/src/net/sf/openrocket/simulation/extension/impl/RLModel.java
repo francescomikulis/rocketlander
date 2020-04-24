@@ -150,38 +150,69 @@ public class RLModel {
         return possibleActions;
     }
 
-    // policy management
+    private void addHierarchicalMDPSelection(SimulationStatus status, State currentState, CoupledStates coupledStates, Action action) {
+        if (action.definition.containsKey("MDPSelectionFormulas")) {
+            for (Object entryObject : action.definition.get("MDPSelectionFormulas").entrySet()) {
+                Map.Entry<String, ArrayList<String>> entry = (Map.Entry<String, ArrayList<String>>) entryObject;
+                String fieldName = entry.getKey();
+                ArrayList<String> advancedIfElseFormula = entry.getValue();
 
-    private CoupledActions run_policy(CoupledStates coupledStates, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
-        ArrayList<Action> actions = new ArrayList<>();
-        CoupledActions coupledActions = null;
-
-        ArrayList<String> methodNameOrder = new ArrayList<>();
-
-        if (mapMethod == MapMethod.Traditional) {
-            methodNameOrder.add("general");
-        } if (mapMethod == MapMethod.Coupled) {
-            // select the order of the actions
-            methodNameOrder.add("lander");
-
-            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
-                if (conditionsForSecondaryMethod(coupledStates.get(0), symmetryAxis2D)) {
-                    methodNameOrder.add("reacher");
-                } else {
-                    methodNameOrder.add("stabilizer");
+                String selectedMDPName = null;
+                for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
+                    String formulaConditions = advancedIfElseFormula.get(i);
+                    ExpressionEvaluator.Formula formula = ExpressionEvaluator.getInstance().generateFormula(formulaConditions);
+                    if (formula.evaluate(currentState) != 0) {
+                        selectedMDPName = advancedIfElseFormula.get(i + 1);
+                        break;
+                    }
                 }
-            }
-            if (simulationType == SimulationType._3D) {
-                if (conditionsForSecondaryMethod(coupledStates.get(0), symmetryAxis3D)) {
-                    methodNameOrder.add("reacher");
-                } else {
-                    methodNameOrder.add("stabilizer");
+                if (selectedMDPName == null) {
+                    if (advancedIfElseFormula.size() == 0) {
+                        System.out.println("Unable to generate MDP selection!");
+                    } else {
+                        // default to last one!
+                        selectedMDPName = advancedIfElseFormula.get(advancedIfElseFormula.size() - 1);
+                    }
+                }
+
+                boolean actuallyCreateNewState = true;
+                String symmetryAxis = null;
+                if (fieldName.contains("X")) symmetryAxis = "X";
+                else if (fieldName.contains("Y")) symmetryAxis = "Y";
+
+                if (symmetryAxis != null) {
+                    if (simulationType == SimulationType._1D) {
+                        actuallyCreateNewState = false;
+                    }
+                    if (simulationType == SimulationType._2D) {
+                        if (!fieldName.contains(symmetryAxis2D)) {
+                            actuallyCreateNewState = false;
+                        }
+                    }
+                }
+
+                if (selectedMDPName == null) actuallyCreateNewState = false;
+
+                if (actuallyCreateNewState) {
+                    State childState = new State(status, methods.get(selectedMDPName).definition);
+                    childState.setAllSymmetries(symmetryAxis);
+                    coupledStates.add(childState);
                 }
             }
         }
+    }
+
+    // policy management
+
+    private Object[] run_policy(SimulationStatus status, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+        ArrayList<Action> actions = new ArrayList<>();
+        CoupledStates coupledStates = new CoupledStates();
+        coupledStates.add(new State(status, primaryMethod.definition));
 
         int methodCounter = 0;
-        for (String methodName: methodNameOrder) {
+        while (methodCounter != coupledStates.size()) {
+            State state = coupledStates.get(methodCounter);
+            String methodName = (String)state.definition.get("meta").get("name");
             ModelBaseImplementation method = methods.get(methodName);
 
             ArrayList<StateActionTuple> stateActionTuples;
@@ -197,12 +228,16 @@ public class RLModel {
 
             State lastState = getLastStateOrNull(stateActionTuples);
             Action bestAction = getLastActionOrNull(stateActionTuples);
-            State state = coupledStates.get(methodCounter);
             if (needToChooseNewAction(state, lastState, bestAction)) {
                 HashSet<Action> possibleActions = generatePossibleActions(state);
                 bestAction = policy(state, possibleActions, method);
+                state.setAllSymmetries(bestAction.symmetry);
                 addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestAction), stateActionTuples);
             }
+
+            // dynamically adds entries to coupledStates - bad convention but required!
+            addHierarchicalMDPSelection(status, state, coupledStates, bestAction);
+
             // propagate selection
             for (State s: coupledStates)
                 bestAction.applyDefinitionValuesToState(s);
@@ -210,21 +245,15 @@ public class RLModel {
             methodCounter += 1;
         }
 
+        coupledStates.freeze();
+
         // need to update the formulas after getting the new data
         for (State s: coupledStates)
             s.runMDPDefinitionFormulas();
 
-        if (actions.size() == 1) {
-            coupledActions = combineCoupledTripleActions(actions.get(0), actions.get(0), actions.get(0));
-        } else if (actions.size() == 2) {
-            coupledActions = combineCoupledTripleActions(actions.get(0), actions.get(1), actions.get(1));
-        } else if (actions.size() == 3) {
-            coupledActions = combineCoupledTripleActions(actions.get(0), actions.get(1), actions.get(2));
-        } else {
-            System.out.println("Issue in the action definition - generating too many actions!!");
-        }
+        CoupledActions coupledActions = new CoupledActions(actions.toArray(new Action[actions.size()]));
 
-        return coupledActions;
+        return new Object[]{coupledStates, coupledActions};
     }
 
     private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> SA) {
@@ -235,81 +264,26 @@ public class RLModel {
         }
     }
 
-    public CoupledStates generateNewCoupledStates(SimulationStatus status) {
-        ArrayList<State> states = new ArrayList<>();
+    public CoupledStates generateCoupledStatesBasedOnLastActions(SimulationStatus status, CoupledActions coupledActions) {
+        CoupledStates coupledStates = new CoupledStates();
+        coupledStates.add(new State(status, primaryMethod.definition));
 
-        State primaryState = new State(status, primaryMethod.definition);
-        states.add(primaryState);
-        if (OptimizedMap.mapMethod == MapMethod.Traditional) {
-            return new CoupledStates(states.toArray(new State[states.size()]));
+        int methodCounter = 0;
+        while (methodCounter != coupledStates.size()) {
+            State currentState = coupledStates.get(methodCounter);
+            addHierarchicalMDPSelection(status, currentState, coupledStates, coupledActions.get(methodCounter));
+            methodCounter += 1;
         }
 
-        if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
-            State secondaryState = null;
-            if (conditionsForSecondaryMethod(primaryState, symmetryAxis2D))
-                secondaryState = new State(status, secondaryMethod.definition);
-            else
-                secondaryState = new State(status, tertiaryMethod.definition);
-            secondaryState.setAllSymmetries(symmetryAxis2D);
-            states.add(secondaryState);
-        }
-
-        if (simulationType == SimulationType._3D) {
-            State tertiaryState = null;
-            if (conditionsForSecondaryMethod(primaryState, symmetryAxis3D))
-                tertiaryState = new State(status, secondaryMethod.definition);
-            else
-                tertiaryState = new State(status, tertiaryMethod.definition);
-            tertiaryState.setAllSymmetries(symmetryAxis3D);
-            states.add(tertiaryState);
-        }
-        return new CoupledStates(states.toArray(new State[states.size()]));
+        return coupledStates;
     }
 
-    private boolean conditionsForSecondaryMethod(StateActionClass stateActionClass, String axis) {
-        // return false;
-        return ((Math.abs(stateActionClass.getDouble("position" + axis)) >= 3.0) && (Math.abs(stateActionClass.getDouble("angle" + axis)) <= Math.asin(PI/16)));
+    public Object[] generateStateAndActionAndStoreHistory(SimulationStatus status, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+        return run_policy(status, SAPrimary, SAGimbalX, SAGimbalY);
     }
 
-
-    public void updateStateBeforeNextAction(CoupledStates coupledStates, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            if (!SAPrimary.isEmpty()) {
-                Action lastAction = SAPrimary.get(SAPrimary.size() - 1).action;
-                State state = coupledStates.get(0);
-                lastAction.applyDefinitionValuesToState(state);
-            }
-        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if (!SAPrimary.isEmpty()) {
-                Action lastLanderAction = SAPrimary.get(SAPrimary.size() - 1).action;
-                State primaryState = coupledStates.get(0);
-                lastLanderAction.applyDefinitionValuesToState(primaryState);
-                /*
-                // DYNAMIC
-                for (Object objectField: lastLanderAction.definition.get("actionDefinition").keySet()) {
-                    String stateField = (String)objectField;
-                    state.set(stateField, lastLanderAction.get(stateField));
-                }*/
-            }
-            if (!SAGimbalX.isEmpty()) {
-                Action lastGimbalXAction = SAGimbalX.get(SAGimbalX.size() - 1).action;
-                State gimbalXState = coupledStates.get(1);
-                lastGimbalXAction.applyDefinitionValuesToState(gimbalXState);
-            }
-            if (!SAGimbalY.isEmpty()) {
-                Action lastGimbalYAction = SAGimbalY.get(SAGimbalY.size() - 1).action;
-                State gimbalYState = coupledStates.get(2);
-                lastGimbalYAction.applyDefinitionValuesToState(gimbalYState);
-            }
-        }
-    }
-
-    public CoupledActions generateAction(CoupledStates state, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
-        return run_policy(state, SAPrimary, SAGimbalX, SAGimbalY);
-    }
-
-    public CoupledActions generateAction(CoupledStates state, ArrayList<StateActionTuple> SA) {
-        return generateAction(state, SA, new ArrayList<>(), new ArrayList<>());
+    public Object[] generateStateAndActionAndStoreHistory(SimulationStatus status, ArrayList<StateActionTuple> SA) {
+        return generateStateAndActionAndStoreHistory(status, SA, new ArrayList<>(), new ArrayList<>());
     }
 
     private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
@@ -465,33 +439,16 @@ public class RLModel {
         if (episodeStateActionsPrimary.size() == 0)
             return null;
 
-        CoupledActions coupledActions = null;
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            Action action = episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action;
-            coupledActions = combineCoupledTripleActions(action, action, action);
-        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-
-            if (simulationType == SimulationType._1D) {
-                coupledActions = combineCoupledTripleActions(
-                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
-                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
-                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action
-                );
-            } else if (simulationType == SimulationType._2D) {
-                coupledActions = combineCoupledTripleActions(
-                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
-                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
-                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action
-                );
-            } else if (simulationType == SimulationType._3D) {
-                coupledActions = combineCoupledTripleActions(
-                        episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action,
-                        episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action,
-                        episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action
-                );
+        ArrayList<Action> actions = new ArrayList<>();
+        actions.add(episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action);
+        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
+            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
+                actions.add(episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action);
             }
+            if (simulationType == SimulationType._3D)
+                actions.add(episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action);
         }
-        return coupledActions;
+        return new CoupledActions(actions.toArray(new Action[actions.size()]));
     }
 
 

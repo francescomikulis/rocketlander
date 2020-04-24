@@ -66,27 +66,16 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private boolean setupStateActionAndStore(SimulationStatus status) {
         CoupledStates oldState = state;
-        state = model.generateNewCoupledStates(status);
-        if (dataStoreStateIndexField.size() == 0) {  // 'lazy' initialization of data storage format
-            memoizeSmartGuesses();
-        }
 
-        model.updateStateBeforeNextAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        Object[] stateActionReturnObject = model.generateStateAndActionAndStoreHistory(status, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        CoupledStates newState = (CoupledStates) stateActionReturnObject[0];
+        CoupledActions newAction = (CoupledActions) stateActionReturnObject[1];
 
-        CoupledActions newAction = model.generateAction(state, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
-        if (newAction != null) {
-            if ((action == null) || !action.equals(newAction)) {
-                // System.out.println("NEW action thrust = " + newAction.getDouble("thrust"));
-                //System.out.println("NEW action name = " + newAction.definition.get("meta").get("name"));
-                //System.out.println("NEW action hashCode = " + newAction.hashCode());
-                if (action != null) {
-                    //System.out.println("OLD action thrust = " + action.getDouble("thrust"));
-                    //System.out.println("OLD action name = " + action.definition.get("meta").get("name"));
-                    //System.out.println("OLD action hashCode = " + action.hashCode());
-                }
-            }
-            action = newAction;
-        }
+        state = newState;
+        action = newAction;
+
+        memoizeSmartGuesses(state.toStringNames());
+
         return true;
     }
 
@@ -259,7 +248,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (model.simulationType == SimulationType._1D) {
             gimbalX = 0.0;
             gimbalY = 0.0;
-        } else if (model.simulationType == SimulationType._1D) {
+        } else if (model.simulationType == SimulationType._2D) {
             gimbalY = 0.0;
         }
         return calculateAcceleration(status, gimbalX, gimbalY);
@@ -268,7 +257,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        // DO NOT USE THIS LINE OF CODE IT BREAKS THE SIMULATOR STEPS  (if used in postStep)--> stabilizeRocketBasedOnSimType(status);
+        stabilizeRocketBasedOnSimType(status);
         setupStateActionAndStore(status);
         storeUpdatedFlightConditions();
 
@@ -295,7 +284,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         System.out.println("");
          */
 
-        terminationBooleans = model.getValueFunctionTable().getTerminationValidity(model.generateNewCoupledStates(status));
+        terminationBooleans = model.getValueFunctionTable().getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
         if (!hasCompletedTerminalUpdate) {
             model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleans);
             hasCompletedTerminalUpdate = true;
@@ -448,6 +437,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
      * This will modify the flightStatus and trigger the data storage for plotting.
      * **/
 
+    // Object[0th] entry is the integer of the access to the index of the state arralist
+    // Object[1st] entry is the real name of that field
+    HashMap<String, HashMap<String, Object[]>> dataStoreState = new HashMap<>();
+
     HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
     HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
 
@@ -462,10 +455,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private void storeUpdatedFlightConditions() {
-        this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate("position"));
-        this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate("velocity"));
-        this.RLVectoringFlightConditions.setRLAngle(getSmartGuessCoordinate("angle"));
-        this.RLVectoringFlightConditions.setRLAngleVelocity(getSmartGuessCoordinate("angleVelocity"));
+        String stateNames = state.toStringNames();
+        this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate(stateNames, "position"));
+        this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate(stateNames, "velocity"));
+        this.RLVectoringFlightConditions.setRLAngle(getSmartGuessCoordinate(stateNames, "angle"));
+        this.RLVectoringFlightConditions.setRLAngleVelocity(getSmartGuessCoordinate(stateNames, "angleVelocity"));
 
         // multiplication is for visualization purposes
         this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
@@ -476,37 +470,46 @@ public class RocketLanderListener extends AbstractSimulationListener {
         this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
     }
 
-    private Coordinate getSmartGuessCoordinate(String field) {
-        return new Coordinate(getSmartGuess(field + "X"), getSmartGuess(field + "Y"), getSmartGuess(field + "Z"));
+    private Coordinate getSmartGuessCoordinate(String stateNames, String field) {
+        return new Coordinate(getSmartGuess(stateNames, field + "X"), getSmartGuess(stateNames, field + "Y"), getSmartGuess(stateNames,field + "Z"));
     }
 
-    private Double getSmartGuess(String originalField) {
-        if (!dataStoreStateIndexField.containsKey(originalField)) {
-            return state.get(0).getDouble(originalField);  // no MDP has that field defined!
+    private Double getSmartGuess(String stateNames, String originalField) {
+        if (!dataStoreState.containsKey(stateNames)) {
+            memoizeSmartGuesses(stateNames);
         }
-        return state.get(dataStoreStateIndexField.get(originalField)).getDouble(dataStoreStateFieldName.get(originalField));
+
+        if (!dataStoreState.get(stateNames).containsKey(originalField)) {
+            return state.get(0).getDouble(originalField);
+        } else {
+            int index = (int)dataStoreState.get(stateNames).get(originalField)[0];
+            String realField = (String)dataStoreState.get(stateNames).get(originalField)[1];
+            return state.get(index).getDouble(realField);
+        }
     }
 
-    private void memoizeSmartGuesses() {
-        storeSmartGuess("positionX");
-        storeSmartGuess("positionY");
-        storeSmartGuess("positionZ");
-        storeSmartGuess("angleX");
-        storeSmartGuess("angleY");
-        storeSmartGuess("angleZ");
-        storeSmartGuess("angleVelocityX");
-        storeSmartGuess("angleVelocityY");
-        storeSmartGuess("angleVelocityZ");
-        storeSmartGuess("velocityX", "angle");
-        storeSmartGuess("velocityY", "angle");
-        storeSmartGuess("velocityZ", "angle");
+    private void memoizeSmartGuesses(String stateNames) {
+        if (dataStoreState.containsKey(stateNames)) return;
+        dataStoreState.put(stateNames, new HashMap<>());
+        storeSmartGuess(stateNames, "positionX");
+        storeSmartGuess(stateNames, "positionY");
+        storeSmartGuess(stateNames, "positionZ");
+        storeSmartGuess(stateNames, "angleX");
+        storeSmartGuess(stateNames, "angleY");
+        storeSmartGuess(stateNames,"angleZ");
+        storeSmartGuess(stateNames, "angleVelocityX");
+        storeSmartGuess(stateNames, "angleVelocityY");
+        storeSmartGuess(stateNames, "angleVelocityZ");
+        storeSmartGuess(stateNames, "velocityX", "angle");
+        storeSmartGuess(stateNames, "velocityY", "angle");
+        storeSmartGuess(stateNames, "velocityZ", "angle");
     }
 
-    private Double storeSmartGuess(String originalField) {
-        return storeSmartGuess(originalField, null);
+    private Double storeSmartGuess(String stateNames, String originalField) {
+        return storeSmartGuess(stateNames, originalField, null);
     }
 
-    private Double storeSmartGuess(String originalField, String skipContainsString) {
+    private Double storeSmartGuess(String stateNames, String originalField, String skipContainsString) {
         String field = originalField + "";
         String potentialAxis = field.substring(field.length() - 1);
         boolean preferSymmetry = false;
@@ -516,25 +519,28 @@ public class RocketLanderListener extends AbstractSimulationListener {
         } else {
             if (!potentialAxis.equals("Z")) potentialAxis = null;
         }
-        Double result = storeSmartGuessCoordinateComponent(originalField, field, potentialAxis, preferSymmetry, skipContainsString);
+        dataStoreState.get(stateNames).put(originalField, new Object[2]);
+        Double result = storeSmartGuessCoordinateComponent(stateNames, originalField, field, potentialAxis, preferSymmetry, skipContainsString);
         if (result == null) {
+            // remove that field because it was not found!
+            dataStoreState.get(stateNames).remove(originalField);
             // no MDP has that field defined!
             result = state.get(0).getDouble(originalField);
         }
         return result;
     }
 
-    private Double storeSmartGuessCoordinateComponent(String originalField, String field, String enforceSymmetryAxis, boolean preferSymmetry, String skipContainsString) {
+    private Double storeSmartGuessCoordinateComponent(String stateNames, String originalField, String field, String enforceSymmetryAxis, boolean preferSymmetry, String skipContainsString) {
         String lowercaseField = field.toLowerCase();
         if (preferSymmetry) {
-            return storeBestGuessField(originalField, lowercaseField, enforceSymmetryAxis, skipContainsString);
+            return storeBestGuessField(stateNames, originalField, lowercaseField, enforceSymmetryAxis, skipContainsString);
         } else {
             // lowercaseField has the required axis
-            return storeBestGuessField(originalField, lowercaseField, null, skipContainsString);
+            return storeBestGuessField(stateNames, originalField, lowercaseField, null, skipContainsString);
         }
     }
 
-    private Double storeBestGuessField(String originalField, String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
+    private Double storeBestGuessField(String stateNames, String originalField, String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
         for (int i = 0; i < state.size(); i++) {
             State s = state.get(i);
             if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
@@ -542,6 +548,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
                     if (definitionField.toLowerCase().equals(lowercaseField)) {
                         dataStoreStateIndexField.put(originalField, i);
                         dataStoreStateFieldName.put(originalField, definitionField);
+                        dataStoreState.get(stateNames).get(originalField)[0] = i;
+                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
                         return s.getDouble(definitionField);
                     }
                 }
@@ -556,6 +564,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
                     if (definitionField.toLowerCase().contains(lowercaseField)) {
                         dataStoreStateIndexField.put(originalField, i);
                         dataStoreStateFieldName.put(originalField, definitionField);
+                        dataStoreState.get(stateNames).get(originalField)[0] = i;
+                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
                         return s.getDouble(definitionField);
                     }
                 }

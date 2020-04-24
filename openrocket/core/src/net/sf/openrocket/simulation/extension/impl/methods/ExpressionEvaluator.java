@@ -271,7 +271,6 @@ public class ExpressionEvaluator {
             if (character.equals("(")) delta +=1;
             else if (character.equals(")")) delta -=1;
         }
-        System.out.println("Delta" + delta);
         return delta == 0;
     }
 
@@ -313,8 +312,6 @@ public class ExpressionEvaluator {
         if (!function_is_valid_format(sentence)) {
             System.out.println("Inputted string formula has mismatched number of open and closed parenthesis!");
         }
-        System.out.println(sentence);
-
         Term resultingTerm = recursively_generate_terms(sentence);
         if (resultingTerm.getClass().equals(Constant.class))
             return new Function("", new ArrayList<Term>(Arrays.asList(resultingTerm)));
@@ -333,7 +330,7 @@ public class ExpressionEvaluator {
         }
 
         // first letter is digit means it's a number
-        if (Character.isDigit(firstCharacter) || partial_input.equals("PI")) {
+        if (Character.isDigit(firstCharacter) || partial_input.equals(partial_input.toUpperCase())) {
             return_term = new Constant(partial_input, parseConstant(partial_input));
             return_term.sign = sign;
             return return_term;
@@ -404,8 +401,6 @@ public class ExpressionEvaluator {
             assert false;
         }
 
-        System.out.println("Function name: " + function_name + ", Input terms: " + input_terms.toString());
-
         return_term = new Function(function_name, input_terms);
         return_term.sign = sign;
         return return_term;
@@ -413,7 +408,9 @@ public class ExpressionEvaluator {
 
     private static double parseConstant(String partial_input) {
         if (partial_input.equals("PI")) return Math.PI;
-        else if (partial_input.equals("e")) return Math.exp(1);
+        else if (partial_input.equals("E")) return Math.exp(1);
+        else if (partial_input.equals("TRUE")) return 1.0;
+        else if (partial_input.equals("FALSE")) return 0.0;
         return Double.parseDouble(partial_input);
     }
 

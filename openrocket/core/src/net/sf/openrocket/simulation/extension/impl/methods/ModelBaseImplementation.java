@@ -5,16 +5,13 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public abstract class ModelBaseImplementation implements ModelInterface {
     OptimizedMap valueFunctionTable = null;
-    public HashMap<String, HashMap> definition;
+    public HashMap<String, LinkedHashMap> definition;
     float stepDiscount = 0.9f;
     float terminalDiscount = 0.999f;
     float alpha = 0.1f;
@@ -154,12 +151,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     }
 
     // general ----- NOTE: PRECISIONS ARE NOT CORRECT!
-    public static HashMap<String, HashMap> generalDefinition = new HashMap<String, HashMap>();
-    public static HashMap<String, HashMap> _generalDefinition = new HashMap<String, HashMap>() {{
-        put("meta", new HashMap<String, String>() {{
+    public static HashMap<String, LinkedHashMap> generalDefinition = new HashMap<String, LinkedHashMap>();
+    public static HashMap<String, LinkedHashMap> _generalDefinition = new HashMap<String, LinkedHashMap>() {{
+        put("meta", new LinkedHashMap<String, String>() {{
             put("name", "general");
         }});
-        put("stateDefinition",  new HashMap<String, float[]>() {{
+        put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             //put("positionX", new float[]{0, 1, 0.25f});
             //put("positionY", new float[]{0, 1, 0.25f});
             put("log2PositionZ", new float[]{0, 5.6f, 0.6f});
@@ -168,18 +165,18 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("log2AngleX", new float[]{-2, 2, 0.5f});
             put("log2AngleY", new float[]{-2, 2, 0.5f});
         }});
-        put("actionDefinition", new HashMap<String, float[]>() {{
+        put("actionDefinition", new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
             put("gimbalX", new float[]{-3, 3, 1f});
             put("gimbalY", new float[]{-3, 3, 1f});
         }});
-        put("formulas", new HashMap<String, String>() {{
+        put("formulas", new LinkedHashMap<String, String>() {{
             put("log2AngleX", "Mult(Signum(angleX),Log2(Add(Abs(angleX),1)))");
             put("log2AngleY", "Mult(Signum(angleY),Log2(Add(Abs(angleY),1)))");
             put("log2PositionZ", "Log2(Add(positionZ,1))");
             put("log2VelocityZ", "Mult(Signum(velocityZ),Log2(Add(Abs(velocityZ),1)))");
         }});
-        put("successConditions", new HashMap<String, float[]>() {{
+        put("successConditions", new LinkedHashMap<String, float[]>() {{
             put("velocityZ", new float[]{-2, 2});
             // put("position", new float[]{-4, 4});
             put("angle", new float[]{-8, 8});
@@ -187,12 +184,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     }};
 
 
-    public static HashMap<String, HashMap> landerDefinition = new HashMap<String, HashMap>();
-    public static HashMap<String, HashMap> _landerDefinition = new HashMap<String, HashMap>() {{
-        put("meta", new HashMap<String, String>() {{
+    public static HashMap<String, LinkedHashMap> landerDefinition = new HashMap<>();
+    public static HashMap<String, LinkedHashMap> _landerDefinition = new HashMap<String, LinkedHashMap>() {{
+        put("meta", new LinkedHashMap<String, String>() {{
             put("name", "lander");
         }});
-        put("stateDefinition",  new HashMap<String, float[]>() {{
+        put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             put("angle", new float[]{-35, 35, 5});
             // put("position", new float[]{0, 8, 2});
 
@@ -203,10 +200,20 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("log2VelocityZ", new float[]{-5, 2.3f, 0.3f});
             // put("log8VelocityZ", new float[]{-1.6f, 0.8f, 0.05f});
         }});
-        put("actionDefinition", new HashMap<String, float[]>() {{
+        put("actionDefinition", new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
         }});
-        put("formulas", new HashMap<String, String>() {{
+        put("MDPSelectionFormulas", new LinkedHashMap<String, ArrayList<String>>() {{
+            put("gimbalXMDP", new ArrayList<>(Arrays.asList(
+                    "And(Gt(Abs(positionX),3.0), FALSE)", "reacher",
+                    "And(Le(Abs(positionX),3.0), Le(Abs(angleX),Asin(Div(PI,16))))", "stabilizer"
+            )));
+            put("gimbalYMDP", new ArrayList<>(Arrays.asList(
+                    "And(Gt(Abs(positionY),3.0), FALSE)", "reacher",
+                    "And(Le(Abs(positionY),3.0), Le(Abs(angleY),Asin(Div(PI,16))))", "stabilizer"
+            )));
+        }});
+        put("formulas", new LinkedHashMap<String, String>() {{
             put("position", "Add(Abs(positionX),Abs(positionY))");
             put("angle", "Add(Abs(angleX),Abs(angleY))");
             put("log2PositionZ", "Log2(Add(positionZ,1))");
@@ -216,19 +223,19 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
             // put("MDPDecision", "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))");
         }});
-        put("successConditions", new HashMap<String, float[]>() {{
+        put("successConditions", new LinkedHashMap<String, float[]>() {{
             put("velocityZ", new float[]{-2, 2});
         }});
     }};
 
     // reacher
-    public static HashMap<String, HashMap> reacherDefinition = new HashMap<String, HashMap>();
-    public static HashMap<String, HashMap> _reacherDefinition = new HashMap<String, HashMap>() {{
-        put("meta", new HashMap<String, String>() {{
+    public static HashMap<String, LinkedHashMap> reacherDefinition = new HashMap<>();
+    public static HashMap<String, LinkedHashMap> _reacherDefinition = new HashMap<String, LinkedHashMap>() {{
+        put("meta", new LinkedHashMap<String, String>() {{
             put("name", "reacher");
             put("symmetry", "angle,position,velocity,gimbal");
         }});
-        put("stateDefinition",  new HashMap<String, float[]>() {{
+        put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
             // put("angle", new float[]{-15, 15, 5});
             put("log2Angle", new float[]{-2, 2, 0.5f});
@@ -236,46 +243,46 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             // put("log2Position", new float[]{-4, 4, 1f});
             put("velocity", new float[]{-3, 3, 1});
         }});
-        put("actionDefinition", new HashMap<String, float[]>() {{
+        put("actionDefinition", new LinkedHashMap<String, float[]>() {{
             put("gimbal", new float[]{-3, 3, 1});
         }});
-        put("noActionState", new HashMap<String, float[]>() {{
+        put("noActionState", new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0.0f});
         }});
-        put("formulas", new HashMap<String, String>() {{
+        put("formulas", new LinkedHashMap<String, String>() {{
             put("log2Angle", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
             put("log2Position", "Mult(Signum(position),Log2(Add(Abs(position),1)))");
         }});
-        put("successConditions", new HashMap<String, float[]>() {{
+        put("successConditions", new LinkedHashMap<String, float[]>() {{
             put("position", new float[]{-10, 10});
             put("angle", new float[]{-12, 12});
         }});
     }};
 
     // stabilizer
-    public static HashMap<String, HashMap> stabilizerDefinition = new HashMap<String, HashMap>();
-    public static HashMap<String, HashMap> _stabilizerDefinition = new HashMap<String, HashMap>() {{
-        put("meta", new HashMap<String, String>() {{
+    public static HashMap<String, LinkedHashMap> stabilizerDefinition = new LinkedHashMap<>();
+    public static HashMap<String, LinkedHashMap> _stabilizerDefinition = new LinkedHashMap<String, LinkedHashMap>() {{
+        put("meta", new LinkedHashMap<String, String>() {{
             put("name", "stabilizer");
             put("symmetry", "angle,angleVelocity,gimbal");
         }});
-        put("stateDefinition",  new HashMap<String, float[]>() {{
+        put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             put("time", new float[]{0, 5, 1});
             put("thrust", new float[]{0, 1, 0.25f});
             // put("angle", new float[]{-12, 12, 2});
             put("log2Angle", new float[]{-2.195f, 2.195f, 0.3659f});
             put("angleVelocity", new float[]{-12, 12, 4});
         }});
-        put("actionDefinition", new HashMap<String, float[]>() {{
+        put("actionDefinition", new LinkedHashMap<String, float[]>() {{
             put("gimbal", new float[]{-3, 3, 1f});
         }});
-        put("noActionState", new HashMap<String, float[]>() {{
+        put("noActionState", new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0.0f});
         }});
-        put("formulas", new HashMap<String, String>() {{
+        put("formulas", new LinkedHashMap<String, String>() {{
             put("log2Angle", "Mult(Signum(angle),Log2(Add(Abs(angle),1)))");
         }});
-        put("successConditions", new HashMap<String, float[]>() {{
+        put("successConditions", new LinkedHashMap<String, float[]>() {{
             put("angle", new float[]{-8, 8});
             // put("angleVelocity", new float[]{-8, 8});
         }});

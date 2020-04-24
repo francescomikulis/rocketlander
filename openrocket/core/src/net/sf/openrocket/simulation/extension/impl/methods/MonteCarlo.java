@@ -6,11 +6,12 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.function.BiFunction;
 
 public class MonteCarlo extends ModelBaseImplementation {
-    public MonteCarlo (HashMap<String, HashMap> definition) {
+    public MonteCarlo (HashMap<String, LinkedHashMap> definition) {
         this.definition = definition;
     }
     public float getExplorationPercentage() { return 0.03f; }

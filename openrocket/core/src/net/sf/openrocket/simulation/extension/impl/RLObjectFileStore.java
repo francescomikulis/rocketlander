@@ -10,7 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedHashMap;
 
 /*
 https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
@@ -48,12 +48,12 @@ public class RLObjectFileStore {
 
     // starting to attempt to move the actionValueFunction to the MDP Definition
 
-    public void storeDefinition(HashMap<String, HashMap> definition, String fileName) {
+    public void storeDefinition(HashMap<String, LinkedHashMap> definition, String fileName) {
         storeObject(definition, fileName);
     }
 
-    public HashMap<String, HashMap> readDefinition(String fileName){
-        HashMap<String, HashMap> definition = (HashMap<String, HashMap>) readObjects(fileName);
+    public HashMap<String, LinkedHashMap> readDefinition(String fileName){
+        HashMap<String, LinkedHashMap> definition = (HashMap<String, LinkedHashMap>) readObjects(fileName);
         return definition;
         // return new OptimizedMap(null, null, null);
     }

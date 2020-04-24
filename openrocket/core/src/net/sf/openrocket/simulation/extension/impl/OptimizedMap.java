@@ -49,10 +49,12 @@ public class OptimizedMap {
         constructorTraditional(newValueFunctionTable);
     }
 
-    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, HashMap> fromHashMap, HashMap<String, HashMap> destinationHashMap) {
+    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, LinkedHashMap> fromHashMap, HashMap<String, LinkedHashMap> destinationHashMap) {
         destinationHashMap.put("meta", deepCopyStringHashMap(fromHashMap.get("meta")));
         destinationHashMap.put("stateDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("stateDefinition")));
         destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
+        if (fromHashMap.containsKey("MDPSelectionFormulas"))
+            destinationHashMap.put("MDPSelectionFormulas", deepCopyStringArrayListHashMap(fromHashMap.get("MDPSelectionFormulas")));
         if (fromHashMap.containsKey("formulas"))
             destinationHashMap.put("formulas", deepCopyStringHashMap(fromHashMap.get("formulas")));
         if (fromHashMap.containsKey("noActionState"))
@@ -60,8 +62,8 @@ public class OptimizedMap {
         destinationHashMap.put("successConditions", deepCopyFloatArrayHashMap(fromHashMap.get("successConditions")));
     }
 
-    private HashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
-        HashMap<String, String> destination = new HashMap<>();
+    private LinkedHashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
+        LinkedHashMap<String, String> destination = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : origin.entrySet()) {
             String newStringKey = String.valueOf(entry.getKey());
             String newStringValue = String.valueOf(entry.getValue());
@@ -70,14 +72,27 @@ public class OptimizedMap {
         return destination;
     }
 
-    private HashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
-        HashMap<String, float[]> destination = new HashMap<>();
+    private LinkedHashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
+        LinkedHashMap<String, float[]> destination = new LinkedHashMap<>();
         for (Map.Entry<String, float[]> entry : origin.entrySet()) {
             String newStringKey = String.valueOf(entry.getKey());
             int size = entry.getValue().length;
             float[] duplicatedFloatArray = new float[size];
             for (int i = 0; i < size; i++) duplicatedFloatArray[i] = entry.getValue()[i] + 0.0f;
             destination.put(newStringKey, duplicatedFloatArray);
+        }
+        return destination;
+    }
+
+    private LinkedHashMap<String, ArrayList<String>> deepCopyStringArrayListHashMap(LinkedHashMap<String, ArrayList<String>> origin) {
+        LinkedHashMap<String, ArrayList<String>> destination = new LinkedHashMap<>();
+        for (Map.Entry<String, ArrayList<String>> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            ArrayList<String> newArrayList = new ArrayList<>();
+            for (String s: entry.getValue()) {
+                newArrayList.add(String.valueOf(s));
+            }
+            destination.put(newStringKey, newArrayList);
         }
         return destination;
     }
@@ -113,7 +128,7 @@ public class OptimizedMap {
         checkTableValues(reacherDefinition);
     }
 
-    public void checkTableValues(HashMap<String, HashMap> definition) {
+    public void checkTableValues(HashMap<String, LinkedHashMap> definition) {
         String name = (String)definition.get("meta").get("name");
         float table[] = null;
         if (name.equals("general")) table = this.valueFunctionTable;
@@ -249,7 +264,7 @@ public class OptimizedMap {
         return DynamicValueFunctionTable.callAllocation(indexProduct(indeces));
     }
 
-    private void generateAndIndecesToDefinition(HashMap<String, HashMap> MDPDefinition){
+    private void generateAndIndecesToDefinition(HashMap<String, LinkedHashMap> MDPDefinition){
         int[] indeces = new int[MDPDefinition.get("stateDefinitionIntegers").size() + MDPDefinition.get("actionDefinitionIntegers").size()];
         int index = 0;
 
@@ -264,13 +279,13 @@ public class OptimizedMap {
             index += 1;
         }
         MDPDefinition.put("indeces",
-            new HashMap<String, int[]>() {{
+            new LinkedHashMap<String, int[]>() {{
                 put("indeces", indeces);
         }});
     }
 
-    public static void convertStringFormulasToFormulas(HashMap<String, HashMap> MDPDefinition){
-        HashMap<String, Formula> formulaHashMap = new HashMap<>();
+    public static void convertStringFormulasToFormulas(HashMap<String, LinkedHashMap> MDPDefinition){
+        LinkedHashMap<String, Formula> formulaHashMap = new LinkedHashMap<>();
         if (!MDPDefinition.containsKey("formulas")) return;
         for (Object entryObject : MDPDefinition.get("formulas").entrySet()) {
             Map.Entry<String, String> entry = (Map.Entry<String, String>) entryObject;
@@ -320,17 +335,17 @@ public class OptimizedMap {
         return new CoupledActions(landerAction, gimbalXAction, gimbalYAction);
     }
 
-    private int[] getIndecesFromDefinition(HashMap<String, HashMap> MDPDefinition){
+    private int[] getIndecesFromDefinition(HashMap<String, LinkedHashMap> MDPDefinition){
         return (int[])MDPDefinition.get("indeces").get("indeces");
     }
 
-    private void convertAnglesToRadians(HashMap<String, HashMap> MDPDefinition) {
+    private void convertAnglesToRadians(HashMap<String, LinkedHashMap> MDPDefinition) {
         _convertAnglesToRadians(MDPDefinition, "stateDefinition");
         _convertAnglesToRadians(MDPDefinition, "actionDefinition");
         _convertAnglesToRadians(MDPDefinition, "successConditions");
     }
 
-    private void _convertAnglesToRadians(HashMap<String, HashMap> definition, String definitionField) {
+    private void _convertAnglesToRadians(HashMap<String, LinkedHashMap> definition, String definitionField) {
         for (Object entryObject : definition.get(definitionField).entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
             String field = entry.getKey();
@@ -348,12 +363,12 @@ public class OptimizedMap {
         }
     }
 
-    private void addIntegersToDefinition(HashMap<String, HashMap> MDPDefinition) {
+    private void addIntegersToDefinition(HashMap<String, LinkedHashMap> MDPDefinition) {
         State state = new State(null);
         state.definition = MDPDefinition;
 
         // state section
-        HashMap<String, int[]> integerFields = new HashMap<>();
+        LinkedHashMap<String, int[]> integerFields = new LinkedHashMap<>();
         for (Object entryObject : MDPDefinition.get("stateDefinition").entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
             String field = entry.getKey();
@@ -367,7 +382,7 @@ public class OptimizedMap {
         MDPDefinition.put("stateDefinitionIntegers", integerFields);
 
         // action section
-        integerFields = new HashMap<>();
+        integerFields = new LinkedHashMap<>();
         for (Object entryObject : MDPDefinition.get("actionDefinition").entrySet()) {
             Map.Entry<String, float[]> entry = (Map.Entry<String, float[]>)entryObject;
             String field = entry.getKey();
