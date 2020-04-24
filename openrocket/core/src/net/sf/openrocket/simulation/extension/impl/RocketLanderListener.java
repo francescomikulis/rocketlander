@@ -28,16 +28,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
-    private ArrayList<StateActionTuple> episodeStateActionsPrimary;
-    private ArrayList<StateActionTuple> episodeStateActionsGimbalX;
-    private ArrayList<StateActionTuple> episodeStateActionsGimbalY;
+    private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
     private Random random;
     private CoupledStates state;
     private CoupledActions action;
     TerminationBooleans terminationBooleans;
-    private int[] lastStepUpdateSizes = new int[]{0, 0, 0};
+    private LinkedHashMap<String, Integer> lastStepUpdateSizes = new LinkedHashMap<>();
     private static double variation = 2;
     private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
@@ -52,7 +50,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     /** Used by the Visualize3DListener extension */
     public CoupledActions getLastAction() {
-        return model.getLastAction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        return action;
     }
 
     RocketLanderListener(RocketLander rocketLander) {
@@ -67,7 +65,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean setupStateActionAndStore(SimulationStatus status) {
         CoupledStates oldState = state;
 
-        Object[] stateActionReturnObject = model.generateStateAndActionAndStoreHistory(status, episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY);
+        Object[] stateActionReturnObject = model.generateStateAndActionAndStoreHistory(status, episodeStateActions);
         CoupledStates newState = (CoupledStates) stateActionReturnObject[0];
         CoupledActions newAction = (CoupledActions) stateActionReturnObject[1];
 
@@ -83,9 +81,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public void startSimulation(SimulationStatus status) {
         episodeManager.initializeEpisodeManager();
         model.initializeModel();
-        episodeStateActionsPrimary = episodeManager.initializeEmptyActionStateTuples();
-        episodeStateActionsGimbalX = episodeManager.initializeEmptyActionStateTuples();
-        episodeStateActionsGimbalY = episodeManager.initializeEmptyActionStateTuples();
+        for (String method: model.getMethodNames()) {
+            episodeStateActions.put(method, new ArrayList<>());
+        }
         episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
@@ -267,8 +265,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
          */
 
-        model.updateStepStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, lastStepUpdateSizes);
-        lastStepUpdateSizes = new int[]{episodeStateActionsPrimary.size(), episodeStateActionsGimbalX.size(), episodeStateActionsGimbalY.size()};
+        model.updateStepStateActionValueFunction(episodeStateActions, lastStepUpdateSizes);
+        for (String method: episodeStateActions.keySet()) {
+            lastStepUpdateSizes.put(method, episodeStateActions.get(method).size());
+        }
     }
 
     @Override
@@ -286,7 +286,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         terminationBooleans = model.getValueFunctionTable().getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
         if (!hasCompletedTerminalUpdate) {
-            model.updateTerminalStateActionValueFunction(episodeStateActionsPrimary, episodeStateActionsGimbalX, episodeStateActionsGimbalY, terminationBooleans);
+            model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleans);
             hasCompletedTerminalUpdate = true;
         }
     }

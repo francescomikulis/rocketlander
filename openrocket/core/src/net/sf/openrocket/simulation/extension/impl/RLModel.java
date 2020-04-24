@@ -37,7 +37,7 @@ public class RLModel {
     private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
     private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
 
-    private HashMap<String, ModelBaseImplementation> methods = new HashMap<String, ModelBaseImplementation>() {{
+    private LinkedHashMap<String, ModelBaseImplementation> methods = new LinkedHashMap<String, ModelBaseImplementation>() {{
         put("lander", primaryMethod);
         put("reacher", secondaryMethod);
         put("stabilizer", tertiaryMethod);
@@ -75,6 +75,10 @@ public class RLModel {
         }
         episodeManager = RLEpisodeManager.getInstance();
         episodeManager.safeActionValueFunctionInitialization();
+    }
+
+    public Set<String> getMethodNames() {
+        return methods.keySet();
     }
 
     private HashSet<Integer> generatePossibleActionValuesInts(int value, int[] definition) {
@@ -204,7 +208,7 @@ public class RLModel {
 
     // policy management
 
-    private Object[] run_policy(SimulationStatus status, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
+    private Object[] run_policy(SimulationStatus status, LinkedHashMap<String, ArrayList<StateActionTuple>> SA) {
         ArrayList<Action> actions = new ArrayList<>();
         CoupledStates coupledStates = new CoupledStates();
         coupledStates.add(new State(status, primaryMethod.definition));
@@ -215,16 +219,10 @@ public class RLModel {
             String methodName = (String)state.definition.get("meta").get("name");
             ModelBaseImplementation method = methods.get(methodName);
 
-            ArrayList<StateActionTuple> stateActionTuples;
-            if (methodCounter == 0) {
-                stateActionTuples = SAPrimary;
-            } else if (methodCounter == 1) {
-                stateActionTuples = SAGimbalX;
-            } else if (methodCounter == 2) {
-                stateActionTuples = SAGimbalY;
-            } else {
-                throw new IllegalStateException("Unexpected value: " + methodCounter);
-            }
+            String storageName = methodName;
+            if (state.symmetry != null) storageName += state.symmetry;
+            if (!SA.containsKey(storageName)) SA.put(storageName, new ArrayList<>());
+            ArrayList<StateActionTuple> stateActionTuples = SA.get(storageName);
 
             State lastState = getLastStateOrNull(stateActionTuples);
             Action bestAction = getLastActionOrNull(stateActionTuples);
@@ -278,12 +276,8 @@ public class RLModel {
         return coupledStates;
     }
 
-    public Object[] generateStateAndActionAndStoreHistory(SimulationStatus status, ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY) {
-        return run_policy(status, SAPrimary, SAGimbalX, SAGimbalY);
-    }
-
-    public Object[] generateStateAndActionAndStoreHistory(SimulationStatus status, ArrayList<StateActionTuple> SA) {
-        return generateStateAndActionAndStoreHistory(status, SA, new ArrayList<>(), new ArrayList<>());
+    public Object[] generateStateAndActionAndStoreHistory(SimulationStatus status, LinkedHashMap<String, ArrayList<StateActionTuple>> SA) {
+        return run_policy(status, SA);
     }
 
     private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
@@ -322,96 +316,40 @@ public class RLModel {
         return selectableActions.get(randomGenerator.nextInt(bestActions.size()));
     }
 
-    public void updateStepStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY, int[] lastUpdateSizes) {
+    public void updateStepStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, LinkedHashMap<String, Integer> lastUpdateSizes) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            if (stateHasChanged(SAPrimary, lastUpdateSizes[0]))
-                primaryMethod.updateStepFunction(SAPrimary);
+            if (stateHasChanged(SA.get("lander"), lastUpdateSizes.get("lander")))
+                methods.get("lander").updateStepFunction(SA.get("lander"));
 
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if (stateHasChanged(SAPrimary, lastUpdateSizes[0]))
-                primaryMethod.updateStepLanderFunction(SAPrimary);
-
-            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
-                Action lastActionX = getLastActionOrNull(SAGimbalX);
-                if ((lastActionX != null) && (stateHasChanged(SAGimbalX, lastUpdateSizes[1]))) {
-                    String MDPName = (String) lastActionX.definition.get("meta").get("name");
-                    if (MDPName.equals("reacher"))
-                        secondaryMethod.updateStepReachingFunction(SAGimbalX);
-                    else if (MDPName.equals("stabilizer"))
-                        tertiaryMethod.updateStepStabilizerFunction(SAGimbalX);
-                    else
-                        System.out.println("Something is fucked up in the value function (X)");
-                }
+            if (stateHasChanged(SA.get("lander"), lastUpdateSizes.get("lander"))) {
+                methods.get("lander").updateStepLanderFunction(SA.get("lander"));
             }
-
-            if (simulationType == SimulationType._3D) {
-                Action lastActionY = getLastActionOrNull(SAGimbalY);
-                if ((lastActionY != null) && (stateHasChanged(SAGimbalY, lastUpdateSizes[2]))) {
-                    String MDPName = (String) lastActionY.definition.get("meta").get("name");
-                    if (MDPName.equals("reacher"))
-                        secondaryMethod.updateStepReachingFunction(SAGimbalY);
-                    else if (MDPName.equals("stabilizer"))
-                        tertiaryMethod.updateStepStabilizerFunction(SAGimbalY);
-                    else
-                        System.out.println("Something is fucked up in the value function (Y)");
-
-                }
+            if (stateHasChanged(SA.get("stabilizerX"), lastUpdateSizes.get("stabilizerX"))) {
+                methods.get("stabilizer").updateStepStabilizerFunction(SA.get("stabilizerX"));
+            }
+            if (stateHasChanged(SA.get("stabilizerY"), lastUpdateSizes.get("stabilizerY"))) {
+                methods.get("stabilizer").updateStepStabilizerFunction(SA.get("stabilizerY"));
+            }
+            if (stateHasChanged(SA.get("reacherX"), lastUpdateSizes.get("reacherX"))) {
+                methods.get("reacher").updateStepReachingFunction(SA.get("reacherX"));
+            }
+            if (stateHasChanged(SA.get("reacherY"), lastUpdateSizes.get("reacherY"))) {
+                methods.get("reacher").updateStepReachingFunction(SA.get("reacherY"));
             }
         }
     }
 
-    public void updateTerminalStateActionValueFunction(ArrayList<StateActionTuple> SAPrimary, ArrayList<StateActionTuple> SAGimbalX, ArrayList<StateActionTuple> SAGimbalY, TerminationBooleans terminationBooleans) {
+    public void updateTerminalStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, TerminationBooleans terminationBooleans) {
         if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            primaryMethod.updateTerminalFunction(SAPrimary);
+            methods.get("lander").updateTerminalFunction(SA.get("lander"));
+
         } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-
-            primaryMethod.updateTerminalLanderFunction(SAPrimary);
-
-            ArrayList<StateActionTuple> SAGimbalXReacher = new ArrayList<>();
-            ArrayList<StateActionTuple> SAGimbalXStabilizer = new ArrayList<>();
-
-            ArrayList<StateActionTuple> SAGimbalYReacher = new ArrayList<>();
-            ArrayList<StateActionTuple> SAGimbalYStabilizer = new ArrayList<>();
-
-            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
-                for (StateActionTuple stateActionTuple : SAGimbalX) {
-                    String MDPName = (String) stateActionTuple.action.definition.get("meta").get("name");
-                    if (MDPName.equals("reacher"))
-                        SAGimbalXReacher.add(stateActionTuple);
-                    else if (MDPName.equals("stabilizer"))
-                        SAGimbalXStabilizer.add(stateActionTuple);
-                }
-            }
-            if (simulationType == SimulationType._3D) {
-                for (StateActionTuple stateActionTuple : SAGimbalY) {
-                    String MDPName = (String) stateActionTuple.action.definition.get("meta").get("name");
-                    if (MDPName.equals("reacher"))
-                        SAGimbalYReacher.add(stateActionTuple);
-                    else if (MDPName.equals("stabilizer"))
-                        SAGimbalYStabilizer.add(stateActionTuple);
-                }
-            }
-
-            double updateOrder = randomGenerator.nextDouble();
-            if (updateOrder < 0.5) {
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
-            } else {
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalYReacher);
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalYStabilizer);
-                secondaryMethod.updateTerminalReachingFunction(SAGimbalXReacher);
-                tertiaryMethod.updateTerminalStabilizerFunction(SAGimbalXStabilizer);
-            }
-
-            /*
-            System.out.println("Number of unique lander states: " + SAPrimary.size());
-            System.out.println("Number of gimbal X reacher states: " + SAGimbalXReacher.size());
-            System.out.println("Number of gimbal X stabilizer states: " + SAGimbalXStabilizer.size());
-            System.out.println("Number of gimbal Y reacher states: " + SAGimbalYReacher.size());
-            System.out.println("Number of gimbal Y stabilizer states: " + SAGimbalYStabilizer.size());
-            */
+            methods.get("lander").updateTerminalLanderFunction(SA.get("lander"));
+            methods.get("stabilizer").updateTerminalStabilizerFunction(SA.get("stabilizerX"));
+            methods.get("stabilizer").updateTerminalStabilizerFunction(SA.get("stabilizerY"));
+            methods.get("reacher").updateTerminalReachingFunction(SA.get("reacherX"));
+            methods.get("reacher").updateTerminalReachingFunction(SA.get("reacherY"));
         }
 
         if (terminationBooleans.totalSuccess()) {
@@ -435,40 +373,28 @@ public class RLModel {
         }
     }
 
-    public CoupledActions getLastAction(ArrayList<StateActionTuple> episodeStateActionsPrimary, ArrayList<StateActionTuple> episodeStateActionsGimbalX, ArrayList<StateActionTuple> episodeStateActionsGimbalY) {
-        if (episodeStateActionsPrimary.size() == 0)
-            return null;
 
-        ArrayList<Action> actions = new ArrayList<>();
-        actions.add(episodeStateActionsPrimary.get(episodeStateActionsPrimary.size() - 1).action);
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if ((simulationType == SimulationType._2D) || (simulationType == SimulationType._3D)) {
-                actions.add(episodeStateActionsGimbalX.get(episodeStateActionsGimbalX.size() - 1).action);
-            }
-            if (simulationType == SimulationType._3D)
-                actions.add(episodeStateActionsGimbalY.get(episodeStateActionsGimbalY.size() - 1).action);
-        }
-        return new CoupledActions(actions.toArray(new Action[actions.size()]));
-    }
-
-
-    private boolean stateHasChanged(ArrayList<StateActionTuple> episodeStateActions, int previousSize){
+    private boolean stateHasChanged(ArrayList<StateActionTuple> episodeStateActions, Integer previousSize){
         State lastStateOrNull = getLastStateOrNull(episodeStateActions);
-        if (lastStateOrNull == null) return false;
+        if (lastStateOrNull == null) return false;  // no state exists for reference
         State lastLastStateOrNull = getLastLastStateOrNull(episodeStateActions);
         if (lastStateOrNull.equals(lastLastStateOrNull)) return false;
+        if ((previousSize == null) || (previousSize == 0)) return true;
         return (episodeStateActions.size() != previousSize);
     }
 
     private State getLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
+        if (episodeStateActions == null) return null;
         return (episodeStateActions.isEmpty()) ? null : episodeStateActions.get(episodeStateActions.size() - 1).state;
     }
 
     private State getLastLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
+        if (episodeStateActions == null) return null;
         return (episodeStateActions.size() <= 1) ? null : episodeStateActions.get(episodeStateActions.size() - 2).state;
     }
 
     private Action getLastActionOrNull(ArrayList<StateActionTuple> episodeStateActions){
+        if (episodeStateActions == null) return null;
         return (episodeStateActions.isEmpty()) ? null : episodeStateActions.get(episodeStateActions.size() - 1).action;
     }
 
