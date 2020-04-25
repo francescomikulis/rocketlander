@@ -214,6 +214,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("methodName", "MC");
             put("reward", "-Div(Abs(thrust),100.0)");
             put("terminalReward", "-Abs(velocityZ)");
+
             /*
             put("discount", "0.999");
             put("stepDiscount", "0.9");
