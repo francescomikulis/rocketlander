@@ -15,7 +15,6 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
     public TD0 (HashMap<String, LinkedHashMap> definition) {
         this.definition = definition;
     }
-    public float getExplorationPercentage() { return 0.03f; }
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
          Function<StateActionTuple.State, Float> reward
     ) {

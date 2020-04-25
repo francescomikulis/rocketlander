@@ -8,7 +8,6 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.State;
 
 public interface ModelInterface {
-    float getExplorationPercentage();
     void updateStepCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> reward

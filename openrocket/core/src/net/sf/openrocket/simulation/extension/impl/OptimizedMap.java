@@ -53,26 +53,38 @@ public class OptimizedMap {
     }
 
     private void constructorCode(LinkedHashMap<String, ModelBaseImplementation> methods, boolean reset) {
-        deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
-
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             HashMap<String, LinkedHashMap> definition = entry.getValue().definition;
 
             setupDefinition(definition);
 
             float[] valueFunctionTable = null;
-            if (!reset) {
+            if ((!reset) && definition.containsKey("valueFunction")) {
                 valueFunctionTable = (float[]) definition.get("valueFunction").get("valueFunction");
             }
             if (valueFunctionTable == null) {
                 valueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(definition));
-                definition.get("valueFunction").put("valueFunction", valueFunctionTable);
             }
+
+            if (!definition.containsKey("valueFunction"))
+                definition.put("valueFunction", new LinkedHashMap<String, float[]>());
+            definition.get("valueFunction").put("valueFunction", valueFunctionTable);
+
+            ModelBaseImplementation method = entry.getValue();
+            method.setValueFunctionTable(this);
             valueFunctionTables.put(entry.getKey(), valueFunctionTable);
             checkTableValues(definition);
+        }
+    }
+
+    public void resetValueFunctionTable(LinkedHashMap<String, ModelBaseImplementation> methods) {
+        for (Map.Entry<String, ModelBaseImplementation> entry : methods.entrySet()) {
+            HashMap<String, LinkedHashMap> definition = entry.getValue().definition;
+
+            definition.remove("valueFunction");
+            String methodName = (String)definition.get("meta").get("name");
+            valueFunctionTables.remove(methodName);
+            entry.getValue().removeValueFunctionTable();
         }
     }
 
@@ -377,7 +389,7 @@ public class OptimizedMap {
 
     /** DeepCopy Definition Code - This must be updated if the schema for definitions changes **/
 
-    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, LinkedHashMap> fromHashMap, HashMap<String, LinkedHashMap> destinationHashMap) {
+    public static void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, LinkedHashMap> fromHashMap, HashMap<String, LinkedHashMap> destinationHashMap) {
         destinationHashMap.put("meta", deepCopyStringHashMap(fromHashMap.get("meta")));
         destinationHashMap.put("stateDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("stateDefinition")));
         destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
@@ -392,7 +404,7 @@ public class OptimizedMap {
         destinationHashMap.put("successConditions", deepCopyFloatArrayHashMap(fromHashMap.get("successConditions")));
     }
 
-    private LinkedHashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
+    private static LinkedHashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
         LinkedHashMap<String, String> destination = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : origin.entrySet()) {
             String newStringKey = String.valueOf(entry.getKey());
@@ -402,7 +414,7 @@ public class OptimizedMap {
         return destination;
     }
 
-    private LinkedHashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
+    private static LinkedHashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
         LinkedHashMap<String, float[]> destination = new LinkedHashMap<>();
         for (Map.Entry<String, float[]> entry : origin.entrySet()) {
             String newStringKey = String.valueOf(entry.getKey());
@@ -414,7 +426,7 @@ public class OptimizedMap {
         return destination;
     }
 
-    private LinkedHashMap<String, ArrayList<String>> deepCopyStringArrayListHashMap(LinkedHashMap<String, ArrayList<String>> origin) {
+    private static LinkedHashMap<String, ArrayList<String>> deepCopyStringArrayListHashMap(LinkedHashMap<String, ArrayList<String>> origin) {
         LinkedHashMap<String, ArrayList<String>> destination = new LinkedHashMap<>();
         for (Map.Entry<String, ArrayList<String>> entry : origin.entrySet()) {
             String newStringKey = String.valueOf(entry.getKey());

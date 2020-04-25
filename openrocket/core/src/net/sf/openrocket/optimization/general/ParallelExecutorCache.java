@@ -37,8 +37,24 @@ public class ParallelExecutorCache implements ParallelFunctionCache {
 	private ExecutorService executor;
 	
 	private Function function;
-	
-	
+
+	// MODIFIED CODE HERE!
+ 	// reference to SwingPreferences
+	private static int getMaxThreadCount() {
+		/*
+		MODIFIED CODE HERE -- THIS IS OUR VERSION
+		return 2 * Runtime.getRuntime().availableProcessors() + 1;
+		*/
+		int numProcessors = 2 * Runtime.getRuntime().availableProcessors() + 1;
+		if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+			numProcessors = Math.max(1, numProcessors/4);
+		}
+		//if ((true) || (System.getProperty("os.name").toLowerCase().contains("posix"))) {
+		//	numProcessors = 1;
+		//}
+		return numProcessors;
+	}
+
 	/**
 	 * Construct a cache that uses the same number of computational threads as there are
 	 * processors available.
@@ -48,7 +64,8 @@ public class ParallelExecutorCache implements ParallelFunctionCache {
 		MODIFIED CODE HERE -- THIS IS OUR VERSION
 		return 2 * Runtime.getRuntime().availableProcessors() + 1;
 		*/
-		this(System.getProperty("os.name").toLowerCase().contains("mac") ? Math.max(1, Runtime.getRuntime().availableProcessors()/4) : 2 * Runtime.getRuntime().availableProcessors() + 1);
+
+		this(getMaxThreadCount());
 	}
 	
 	/**

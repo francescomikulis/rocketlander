@@ -3,11 +3,15 @@ package net.sf.openrocket.simulation.extension.impl.methods;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class Sarsa extends ModelBaseImplementation implements ModelInterface {
-    public float getExplorationPercentage() { return 0.05f; }
+    public Sarsa (HashMap<String, LinkedHashMap> definition) {
+        this.definition = definition;
+    }
     public void updateStepCommon(
         ArrayList<StateActionTuple> SA,
         Function<StateActionTuple, Float> valueFunction,

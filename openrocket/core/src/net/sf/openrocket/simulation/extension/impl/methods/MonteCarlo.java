@@ -14,7 +14,6 @@ public class MonteCarlo extends ModelBaseImplementation {
     public MonteCarlo (HashMap<String, LinkedHashMap> definition) {
         this.definition = definition;
     }
-    public float getExplorationPercentage() { return 0.03f; }
     public void updateTerminalCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> terminalReward,

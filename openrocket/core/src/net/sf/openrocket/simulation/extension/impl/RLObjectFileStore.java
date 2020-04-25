@@ -44,7 +44,7 @@ public class RLObjectFileStore {
 
     // starting to attempt to move the actionValueFunction to the MDP Definition
 
-    public void storeDefinition(HashMap<String, LinkedHashMap> definition, String fileName) {
+    public static void storeDefinition(HashMap<String, LinkedHashMap> definition, String fileName) {
         storeObject(definition, fileName);
     }
 
@@ -54,7 +54,8 @@ public class RLObjectFileStore {
         // return new OptimizedMap(null, null, null);
     }
 
-    public void storeActionValueFunctions(OptimizedMap optimizedMap){
+    public static void storeActionValueFunctions(){
+        OptimizedMap optimizedMap = RLModel.getInstance().getValueFunctionTable();
         for (Map.Entry<String, float[]> entry: optimizedMap.valueFunctionTables.entrySet()) {
             float[] actionValueFunction = entry.getValue();
             storeObject(actionValueFunction, actionValueFunctionFileName + entry.getKey() + ".txt");
@@ -65,7 +66,7 @@ public class RLObjectFileStore {
     Private implementation.  Details.
      */
 
-    private void storeObject(Object data, String fileName) {
+    private static void storeObject(Object data, String fileName) {
         OutputStream ops = null;
         ObjectOutputStream objOps = null;
         try {
@@ -80,7 +81,7 @@ public class RLObjectFileStore {
         }
     }
 
-    private Object readObjects(String fileName) {
+    private static Object readObjects(String fileName) {
         InputStream fileIs = null;
         ObjectInputStream objIs = null;
         Object data = null;

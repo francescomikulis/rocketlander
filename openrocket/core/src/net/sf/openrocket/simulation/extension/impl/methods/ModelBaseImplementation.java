@@ -15,6 +15,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     float stepDiscount = 0.9f;
     float terminalDiscount = 0.999f;
     float alpha = 0.1f;
+    float exploration = 0.05f;
 
     public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
@@ -29,9 +30,16 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         this.valueFunctionTable = valueFunctionTable;
     }
 
+    public void removeValueFunctionTable() {
+        this.valueFunctionTable = null;
+    }
+
     public void setStepDiscount(float stepDiscount) { this.stepDiscount = stepDiscount; }
     public void setTerminalDiscount(float terminalDiscount) { this.terminalDiscount = terminalDiscount; }
     public void setAlpha(float alpha) { this.alpha = alpha; }
+    public void setExploration(float exploration) { this.exploration = exploration; }
+
+    public float getExploration() { return exploration; }
 
     public void updateStepCommon(
             ArrayList<StateActionTuple> SA,
@@ -206,6 +214,12 @@ public abstract class ModelBaseImplementation implements ModelInterface {
             put("methodName", "MC");
             put("reward", "-Div(Abs(thrust),100.0)");
             put("terminalReward", "-Abs(velocityZ)");
+            /*
+            put("discount", "0.999");
+            put("stepDiscount", "0.9");
+            put("alpha", "0.1");
+            put("exploration", "0.05");
+             */
         }});
         put("stateDefinition",  new LinkedHashMap<String, float[]>() {{
             put("angle", new float[]{-35, 35, 5});
@@ -259,6 +273,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, LinkedHashMap> _reacherDefinition = new HashMap<String, LinkedHashMap>() {{
         put("meta", new LinkedHashMap<String, String>() {{
             put("name", "reacher");
+            put("methodName", "TD0");
             put("reward", "Add(-Mult(position, 10.0), -velocity)");
             put("symmetry", "angle,position,velocity,gimbal");
         }});
@@ -291,6 +306,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
     public static HashMap<String, LinkedHashMap> _stabilizerDefinition = new LinkedHashMap<String, LinkedHashMap>() {{
         put("meta", new LinkedHashMap<String, String>() {{
             put("name", "stabilizer");
+            put("methodName", "TD0");
             put("reward", "Add(-Pow(Todeg(angle), 2.0), 1.0)");
             put("symmetry", "angle,angleVelocity,gimbal");
         }});

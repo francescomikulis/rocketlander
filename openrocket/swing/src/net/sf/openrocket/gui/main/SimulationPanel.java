@@ -25,8 +25,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.DefaultEditorKit;
 
-import net.sf.openrocket.simulation.extension.impl.RLEpisodeManager;
 import net.sf.openrocket.simulation.extension.impl.RLModel;
+import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -304,7 +304,7 @@ public class SimulationPanel extends JPanel {
 					fireMaintainSelection();
 
 					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
-						RLEpisodeManager.getInstance().storeActionValueFunction();
+						RLObjectFileStore.storeActionValueFunctions();
 						startSaveTime = System.currentTimeMillis();
 					}
 				}

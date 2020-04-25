@@ -26,7 +26,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MAX_ALTITUDE = 30;
     private static final double MAX_POSITION = 10;
 
-    private RLEpisodeManager episodeManager = RLEpisodeManager.getInstance();
     private RLModel model = RLModel.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
     //HashMap<String, ArrayList<Double>> episodeData;
@@ -79,12 +78,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void startSimulation(SimulationStatus status) {
-        episodeManager.initializeEpisodeManager();
-        model.initializeModel();
+        // initialize episode
         for (String method: model.getMethodNames()) {
             episodeStateActions.put(method, new ArrayList<>());
         }
-        episodeManager.setupParameters(status);
         status.getSimulationConditions().setTimeStep(timeStep);
 
         double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);

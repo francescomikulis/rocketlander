@@ -60,7 +60,7 @@ import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
-import net.sf.openrocket.simulation.extension.impl.RLEpisodeManager;
+import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -268,7 +268,7 @@ public class BasicFrame extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				RLEpisodeManager.getInstance().storeActionValueFunction();
+				RLObjectFileStore.storeActionValueFunctions();
 				closeAction();
 			}
 		});

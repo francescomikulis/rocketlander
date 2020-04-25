@@ -3,58 +3,103 @@ package net.sf.openrocket.simulation.extension.impl;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.methods.*;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
-import static java.lang.Math.PI;
 import static net.sf.openrocket.simulation.extension.impl.OptimizedMap.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 
 public class RLModel {
+    private static volatile RLModel instance;
     private Random randomGenerator = new Random();
-    private RLEpisodeManager episodeManager = null;
+    OptimizedMap valueFunctionTable;
 
-    // MonteCarlo or TD0
-
-    //  MapMethod.Traditional
-    /*
-    private ModelBaseImplementation primaryMethod = new MonteCarlo(generalDefinition);
-    private ModelBaseImplementation secondaryMethod = null;
-    private ModelBaseImplementation tertiaryMethod = null;
-
-    private HashMap<String, ModelBaseImplementation> methods = new HashMap<String, ModelBaseImplementation>() {{
-            put("general", primaryMethod);
-    }};
-     */
-
-    //  MapMethod.Coupled
-
-    private ModelBaseImplementation primaryMethod = new MonteCarlo(landerDefinition);
-    private ModelBaseImplementation secondaryMethod = new TD0(reacherDefinition);
-    private ModelBaseImplementation tertiaryMethod = new TD0(stabilizerDefinition);
-
-    private LinkedHashMap<String, ModelBaseImplementation> methods = new LinkedHashMap<String, ModelBaseImplementation>() {{
-        put("lander", primaryMethod);
-        put("reacher", secondaryMethod);
-        put("stabilizer", tertiaryMethod);
-    }};
+    private LinkedHashMap<String, ModelBaseImplementation> methods;
 
     public String symmetryAxis2D = "X";
     public String symmetryAxis3D = "Y";
     public SimulationType simulationType = SimulationType._3D;
 
-
     enum SimulationType {
         _1D, _2D, _3D
     }
 
-    private static volatile RLModel instance;
+    private RLModel(){
+        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
+        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
+        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
+        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
 
-    private RLModel(){}
+        constructor(false);
+    }
+
+    private void constructor(boolean reset) {
+        // this is the default constructor - these hashmap definition should be read from elsewhere
+
+        constructor("X", "Y", SimulationType._3D, reset, landerDefinition, reacherDefinition, stabilizerDefinition);
+        // constructor("X", "Y", SimulationType._3D, generalDefinition);
+    }
+
+    private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, boolean reset, HashMap<String, LinkedHashMap> ... definitions) {
+        valueFunctionTable = null;
+        this.symmetryAxis2D = symmetryAxis2D;
+        this.symmetryAxis3D = symmetryAxis3D;
+        this.simulationType = simulationType;
+        this.methods = new LinkedHashMap<>();
+        for (HashMap<String, LinkedHashMap> definition: definitions) {
+            addMethodFromDefinition(definition);
+        }
+        // setValueFunctionTable
+        if (reset) {
+            this.valueFunctionTable = new OptimizedMap(methods);
+        } else {
+            this.valueFunctionTable = RLObjectFileStore.getInstance().readActionValueFunctionFromMethods(methods);
+        }
+    }
+
+    public void resetValueFunctionTable() {
+        valueFunctionTable.resetValueFunctionTable(methods);
+        constructor(true);
+    }
+
+    public OptimizedMap getValueFunctionTable() {
+        return valueFunctionTable;
+    }
+
+    private void addMethodFromDefinition(HashMap<String, LinkedHashMap> definition) {
+        String RLMethodName = (String)definition.get("meta").get("name");
+        String RLMethod = (String)definition.get("meta").get("methodName");
+        ModelBaseImplementation model = null;
+        switch (RLMethod.toUpperCase()) {
+            case "MC":
+                model = new MonteCarlo(definition); break;
+            case "TD0":
+                model = new TD0(definition); break;
+            case "SARSA":
+                model = new Sarsa(definition); break;
+            default:
+                System.out.println("METHOD NAME NOT DEFINED IN THE IMPLEMENTATION.  Must choose between MC, TD0, SARSA.");
+                return;
+        }
+
+        if (definition.get("meta").containsKey("discount")) {
+            model.setTerminalDiscount((float)Double.parseDouble((String)definition.get("meta").get("discount")));
+        }
+        if (definition.get("meta").containsKey("stepDiscount")) {
+            model.setStepDiscount((float)Double.parseDouble((String)definition.get("meta").get("stepDiscount")));
+        }
+        if (definition.get("meta").containsKey("alpha")) {
+            model.setAlpha((float)Double.parseDouble((String)definition.get("meta").get("alpha")));
+        }
+        if (definition.get("meta").containsKey("exploration")) {
+            model.setExploration((float)Double.parseDouble((String)definition.get("meta").get("exploration")));
+        }
+
+        methods.put(RLMethodName, model);
+    }
 
     public static RLModel getInstance() {
         if (instance == null) { // first time lock
@@ -65,16 +110,6 @@ public class RLModel {
             }
         }
         return instance;
-    }
-
-
-    public void initializeModel() {
-        if (symmetryAxis2D.equals(symmetryAxis3D)) {
-            System.out.println("ISSUES IN SYMMETRY AXIS ASSIGNMENT!!!!");
-            System.out.println("YOU MUST SELECT 2 DIFFERENT SYMMETRY AXIS FOR 2D AND 3D");
-        }
-        episodeManager = RLEpisodeManager.getInstance();
-        episodeManager.safeActionValueFunctionInitialization();
     }
 
     public LinkedHashMap<String, ModelBaseImplementation> getMethods() {
@@ -249,7 +284,9 @@ public class RLModel {
     private Object[] run_policy(SimulationStatus status, LinkedHashMap<String, ArrayList<StateActionTuple>> SA) {
         ArrayList<Action> actions = new ArrayList<>();
         CoupledStates coupledStates = new CoupledStates();
-        coupledStates.add(new State(status, primaryMethod.definition));
+        HashMap<String, LinkedHashMap> firstDefinition = null;
+        for (String key: methods.keySet()) { firstDefinition = methods.get(key).definition; break; }
+        coupledStates.add(new State(status, firstDefinition));
 
         int methodCounter = 0;
         while (methodCounter != coupledStates.size()) {
@@ -262,8 +299,13 @@ public class RLModel {
             if (!SA.containsKey(storageName)) SA.put(storageName, new ArrayList<>());
             ArrayList<StateActionTuple> stateActionTuples = SA.get(storageName);
 
-            State lastState = getLastStateOrNull(stateActionTuples);
-            Action bestAction = getLastActionOrNull(stateActionTuples);
+            State lastState = null;
+            Action bestAction = null;
+            if ((stateActionTuples != null) && !stateActionTuples.isEmpty()) {
+                lastState = stateActionTuples.get(stateActionTuples.size() - 1).state;
+                bestAction = stateActionTuples.get(stateActionTuples.size() - 1).action;
+            }
+
             if (needToChooseNewAction(state, lastState, bestAction)) {
                 HashSet<Action> possibleActions = generatePossibleActions(state);
                 bestAction = policy(state, possibleActions, method);
@@ -302,7 +344,7 @@ public class RLModel {
 
     public CoupledStates generateCoupledStatesBasedOnLastActions(SimulationStatus status, CoupledActions coupledActions) {
         CoupledStates coupledStates = new CoupledStates();
-        coupledStates.add(new State(status, primaryMethod.definition));
+        coupledStates.add(new State(status, coupledActions.get(0).definition));
 
         int methodCounter = 0;
         while (methodCounter != coupledStates.size()) {
@@ -320,7 +362,7 @@ public class RLModel {
     private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
         HashSet<Action> bestActions = new HashSet<>();
 
-        float explorationPercentage = method.getExplorationPercentage();
+        float explorationPercentage = method.getExploration();
 
         float val = Float.NEGATIVE_INFINITY;
         boolean greedy = true;
@@ -398,58 +440,6 @@ public class RLModel {
             System.out.print("+");
         } else {
             System.out.print("-");
-        }
-    }
-
-    public void resetValueFunctionTable() {
-        setValueFunctionTable(new OptimizedMap(methods, true));
-    }
-
-    public OptimizedMap getValueFunctionTable() {
-        return primaryMethod.getValueFunctionTable();
-    }
-
-    public void setValueFunctionTable(OptimizedMap valueFunctionTable) {
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
-            entry.getValue().setValueFunctionTable(valueFunctionTable);
-        }
-    }
-
-
-    private boolean stateHasChanged(ArrayList<StateActionTuple> episodeStateActions, Integer previousSize){
-        State lastStateOrNull = getLastStateOrNull(episodeStateActions);
-        if (lastStateOrNull == null) return false;  // no state exists for reference
-        State lastLastStateOrNull = getLastLastStateOrNull(episodeStateActions);
-        if (lastStateOrNull.equals(lastLastStateOrNull)) return false;
-        if ((previousSize == null) || (previousSize == 0)) return true;
-        return (episodeStateActions.size() != previousSize);
-    }
-
-    private State getLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
-        if (episodeStateActions == null) return null;
-        return (episodeStateActions.isEmpty()) ? null : episodeStateActions.get(episodeStateActions.size() - 1).state;
-    }
-
-    private State getLastLastStateOrNull(ArrayList<StateActionTuple> episodeStateActions){
-        if (episodeStateActions == null) return null;
-        return (episodeStateActions.size() <= 1) ? null : episodeStateActions.get(episodeStateActions.size() - 2).state;
-    }
-
-    private Action getLastActionOrNull(ArrayList<StateActionTuple> episodeStateActions){
-        if (episodeStateActions == null) return null;
-        return (episodeStateActions.isEmpty()) ? null : episodeStateActions.get(episodeStateActions.size() - 1).action;
-    }
-
-
-    @FunctionalInterface
-    interface TriFunction<A,B,C,R> {
-
-        R apply(A a, B b, C c);
-
-        default <V> TriFunction<A, B, C, V> andThen(
-                Function<? super R, ? extends V> after) {
-            Objects.requireNonNull(after);
-            return (A a, B b, C c) -> after.apply(apply(a, b, c));
         }
     }
 }
