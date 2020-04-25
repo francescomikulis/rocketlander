@@ -18,8 +18,6 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
     public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
-        if (!valueFunctionTable.containsKey(stateActionTuple))
-            return 0.0f;
         return valueFunctionTable.get(stateActionTuple);
     }
 

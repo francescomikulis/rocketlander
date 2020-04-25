@@ -28,9 +28,6 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         // skip if the states are equivalent under the equivalentStateFunction
         if (OptimizedMap.equivalentState(old.state, current.state)) return;
 
-        if (!valueFunctionTable.containsKey(old)) valueFunctionTable.put(old, 0.0f);
-        if (!valueFunctionTable.containsKey(current)) valueFunctionTable.put(current, 0.0f);
-
         float oldValue = valueFunction(old);
         float currentValue = valueFunction(current);
         float rewardValue = reward.apply(current.state);

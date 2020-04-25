@@ -387,7 +387,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return DynamicValueFunctionTable.computeIndexState(this);
+            return OptimizedMap.computeIndexState(this);
         }
 
         @Override
@@ -454,7 +454,7 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public int hashCode() {
-            return DynamicValueFunctionTable.computeIndexAction(this);
+            return OptimizedMap.computeIndexAction(this);
         }
 
         @Override

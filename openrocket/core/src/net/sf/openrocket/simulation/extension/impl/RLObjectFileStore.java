@@ -1,5 +1,7 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -11,13 +13,13 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 /*
 https://www.java2novice.com/java-file-io-operations/read-write-object-from-file/
  */
 
 public class RLObjectFileStore {
-    private static String episodeDataFileName = "episodesData.txt";
     private static String actionValueFunctionFileName = "actionValue";
 
     private static class InstanceHolder {
@@ -30,20 +32,14 @@ public class RLObjectFileStore {
 
     private RLObjectFileStore(){}
 
-
-    public ArrayList readEpisodesData(){
-        return (ArrayList) readObjects(episodeDataFileName);
-    }
-
-    public OptimizedMap readActionValueFunction(String filenameExtension){
-        return new OptimizedMap((float[]) readObjects(actionValueFunctionFileName + filenameExtension));
-    }
-
-    public OptimizedMap readCoupledActionValueFunction(String filenameExtension){
-        float[] landerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "lander" + filenameExtension);
-        float[] stabilizerActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "stabilizer" + filenameExtension);
-        float[] reacherActionValueFunction = (float[]) readObjects(actionValueFunctionFileName + "reacher" + filenameExtension);
-        return new OptimizedMap(landerActionValueFunction, reacherActionValueFunction, stabilizerActionValueFunction);
+    public OptimizedMap readActionValueFunctionFromMethods(LinkedHashMap<String, ModelBaseImplementation> methods) {
+        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+            float[] actionValueFunction = (float[]) readObjects(actionValueFunctionFileName + entry.getKey() + ".txt");
+            LinkedHashMap<String, float[]> holderHashMap = new LinkedHashMap<>();
+            holderHashMap.put("valueFunction", actionValueFunction);
+            entry.getValue().definition.put("valueFunction", holderHashMap);
+        }
+        return new OptimizedMap(methods);
     }
 
     // starting to attempt to move the actionValueFunction to the MDP Definition
@@ -58,14 +54,11 @@ public class RLObjectFileStore {
         // return new OptimizedMap(null, null, null);
     }
 
-    public void storeActionValueFunction(OptimizedMap optimizedMap, String filenameExtension){
-        storeObject(optimizedMap.getValueFunctionArray(), actionValueFunctionFileName + filenameExtension);
-    }
-
-    public void storeCoupledActionValueFunction(OptimizedMap optimizedMap, RLModel.SimulationType symType, String filenameExtension){
-        storeObject(optimizedMap.getLanderValueFunctionArray(), actionValueFunctionFileName + "lander" + filenameExtension);
-        storeObject(optimizedMap.getStabilizerValueFunctionArray(), actionValueFunctionFileName + "stabilizer" + filenameExtension);
-        storeObject(optimizedMap.getReacherValueFunctionArray(), actionValueFunctionFileName + "reacher" + filenameExtension);
+    public void storeActionValueFunctions(OptimizedMap optimizedMap){
+        for (Map.Entry<String, float[]> entry: optimizedMap.valueFunctionTables.entrySet()) {
+            float[] actionValueFunction = entry.getValue();
+            storeObject(actionValueFunction, actionValueFunctionFileName + entry.getKey() + ".txt");
+        }
     }
 
     /*

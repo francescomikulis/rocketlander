@@ -1,6 +1,7 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
+import net.sf.openrocket.simulation.extension.impl.RLModel;
 import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.StateActionClass;
@@ -419,7 +420,8 @@ public class ExpressionEvaluator {
 
 
     public static void main(String[] args) {
-        new OptimizedMap();
+        RLModel model = RLModel.getInstance();
+        new OptimizedMap(model.getMethods());
 
         String formula = "Add(Abs(positionX),Abs(positionY))";
 

@@ -53,24 +53,14 @@ public class RLEpisodeManager {
     public void storeActionValueFunction() {
         System.out.println("SAVING ACTION VALUE FUNCTION!!!");
         initializeEpisodeManager();
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional)
-            mof.storeActionValueFunction(model.getValueFunctionTable(), selectFileNameExtension());
-        else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            mof.storeCoupledActionValueFunction(model.getValueFunctionTable(), model.simulationType, selectFileNameExtension());
-        }
+        mof.storeActionValueFunctions(model.getValueFunctionTable());
     }
 
     /* SAFE INITIALIZERS */
 
     public void safeActionValueFunctionInitialization() {
-        if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Traditional) {
-            if (model.getValueFunctionTable() == null) {
-                model.setValueFunctionTable(mof.readActionValueFunction(selectFileNameExtension()));
-            }
-        } else if (OptimizedMap.mapMethod == OptimizedMap.MapMethod.Coupled) {
-            if (model.getValueFunctionTable() == null) {
-                model.setValueFunctionTable(mof.readCoupledActionValueFunction(selectFileNameExtension()));
-            }
+        if (model.getValueFunctionTable() == null) {
+            model.setValueFunctionTable(mof.readActionValueFunctionFromMethods(model.getMethods()));
         }
     }
 

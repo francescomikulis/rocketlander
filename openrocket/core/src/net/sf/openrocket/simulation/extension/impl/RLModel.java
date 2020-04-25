@@ -77,6 +77,10 @@ public class RLModel {
         episodeManager.safeActionValueFunctionInitialization();
     }
 
+    public LinkedHashMap<String, ModelBaseImplementation> getMethods() {
+        return methods;
+    }
+
     public Set<String> getMethodNames() {
         return methods.keySet();
     }
@@ -398,7 +402,7 @@ public class RLModel {
     }
 
     public void resetValueFunctionTable() {
-        setValueFunctionTable(new OptimizedMap());
+        setValueFunctionTable(new OptimizedMap(methods, true));
     }
 
     public OptimizedMap getValueFunctionTable() {

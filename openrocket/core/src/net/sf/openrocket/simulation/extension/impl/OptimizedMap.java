@@ -2,6 +2,7 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
+import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
 import java.util.*;
 
@@ -33,111 +34,57 @@ public class OptimizedMap {
     }
     public static MapMethod mapMethod = MapMethod.Coupled;
 
-    private float[] valueFunctionTable = null;
-    private float[] landerValueFunctionTable = null;
-    private float[] stabilizerValueFunctionTable = null;
-    private float[] reacherValueFunctionTable = null;
+    public HashMap<String, float[]> valueFunctionTables = new HashMap<>();
 
-    public OptimizedMap() {
-        if (mapMethod == MapMethod.Traditional)
-            constructorTraditional(null);
-        else if (mapMethod == MapMethod.Coupled)
-            constructorCoupled(null, null, null);
+    public OptimizedMap(LinkedHashMap<String, ModelBaseImplementation> methods) {
+        constructorCode(methods, false);
     }
 
-    public OptimizedMap(float[] newValueFunctionTable) {
-        constructorTraditional(newValueFunctionTable);
+    public OptimizedMap(LinkedHashMap<String, ModelBaseImplementation> methods, boolean reset) {
+        constructorCode(methods, reset);
     }
 
-    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, LinkedHashMap> fromHashMap, HashMap<String, LinkedHashMap> destinationHashMap) {
-        destinationHashMap.put("meta", deepCopyStringHashMap(fromHashMap.get("meta")));
-        destinationHashMap.put("stateDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("stateDefinition")));
-        destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
-        if (fromHashMap.containsKey("MDPSelectionFormulas"))
-            destinationHashMap.put("MDPSelectionFormulas", deepCopyStringArrayListHashMap(fromHashMap.get("MDPSelectionFormulas")));
-        if (fromHashMap.containsKey("childrenMDPOptions"))
-            destinationHashMap.put("childrenMDPOptions", deepCopyStringHashMap(fromHashMap.get("childrenMDPOptions")));
-        if (fromHashMap.containsKey("formulas"))
-            destinationHashMap.put("formulas", deepCopyStringHashMap(fromHashMap.get("formulas")));
-        if (fromHashMap.containsKey("noActionState"))
-            destinationHashMap.put("noActionState", deepCopyFloatArrayHashMap(fromHashMap.get("noActionState")));
-        destinationHashMap.put("successConditions", deepCopyFloatArrayHashMap(fromHashMap.get("successConditions")));
+    private void setupDefinition(HashMap<String, LinkedHashMap> definition) {
+        convertAnglesToRadians(definition);
+        buildChildrenMDPIntegerOptions(definition);
+        addIntegersToDefinition(definition);
+        generateAndIndecesToDefinition(definition);
+        convertStringFormulasToFormulas(definition);
     }
 
-    private LinkedHashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
-        LinkedHashMap<String, String> destination = new LinkedHashMap<>();
-        for (Map.Entry<String, String> entry : origin.entrySet()) {
-            String newStringKey = String.valueOf(entry.getKey());
-            String newStringValue = String.valueOf(entry.getValue());
-            destination.put(newStringKey, newStringValue);
-        }
-        return destination;
-    }
+    private void constructorCode(LinkedHashMap<String, ModelBaseImplementation> methods, boolean reset) {
+        deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
+        deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
 
-    private LinkedHashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
-        LinkedHashMap<String, float[]> destination = new LinkedHashMap<>();
-        for (Map.Entry<String, float[]> entry : origin.entrySet()) {
-            String newStringKey = String.valueOf(entry.getKey());
-            int size = entry.getValue().length;
-            float[] duplicatedFloatArray = new float[size];
-            for (int i = 0; i < size; i++) duplicatedFloatArray[i] = entry.getValue()[i] + 0.0f;
-            destination.put(newStringKey, duplicatedFloatArray);
-        }
-        return destination;
-    }
+        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+            HashMap<String, LinkedHashMap> definition = entry.getValue().definition;
 
-    private LinkedHashMap<String, ArrayList<String>> deepCopyStringArrayListHashMap(LinkedHashMap<String, ArrayList<String>> origin) {
-        LinkedHashMap<String, ArrayList<String>> destination = new LinkedHashMap<>();
-        for (Map.Entry<String, ArrayList<String>> entry : origin.entrySet()) {
-            String newStringKey = String.valueOf(entry.getKey());
-            ArrayList<String> newArrayList = new ArrayList<>();
-            for (String s: entry.getValue()) {
-                newArrayList.add(String.valueOf(s));
+            setupDefinition(definition);
+
+            float[] valueFunctionTable = null;
+            if (!reset) {
+                valueFunctionTable = (float[]) definition.get("valueFunction").get("valueFunction");
             }
-            destination.put(newStringKey, newArrayList);
+            if (valueFunctionTable == null) {
+                valueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(definition));
+                definition.get("valueFunction").put("valueFunction", valueFunctionTable);
+            }
+            valueFunctionTables.put(entry.getKey(), valueFunctionTable);
+            checkTableValues(definition);
         }
-        return destination;
     }
 
-    private void constructorTraditional(float[] newValueFunctionTable) {
-        constructorCode();
-
-        // allocate new function table
-        if (newValueFunctionTable == null)
-            newValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(generalDefinition));
-        this.valueFunctionTable = newValueFunctionTable;
-    }
-
-    public OptimizedMap(float[] newLanderValueFunctionTable, float[] newReacherValueFunctionTable, float[] newStabilizerValueFunctionTable) {
-        constructorCoupled(newLanderValueFunctionTable, newReacherValueFunctionTable, newStabilizerValueFunctionTable);
-    }
-
-    private void constructorCoupled(float[] newLanderValueFunctionTable, float[] newReacherValueFunctionTable, float[] newStabilizerValueFunctionTable) {
-        constructorCode();
-
-        // allocate new function table
-        if (newLanderValueFunctionTable == null)
-            newLanderValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(landerDefinition));
-        this.landerValueFunctionTable = newLanderValueFunctionTable;
-        checkTableValues(landerDefinition);
-        if (newStabilizerValueFunctionTable == null)
-            newStabilizerValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(stabilizerDefinition));
-        this.stabilizerValueFunctionTable = newStabilizerValueFunctionTable;
-        checkTableValues(stabilizerDefinition);
-        if (newReacherValueFunctionTable == null)
-            newReacherValueFunctionTable = allocateNewValueFunctionTable(getIndecesFromDefinition(reacherDefinition));
-        this.reacherValueFunctionTable = newReacherValueFunctionTable;
-        checkTableValues(reacherDefinition);
+    private float[] allocateNewValueFunctionTable(int[] indeces) {
+        int size = indexProduct(indeces);
+        System.out.println("Allocating stateSpace: " + size);
+        return new float[size];
     }
 
     public void checkTableValues(HashMap<String, LinkedHashMap> definition) {
         String name = (String)definition.get("meta").get("name");
-        float table[] = null;
-        if (name.equals("general")) table = this.valueFunctionTable;
-        else if (name.equals("lander")) table = this.landerValueFunctionTable;
-        else if (name.equals("stabilizer")) table = this.stabilizerValueFunctionTable;
-        else if (name.equals("reacher")) table = this.reacherValueFunctionTable;
-        else System.out.println("TABLE TYPE DOES NOT EXIST!");
+        float[] table = valueFunctionTables.get(name);
 
         int[] indeces = getIndecesFromDefinition(definition);
         int product = indexProduct(indeces);
@@ -148,44 +95,74 @@ public class OptimizedMap {
         }
     }
 
-    private void constructorCode() {
-        deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
-        deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
-
-        convertAnglesToRadians(generalDefinition);
-        convertAnglesToRadians(landerDefinition);
-        convertAnglesToRadians(reacherDefinition);
-        convertAnglesToRadians(stabilizerDefinition);
-
-        buildChildrenMDPOptions(generalDefinition);
-        buildChildrenMDPOptions(landerDefinition);
-        buildChildrenMDPOptions(reacherDefinition);
-        buildChildrenMDPOptions(stabilizerDefinition);
-
-        addIntegersToDefinition(generalDefinition);
-        addIntegersToDefinition(landerDefinition);
-        addIntegersToDefinition(reacherDefinition);
-        addIntegersToDefinition(stabilizerDefinition);
-
-        generateAndIndecesToDefinition(generalDefinition);
-        generateAndIndecesToDefinition(landerDefinition);
-        generateAndIndecesToDefinition(reacherDefinition);
-        generateAndIndecesToDefinition(stabilizerDefinition);
-
-        convertStringFormulasToFormulas(generalDefinition);
-        convertStringFormulasToFormulas(landerDefinition);
-        convertStringFormulasToFormulas(reacherDefinition);
-        convertStringFormulasToFormulas(stabilizerDefinition);
-    }
-
     public float get(StateActionTuple stateActionTuple) {
-        return DynamicValueFunctionTable.get(this, stateActionTuple);
+        String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
+        float[] valueFunctionTable = valueFunctionTables.get(definitionName);
+        int index = computeIndex(stateActionTuple);
+        return valueFunctionTable[index];
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        return DynamicValueFunctionTable.put(this, stateActionTuple, newValue);
+        String definitionName = (String)stateActionTuple.state.definition.get("meta").get("name");
+        float[] valueFunctionTable = valueFunctionTables.get(definitionName);
+        int index = computeIndex(stateActionTuple);
+        valueFunctionTable[index] = newValue;
+        return newValue;
+    }
+
+    private static int computeIndex(StateActionTuple stateActionTuple) {
+        return computeIndexState(stateActionTuple.state) + computeIndexAction(stateActionTuple.action);
+    }
+
+    public static int computeIndexState(State state) {
+        int index = 0;
+        int currentSize = 0;
+        HashMap<String, LinkedHashMap> MDPDefinition = state.definition;
+        int indeces[] = ((int[])(MDPDefinition.get("indeces").get("indeces")));
+        int product = OptimizedMap.indexProduct(indeces);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String stateField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int maxValue = minMax[1];
+            int currentValue = (int) state.get(stateField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
+            product /= indeces[currentSize];
+            index += (currentValue - minValue) * product;
+            currentSize += 1;
+        }
+        return index;
+    }
+
+    public static int computeIndexAction(Action action) {
+        int index = 0;
+        int currentSize = 0;
+        HashMap<String, LinkedHashMap> MDPDefinition = action.definition;
+        int indeces[] = ((int[])(MDPDefinition.get("indeces").get("indeces")));
+        int product = OptimizedMap.indexProduct(indeces);
+
+        for (Object entryObject : MDPDefinition.get("stateDefinitionIntegers").entrySet()) {
+            product /= indeces[currentSize];
+            currentSize += 1;
+        }
+
+        for (Object entryObject : MDPDefinition.get("actionDefinitionIntegers").entrySet()) {
+            Map.Entry<String, int[]> entry = (Map.Entry<String, int[]>) entryObject;
+            String actionField = entry.getKey();
+            int[] minMax = entry.getValue();
+            int minValue = minMax[0];
+            int maxValue = minMax[1];
+            int currentValue = (int) action.get(actionField);
+            currentValue = Math.max(currentValue, minValue);
+            currentValue = Math.min(currentValue, maxValue);
+            product /= indeces[currentSize];
+            index += (currentValue - minValue) * product;
+            currentSize += 1;
+        }
+        return index;
     }
 
     public static boolean needToChooseNewAction(State newState, State oldState, Action lastAction) {
@@ -224,17 +201,6 @@ public class OptimizedMap {
         return equivalent;
     }
 
-
-    public boolean containsKey(State state, Action action) {
-        return true;
-        // return checkBounds(new StateActionTuple(state, action));
-    }
-
-    public boolean containsKey(StateActionTuple stateActionTuple) {
-        return true;
-        // return checkBounds(stateActionTuple);
-    }
-
     public int getMinField(int[] minMax) {
         return minMax[0];
     }
@@ -266,12 +232,7 @@ public class OptimizedMap {
         return true;
     }
 
-    private float[] allocateNewValueFunctionTable(int[] indeces) {
-        System.out.println("Allocating stateSpace: " + indexProduct(indeces));
-        return DynamicValueFunctionTable.callAllocation(indexProduct(indeces));
-    }
-
-    private void buildChildrenMDPOptions(HashMap<String, LinkedHashMap> MDPDefinition) {
+    private void buildChildrenMDPIntegerOptions(HashMap<String, LinkedHashMap> MDPDefinition) {
         if (!MDPDefinition.containsKey("childrenMDPOptions")) return;
 
         LinkedHashMap<String, Integer> MDPIntegerHashMap = new LinkedHashMap<>();
@@ -352,30 +313,6 @@ public class OptimizedMap {
         return totalSize;
     }
 
-    public float[] getValueFunctionArray() {
-        return valueFunctionTable;
-    }
-
-    public float[] getLanderValueFunctionArray() {
-        return landerValueFunctionTable;
-    }
-
-    public float[] getStabilizerValueFunctionArray() {
-        return stabilizerValueFunctionTable;
-    }
-
-    public float[] getReacherValueFunctionArray() {
-        return reacherValueFunctionTable;
-    }
-
-    public static CoupledActions combineCoupledActions(Action landerAction, Action stabilizerAction) {
-        return new CoupledActions(landerAction, stabilizerAction, stabilizerAction);
-    }
-
-    public static CoupledActions combineCoupledTripleActions(Action landerAction, Action gimbalXAction, Action gimbalYAction) {
-        return new CoupledActions(landerAction, gimbalXAction, gimbalYAction);
-    }
-
     private int[] getIndecesFromDefinition(HashMap<String, LinkedHashMap> MDPDefinition){
         return (int[])MDPDefinition.get("indeces").get("indeces");
     }
@@ -435,5 +372,58 @@ public class OptimizedMap {
             integerFields.put(field, new int[]{minIntValue, maxIntValue});
         }
         MDPDefinition.put("actionDefinitionIntegers", integerFields);
+    }
+
+
+    /** DeepCopy Definition Code - This must be updated if the schema for definitions changes **/
+
+    private void deepCopyElementsFromKnownHashMapToOtherMap(HashMap<String, LinkedHashMap> fromHashMap, HashMap<String, LinkedHashMap> destinationHashMap) {
+        destinationHashMap.put("meta", deepCopyStringHashMap(fromHashMap.get("meta")));
+        destinationHashMap.put("stateDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("stateDefinition")));
+        destinationHashMap.put("actionDefinition", deepCopyFloatArrayHashMap(fromHashMap.get("actionDefinition")));
+        if (fromHashMap.containsKey("MDPSelectionFormulas"))
+            destinationHashMap.put("MDPSelectionFormulas", deepCopyStringArrayListHashMap(fromHashMap.get("MDPSelectionFormulas")));
+        if (fromHashMap.containsKey("childrenMDPOptions"))
+            destinationHashMap.put("childrenMDPOptions", deepCopyStringHashMap(fromHashMap.get("childrenMDPOptions")));
+        if (fromHashMap.containsKey("formulas"))
+            destinationHashMap.put("formulas", deepCopyStringHashMap(fromHashMap.get("formulas")));
+        if (fromHashMap.containsKey("noActionState"))
+            destinationHashMap.put("noActionState", deepCopyFloatArrayHashMap(fromHashMap.get("noActionState")));
+        destinationHashMap.put("successConditions", deepCopyFloatArrayHashMap(fromHashMap.get("successConditions")));
+    }
+
+    private LinkedHashMap<String, String> deepCopyStringHashMap(HashMap<String, String> origin) {
+        LinkedHashMap<String, String> destination = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            String newStringValue = String.valueOf(entry.getValue());
+            destination.put(newStringKey, newStringValue);
+        }
+        return destination;
+    }
+
+    private LinkedHashMap<String, float[]> deepCopyFloatArrayHashMap(HashMap<String, float[]> origin) {
+        LinkedHashMap<String, float[]> destination = new LinkedHashMap<>();
+        for (Map.Entry<String, float[]> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            int size = entry.getValue().length;
+            float[] duplicatedFloatArray = new float[size];
+            for (int i = 0; i < size; i++) duplicatedFloatArray[i] = entry.getValue()[i] + 0.0f;
+            destination.put(newStringKey, duplicatedFloatArray);
+        }
+        return destination;
+    }
+
+    private LinkedHashMap<String, ArrayList<String>> deepCopyStringArrayListHashMap(LinkedHashMap<String, ArrayList<String>> origin) {
+        LinkedHashMap<String, ArrayList<String>> destination = new LinkedHashMap<>();
+        for (Map.Entry<String, ArrayList<String>> entry : origin.entrySet()) {
+            String newStringKey = String.valueOf(entry.getKey());
+            ArrayList<String> newArrayList = new ArrayList<>();
+            for (String s: entry.getValue()) {
+                newArrayList.add(String.valueOf(s));
+            }
+            destination.put(newStringKey, newArrayList);
+        }
+        return destination;
     }
 }
