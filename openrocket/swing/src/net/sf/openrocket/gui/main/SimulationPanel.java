@@ -198,6 +198,7 @@ public class SimulationPanel extends JPanel {
 					return;
 				}
 
+				/*
 				Simulation[] sims = new Simulation[selection.length * multiplier];
 
 				for (int i = 0; i < selection.length; i++) {
@@ -213,6 +214,26 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
+				*/
+
+
+				selection[0] = simulationTable.convertRowIndexToModel(selection[0]);
+				Simulation baseSimulation = document.getSimulation(selection[0]);
+				for (int i = 0; i < multiplier; i++) {
+					Simulation[] newSims = new Simulation[1];
+					newSims[0] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+					SimulationRunDialog dialog = new SimulationRunDialog(document, newSims);
+					if (i % 5 == 0) {
+						System.gc();
+						System.runFinalization();
+					}
+				}
+
+				Simulation[] sims = new Simulation[1];
+				sims[0] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
+				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+						SimulationPanel.this), document, sims).setVisible(true);
+
 				// new SimulationRunDialog(document, sims);  // without UI
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();

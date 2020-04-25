@@ -332,6 +332,9 @@ public class SwingPreferences extends net.sf.openrocket.startup.Preferences {
 		if (System.getProperty("os.name").toLowerCase().contains("mac")) {
 			numProcessors = Math.max(1, numProcessors/4);
 		}
+		//if ((true) || (System.getProperty("os.name").toLowerCase().contains("posix"))) {
+		//	numProcessors = 1;
+		//}
 		return numProcessors;
 	}
 	
