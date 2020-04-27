@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
+import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 
@@ -12,7 +13,7 @@ import java.util.function.Function;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 public class TD0 extends ModelBaseImplementation implements ModelInterface {
-    public TD0 (HashMap<String, LinkedHashMap> definition) {
+    public TD0 (MDPDefinition definition) {
         this.definition = definition;
     }
     public void updateStepCommon(ArrayList<StateActionTuple> SA,
@@ -25,7 +26,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         StateActionTuple current = SA.get(SA.size() - 1);
 
         // skip if the states are equivalent under the equivalentStateFunction
-        if (OptimizedMap.equivalentState(old.state, current.state)) return;
+        if (MDPDefinition.equivalentState(old.state, current.state)) return;
 
         float oldValue = valueFunction(old);
         float currentValue = valueFunction(current);

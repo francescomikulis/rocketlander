@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
+import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
@@ -11,7 +12,7 @@ import java.util.function.Function;
 import java.util.function.BiFunction;
 
 public class MonteCarlo extends ModelBaseImplementation {
-    public MonteCarlo (HashMap<String, LinkedHashMap> definition) {
+    public MonteCarlo (MDPDefinition definition) {
         this.definition = definition;
     }
     public void updateTerminalCommon(
@@ -31,7 +32,7 @@ public class MonteCarlo extends ModelBaseImplementation {
             StateActionTuple stateActionTuple = SA.get(timeStep);
 
             // skip if the states are equivalent under the equivalentStateFunction
-            if (OptimizedMap.equivalentState(lastStateActionTuple.state, stateActionTuple.state)) continue;
+            if (MDPDefinition.equivalentState(lastStateActionTuple.state, stateActionTuple.state)) continue;
             lastStateActionTuple = stateActionTuple;
 
             actualSteps += 1;

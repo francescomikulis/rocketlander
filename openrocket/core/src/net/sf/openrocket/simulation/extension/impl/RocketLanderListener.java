@@ -20,6 +20,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
+import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.getLanderDefinition;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
@@ -281,7 +282,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         System.out.println("");
          */
 
-        terminationBooleans = model.getValueFunctionTable().getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
+        terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
         if (!hasCompletedTerminalUpdate) {
             model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleans);
             hasCompletedTerminalUpdate = true;
@@ -541,7 +542,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         for (int i = 0; i < state.size(); i++) {
             State s = state.get(i);
             if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
+                for (String definitionField : s.definition.stateDefinitionFields) {
                     if (definitionField.toLowerCase().equals(lowercaseField)) {
                         dataStoreStateIndexField.put(originalField, i);
                         dataStoreStateFieldName.put(originalField, definitionField);
@@ -555,7 +556,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         for (int i = 0; i < state.size(); i++) {
             State s = state.get(i);
             if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : (Set<String>) s.definition.get("stateDefinition").keySet()) {
+                for (String definitionField: s.definition.stateDefinitionFields) {
                     if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
                         continue;
                     if (definitionField.toLowerCase().contains(lowercaseField)) {

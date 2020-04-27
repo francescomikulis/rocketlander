@@ -1,16 +1,12 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
-import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
-import net.sf.openrocket.simulation.extension.impl.RLModel;
-import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
+import net.sf.openrocket.simulation.extension.impl.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.StateActionClass;
 
 import java.util.*;
 
 import static java.lang.Math.abs;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation._landerDefinition;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.landerDefinition;
+import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 public class ExpressionEvaluator {
     // public interfacing class
@@ -429,7 +425,7 @@ public class ExpressionEvaluator {
         formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";
 
         StateActionClass object = new StateActionTuple.State(null);
-        object.definition = landerDefinition;
+        object.definition = getLanderDefinition();
         object.setDouble("velocityZ", 25.0);
         object.setDouble("positionX", 25.0);
         object.setDouble("positionY", 10.0);
@@ -437,10 +433,9 @@ public class ExpressionEvaluator {
         ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
         // test - assigning a symmetry formula creates formula
-        OptimizedMap.convertStringFormulasToFormulas(object.definition);
-        object.setSymmetry("position", "X");
-        assert object.definition.get("formulas").containsKey("position");
-        assert object.definition.get("formulas").get("position").equals("(positionX)");
+        object.setSymmetry("X");
+        assert object.definition.symmetryFormulas.containsKey("X");
+        assert object.definition.symmetryFormulas.get("X").containsKey("position");
 
         // test - input string equals output string
         formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";

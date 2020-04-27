@@ -35,9 +35,7 @@ public class RLObjectFileStore {
     public OptimizedMap readActionValueFunctionFromMethods(LinkedHashMap<String, ModelBaseImplementation> methods) {
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             float[] actionValueFunction = (float[]) readObjects(actionValueFunctionFileName + entry.getKey() + ".txt");
-            LinkedHashMap<String, float[]> holderHashMap = new LinkedHashMap<>();
-            holderHashMap.put("valueFunction", actionValueFunction);
-            entry.getValue().definition.put("valueFunction", holderHashMap);
+            entry.getValue().definition.valueFunction = actionValueFunction;
         }
         return new OptimizedMap(methods);
     }

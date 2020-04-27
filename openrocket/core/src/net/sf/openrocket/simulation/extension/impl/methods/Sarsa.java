@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl.methods;
 
+import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class Sarsa extends ModelBaseImplementation implements ModelInterface {
-    public Sarsa (HashMap<String, LinkedHashMap> definition) {
+    public Sarsa (MDPDefinition definition) {
         this.definition = definition;
     }
     public void updateStepCommon(

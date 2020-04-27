@@ -92,6 +92,7 @@
 			<!-- Libraries to extract into base JAR -->
 			<zipfileset src="${core.dir}/build/jar/OpenRocket-Core.jar" />
 			<zipfileset src="${lib.dir}/miglayout-4.0-swing.jar" />
+			<zipfileset src="${core.dir}/lib/gson-2.8.6.jar" />
 			<zipfileset src="${core.dir}/lib/guice-3.0.jar" />
 			<zipfileset src="${core.dir}/lib/aopalliance.jar"/>
 			<zipfileset src="${core.dir}/lib/guice-multibindings-3.0.jar"/>

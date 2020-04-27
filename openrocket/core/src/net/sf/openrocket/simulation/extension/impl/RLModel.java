@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
 
 import static net.sf.openrocket.simulation.extension.impl.OptimizedMap.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
@@ -28,29 +29,24 @@ public class RLModel {
     }
 
     private RLModel(){
-        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_generalDefinition, generalDefinition);
-        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_landerDefinition, landerDefinition);
-        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_reacherDefinition, reacherDefinition);
-        OptimizedMap.deepCopyElementsFromKnownHashMapToOtherMap(_stabilizerDefinition, stabilizerDefinition);
-
         constructor(false);
     }
 
     private void constructor(boolean reset) {
         // this is the default constructor - these hashmap definition should be read from elsewhere
 
-        constructor("X", "Y", SimulationType._3D, reset, landerDefinition, reacherDefinition, stabilizerDefinition);
+        constructor("X", "Y", SimulationType._3D, reset, getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
         // constructor("X", "Y", SimulationType._3D, generalDefinition);
     }
 
-    private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, boolean reset, HashMap<String, LinkedHashMap> ... definitions) {
+    private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, boolean reset, MDPDefinition ... definitions) {
         valueFunctionTable = null;
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
         this.methods = new LinkedHashMap<>();
-        for (HashMap<String, LinkedHashMap> definition: definitions) {
-            addMethodFromDefinition(definition);
+        for (MDPDefinition definition: definitions) {
+            methods.put(definition.name, definition.model);
         }
         // setValueFunctionTable
         if (reset) {
@@ -67,38 +63,6 @@ public class RLModel {
 
     public OptimizedMap getValueFunctionTable() {
         return valueFunctionTable;
-    }
-
-    private void addMethodFromDefinition(HashMap<String, LinkedHashMap> definition) {
-        String RLMethodName = (String)definition.get("meta").get("name");
-        String RLMethod = (String)definition.get("meta").get("methodName");
-        ModelBaseImplementation model = null;
-        switch (RLMethod.toUpperCase()) {
-            case "MC":
-                model = new MonteCarlo(definition); break;
-            case "TD0":
-                model = new TD0(definition); break;
-            case "SARSA":
-                model = new Sarsa(definition); break;
-            default:
-                System.out.println("METHOD NAME NOT DEFINED IN THE IMPLEMENTATION.  Must choose between MC, TD0, SARSA.");
-                return;
-        }
-
-        if (definition.get("meta").containsKey("discount")) {
-            model.setTerminalDiscount((float)Double.parseDouble((String)definition.get("meta").get("discount")));
-        }
-        if (definition.get("meta").containsKey("stepDiscount")) {
-            model.setStepDiscount((float)Double.parseDouble((String)definition.get("meta").get("stepDiscount")));
-        }
-        if (definition.get("meta").containsKey("alpha")) {
-            model.setAlpha((float)Double.parseDouble((String)definition.get("meta").get("alpha")));
-        }
-        if (definition.get("meta").containsKey("exploration")) {
-            model.setExploration((float)Double.parseDouble((String)definition.get("meta").get("exploration")));
-        }
-
-        methods.put(RLMethodName, model);
     }
 
     public static RLModel getInstance() {
@@ -129,18 +93,17 @@ public class RLModel {
     }
 
     private HashSet<Integer> generatePossibleActionValuesMDPInts(State state, String MDPActionSelectionField) {
-        HashMap<String, LinkedHashMap> definition = state.definition;
+        MDPDefinition definition = state.definition;
         HashSet<Integer> possibleActionValues = new HashSet<>();
 
-        if (definition.containsKey("MDPSelectionFormulas") && definition.get("MDPSelectionFormulas").containsKey(MDPActionSelectionField)) {
-            ArrayList<String> advancedIfElseFormula = (ArrayList<String>)(definition.get("MDPSelectionFormulas").get(MDPActionSelectionField));
+        if ((definition._MDPSelectionFormulas != null) && definition._MDPSelectionFormulas.containsKey(MDPActionSelectionField)) {
+            ArrayList<Object[]> advancedIfElseFormula = (definition._MDPSelectionFormulas.get(MDPActionSelectionField));
 
             String selectedMDPName = null;
             for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
-                String formulaConditions = advancedIfElseFormula.get(i);
-                ExpressionEvaluator.Formula formula = ExpressionEvaluator.getInstance().generateFormula(formulaConditions);
+                Formula formula = (Formula) advancedIfElseFormula.get(i)[0];
                 if (formula.evaluate(state) != 0) {  // 0 is false, 1 is true
-                    selectedMDPName = advancedIfElseFormula.get(i + 1);
+                    selectedMDPName = (String) advancedIfElseFormula.get(i)[1];
                     break;
                 }
             }
@@ -149,18 +112,17 @@ public class RLModel {
                     System.out.println("Unable to generate MDP selection!");
                 } else {
                     // default to last one!
-                    selectedMDPName = advancedIfElseFormula.get(advancedIfElseFormula.size() - 1);
+                    selectedMDPName = (String)advancedIfElseFormula.get(advancedIfElseFormula.size() - 1)[1];
                 }
             }
             // overrides the traditional options calculations of that MDP Field Name
             if (selectedMDPName != null)
-                possibleActionValues.add((Integer)definition.get("childrenMDPIntegerOptions").get(selectedMDPName));
+                possibleActionValues.add(definition.childrenMDPIntegerOptions.get(selectedMDPName));
         } else {
-            String stringMDPNames = (String) definition.get("childrenMDPOptions").get(MDPActionSelectionField);
-            String[] MDPNames = stringMDPNames.split(",");
+            String[] MDPNames = definition.childrenMDPOptions.get(MDPActionSelectionField);
             for (String MDPName : MDPNames) {
                 // convert MDPName to fixed integer number
-                possibleActionValues.add((Integer) definition.get("childrenMDPIntegerOptions").get(MDPName));
+                possibleActionValues.add((Integer) definition.childrenMDPIntegerOptions.get(MDPName));
             }
         }
         return possibleActionValues;
@@ -185,17 +147,12 @@ public class RLModel {
      ***/
 
     public HashSet<Action> generatePossibleActions(State state) {
-        HashMap<String, int[]> actionDefinition = state.definition.get("actionDefinitionIntegers");
         ArrayList<ArrayList<Integer>> possibleActionInts = new ArrayList<>();
 
-        HashSet<String> symmetryAxes = null;
-        if (state.definition.get("meta").containsKey("symmetry")) {
-            String[] symmetryAxesArray = ((String) state.definition.get("meta").get("symmetry")).split(",");
-            symmetryAxes = new HashSet<>(Arrays.asList(symmetryAxesArray));
-        }
-
-        ArrayList<String> actionFields = new ArrayList<>(actionDefinition.keySet());
+        HashSet<String> symmetryAxes = state.definition.symmetryAxesHashSet;
+        String[] actionFields = state.definition.actionDefinitionFields;
         ArrayList<String> actionStrings = new ArrayList<>();  // these have actual components (e.g. gimbalX - NOT gimbal)
+        int index = 0;
         for (String actionField: actionFields) {
             String realField = actionField;
             if (symmetryAxes != null) {
@@ -203,15 +160,16 @@ public class RLModel {
                     realField += state.symmetry;
             }
             actionStrings.add(realField);
-            if (state.definition.containsKey("childrenMDPOptions") && state.definition.get("childrenMDPOptions").containsKey(realField)) {
+            if ((state.definition.childrenMDPOptions != null) && state.definition.childrenMDPOptions.containsKey(realField)) {
                 ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, realField));
                 possibleActionInts.add(childMDPOptions);
                 if (childMDPOptions.size() != 1) {
                     System.out.println("Formula evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
                 }
             } else {
-                possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), actionDefinition.get(actionField))));
+                possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), state.definition.actionDefinitionIntegers[index])));
             }
+            index++;
         }
 
         int size = actionStrings.size();
@@ -229,7 +187,7 @@ public class RLModel {
                 actionValueMap.put(actionStrings.get(i), possibleActionInts.get(i).get(indeces[i]));
             }
             Action action = new Action(actionValueMap, state.definition);
-            action.setAllSymmetries(state.symmetry);
+            action.setSymmetry(state.symmetry, true);
             possibleActions.add(action);
 
             if (!incrementIndeces(indeces, maxIndeces)) {
@@ -240,15 +198,13 @@ public class RLModel {
     }
 
     private void addHierarchicalMDPSelection(SimulationStatus status, CoupledStates coupledStates, Action action) {
-        if (action.definition.containsKey("childrenMDPOptions")) {
-            for (Object entryObject : action.definition.get("childrenMDPOptions").keySet()) {
-                String MDPActionSelectionField = (String)entryObject;
+        if (action.definition.childrenMDPOptions != null) {
+            for (String MDPActionSelectionField : action.definition.childrenMDPOptions.keySet()) {
                 int SelectedMDPID = action.get(MDPActionSelectionField);
 
                 // reverse hashmap and find the MDP name
                 String selectedMDPName = null;
-                for (Object internalEntryObject : action.definition.get("childrenMDPIntegerOptions").entrySet()) {
-                    Map.Entry<String, Integer> internalEntry = (Map.Entry<String, Integer>) internalEntryObject;
+                for (Map.Entry<String, Integer> internalEntry : action.definition.childrenMDPIntegerOptions.entrySet()) {
                     if (internalEntry.getValue() == SelectedMDPID) {
                         selectedMDPName = internalEntry.getKey();
                     }
@@ -272,7 +228,7 @@ public class RLModel {
 
                 if (actuallyCreateNewState) {
                     State childState = new State(status, methods.get(selectedMDPName).definition);
-                    childState.setAllSymmetries(symmetryAxis);
+                    childState.setSymmetry(symmetryAxis);
                     coupledStates.add(childState);
                 }
             }
@@ -284,14 +240,14 @@ public class RLModel {
     private Object[] run_policy(SimulationStatus status, LinkedHashMap<String, ArrayList<StateActionTuple>> SA) {
         ArrayList<Action> actions = new ArrayList<>();
         CoupledStates coupledStates = new CoupledStates();
-        HashMap<String, LinkedHashMap> firstDefinition = null;
+        MDPDefinition firstDefinition = null;
         for (String key: methods.keySet()) { firstDefinition = methods.get(key).definition; break; }
         coupledStates.add(new State(status, firstDefinition));
 
         int methodCounter = 0;
         while (methodCounter != coupledStates.size()) {
             State state = coupledStates.get(methodCounter);
-            String methodName = (String)state.definition.get("meta").get("name");
+            String methodName = state.definition.name;
             ModelBaseImplementation method = methods.get(methodName);
 
             String storageName = methodName;
@@ -306,10 +262,10 @@ public class RLModel {
                 bestAction = stateActionTuples.get(stateActionTuples.size() - 1).action;
             }
 
-            if (needToChooseNewAction(state, lastState, bestAction)) {
+            if (MDPDefinition.needToChooseNewAction(state, lastState, bestAction)) {
                 HashSet<Action> possibleActions = generatePossibleActions(state);
                 bestAction = policy(state, possibleActions, method);
-                state.setAllSymmetries(bestAction.symmetry);
+                bestAction.setSymmetry(state.symmetry);
                 addStateActionTupleIfNotDuplicate(new StateActionTuple(state, bestAction), stateActionTuples);
             }
 
@@ -337,7 +293,7 @@ public class RLModel {
     private void addStateActionTupleIfNotDuplicate(StateActionTuple stateActionTuple, ArrayList<StateActionTuple> SA) {
         if (SA.size() == 0)
             SA.add(stateActionTuple);
-        else if (!equivalentState(SA.get(SA.size() - 1).state, stateActionTuple.state)) {
+        else if (!MDPDefinition.equivalentState(SA.get(SA.size() - 1).state, stateActionTuple.state)) {
             SA.add(stateActionTuple);
         }
     }
@@ -399,9 +355,9 @@ public class RLModel {
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             String methodName = entry.getKey();
             ModelBaseImplementation method = entry.getValue();
-            ExpressionEvaluator.Formula reward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("reward"));
+            Formula reward = method.definition._reward;
 
-            if (!methods.get(methodName).definition.get("meta").containsKey("symmetry")) {
+            if (methods.get(methodName).definition.symmetryAxes == null) {
                 methods.get(methodName).updateStepCustomFunction(SA.get(methodName), reward);
             } else {
                 if (0.5 < randomGenerator.nextDouble()) {
@@ -419,11 +375,11 @@ public class RLModel {
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             String methodName = entry.getKey();
             ModelBaseImplementation method = entry.getValue();
-            if (!method.definition.get("meta").containsKey("terminalReward")) continue;  // terminalReward not specified, skip method!
-            ExpressionEvaluator.Formula terminalReward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("terminalReward"));
-            ExpressionEvaluator.Formula reward = ExpressionEvaluator.getInstance().generateFormula((String)method.definition.get("meta").get("reward"));
+            if (method.definition._terminalReward == null) continue;  // terminalReward not specified, skip method!
+            Formula terminalReward = method.definition._terminalReward;
+            Formula reward = method.definition._reward;
 
-            if (!methods.get(methodName).definition.get("meta").containsKey("symmetry")) {
+            if (methods.get(methodName).definition.symmetryAxes == null) {
                 methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);
             } else {
                 if (0.5 < randomGenerator.nextDouble()) {
