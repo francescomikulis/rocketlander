@@ -69,7 +69,7 @@ public class OptimizedMap {
         }
     }
 
-    private float[] allocateNewValueFunctionTable(int size) {
+    public static float[] allocateNewValueFunctionTable(int size) {
         System.out.println("Allocating stateSpace: " + size);
         return new float[size];
     }

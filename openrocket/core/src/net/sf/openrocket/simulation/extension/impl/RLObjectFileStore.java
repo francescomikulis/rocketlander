@@ -2,14 +2,7 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,7 +27,14 @@ public class RLObjectFileStore {
 
     public OptimizedMap readActionValueFunctionFromMethods(LinkedHashMap<String, ModelBaseImplementation> methods) {
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
-            float[] actionValueFunction = (float[]) readObjects(actionValueFunctionFileName + entry.getKey() + ".txt");
+            String fileName = actionValueFunctionFileName + entry.getKey() + ".txt";
+            float[] actionValueFunction;
+            File tempFile = new File(fileName);
+            if (tempFile.exists()) {
+                actionValueFunction = (float[]) readObjects(fileName);
+            } else {
+                actionValueFunction = OptimizedMap.allocateNewValueFunctionTable(entry.getValue().definition.indexProduct);
+            }
             entry.getValue().definition.valueFunction = actionValueFunction;
         }
         return new OptimizedMap(methods);
