@@ -29,8 +29,14 @@ public class RLObjectFileStore {
         for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
             String fileName = actionValueFunctionFileName + entry.getKey() + ".txt";
             float[] actionValueFunction;
-            File tempFile = new File(fileName);
-            if (tempFile.exists()) {
+            boolean exists = false;
+            try {
+                File tempFile = new File(fileName);
+                exists = tempFile.exists();
+            } catch (Exception e) {
+                exists = false;
+            }
+            if (exists) {
                 actionValueFunction = (float[]) readObjects(fileName);
             } else {
                 actionValueFunction = OptimizedMap.allocateNewValueFunctionTable(entry.getValue().definition.indexProduct);
