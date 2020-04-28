@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import net.sf.openrocket.document.Definition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +103,19 @@ public class OpenRocketSaver extends RocketSaver {
 		}
 		indent--;
 		writeln("</simulations>");
+
+		// Save all definitions
+		writeln("<definitions>");
+		indent++;
+		first = true;
+		for (Definition definition : document.definitions) {
+			if (!first)
+				writeln("");
+			first = false;
+			saveDefinition(definition);
+		}
+		indent--;
+		writeln("</definitions>");
 		
 		indent--;
 		writeln("</openrocket>");
@@ -423,7 +437,23 @@ public class OpenRocketSaver extends RocketSaver {
 		writeln("</simulation>");
 		
 	}
-	
+
+	private void saveDefinition(Definition definition) throws IOException {
+		writeln("<definition>");
+		indent++;
+
+		writeln("<name>" + TextUtil.escapeXML(definition.getName()) + "</name>");
+		writeln("<data>" + TextUtil.escapeXML(definition.getData()) + "</data>");
+		String ignoreString;
+		if (definition.getIgnore())
+			ignoreString = "1";
+		else
+			ignoreString = "0";
+		writeln("<ignore>" + ignoreString + "</ignore>");
+
+		indent--;
+		writeln("</definition>");
+	}
 	
 	private void writeEntry(String key, Object value) throws IOException {
 		if (value == null) {

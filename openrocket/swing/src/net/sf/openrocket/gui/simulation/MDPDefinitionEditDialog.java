@@ -2,6 +2,7 @@ package net.sf.openrocket.gui.simulation;
 
 
 import net.miginfocom.swing.MigLayout;
+import net.sf.openrocket.document.Definition;
 import net.sf.openrocket.document.OpenRocketDocument;
 import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.gui.components.ConfigurationComboBox;
@@ -28,19 +29,19 @@ import java.awt.event.ActionListener;
 public class MDPDefinitionEditDialog extends JDialog {
 	private static final long serialVersionUID = -4468157685542912716L;
 	private final Window parentWindow;
-	private final Simulation[] simulationList;
+	private final Definition[] definitionList;
 	private final OpenRocketDocument document;
 	private static final Translator trans = Application.getTranslator();
 
 	JPanel cards;
 	private final static String EDITMODE = "EDIT";
 
-	public MDPDefinitionEditDialog(Window parent, final OpenRocketDocument document, Simulation... sims) {
+	public MDPDefinitionEditDialog(Window parent, final OpenRocketDocument document, Definition... definitions) {
 		//// Edit simulation
 		super(parent, "Edit MDP Definition", ModalityType.DOCUMENT_MODAL);
 		this.document = document;
 		this.parentWindow = parent;
-		this.simulationList = sims;
+		this.definitionList = definitions;
 		
 		this.cards = new JPanel(new CardLayout());
 		this.add(cards);
@@ -55,12 +56,10 @@ public class MDPDefinitionEditDialog extends JDialog {
 	}
 	
 	private boolean isSingleEdit() {
-		return simulationList.length == 1;
+		return definitionList.length == 1;
 	}
 
-	private String getSimplifiedName(String jsonDefinition) {
-		return jsonDefinition.substring(jsonDefinition.indexOf("\""), jsonDefinition.indexOf(","));
-	}
+
 	
 	private void buildEditCard() {
 		JPanel simEditPanel = new JPanel(new MigLayout("fill"));
@@ -68,11 +67,36 @@ public class MDPDefinitionEditDialog extends JDialog {
 		if (isSingleEdit()) {
 			JPanel panel = new JPanel(new MigLayout("fill, ins 0"));
 
-			//// MDPConfiguration name:
+			//// Simulation name:
 			panel.add(new JLabel("Configuration Name"), "growx 0, gapright para");
-			final JTextField field = new JTextField(getSimplifiedName(simulationList[0].getName()));
-			field.setEditable(false);
+			final JTextField field = new JTextField(definitionList[0].getName());
+			field.getDocument().addDocumentListener(new DocumentListener() {
+				@Override
+				public void changedUpdate(DocumentEvent e) {
+					setText();
+				}
+
+				@Override
+				public void insertUpdate(DocumentEvent e) {
+					setText();
+				}
+
+				@Override
+				public void removeUpdate(DocumentEvent e) {
+					setText();
+				}
+
+				private void setText() {
+					String name = field.getText();
+					if (name == null || name.equals(""))
+						return;
+					//System.out.println("Setting name:" + name);
+					definitionList[0].setName(name);
+
+				}
+			});
 			panel.add(field, "growx, wrap");
+
 			panel.add(new JPanel(), "growx, wrap");
 
 			simEditPanel.add(panel, "growx, wrap");
@@ -80,7 +104,7 @@ public class MDPDefinitionEditDialog extends JDialog {
 		JTabbedPane tabbedPane = new JTabbedPane();
 
 		//// Simulation options
-		tabbedPane.addTab("MDPDefinition", new MDPDefinitionPanel(simulationList[0]));
+		tabbedPane.addTab("MDPDefinition", new MDPDefinitionPanel(definitionList[0]));
 		
 		tabbedPane.setSelectedIndex(0);
 		
@@ -105,15 +129,13 @@ public class MDPDefinitionEditDialog extends JDialog {
 		private static final Translator trans = Application.getTranslator();
 
 
-		MDPDefinitionPanel(final Simulation simulation) {
+		MDPDefinitionPanel(final Definition definition) {
 			super(new MigLayout("fill"));
-
-			String definition = simulation.getName();
 
 			JTextPane jtp = new JTextPane();
 			jtp.setEditable(true);
 			jtp.setContentType("text/plain");
-			jtp.setText(definition);
+			jtp.setText(definition.getData());
 
 			JScrollPane scrollPane = new JScrollPane(jtp);
 			this.add(scrollPane, "growx, growy, split 2, aligny 0, flowy, gapright para");
@@ -127,15 +149,10 @@ public class MDPDefinitionEditDialog extends JDialog {
 					newDefinition = newDefinition.replaceAll("\t", "");
 					newDefinition = newDefinition.replaceAll(" ", "");
 
-					String storeDefinitionString = newDefinition.replace("IGNORE", "");
-					MDPDefinition theDefinition = MDPDefinition.buildFromJsonString(storeDefinitionString);
-					storeDefinitionString = MDPDefinition.toJsonString(theDefinition);
+					MDPDefinition theDefinition = MDPDefinition.buildFromJsonString(newDefinition);
+					String storeDefinitionString = MDPDefinition.toJsonString(theDefinition);
 
-					if (newDefinition.contains("IGNORE")) {
-						storeDefinitionString = "IGNORE" + "\n" + storeDefinitionString;
-					}
-
-					simulation.setName(storeDefinitionString);
+					definition.setData(storeDefinitionString);
 				}
 			});
 			this.add(save, "tag ok");

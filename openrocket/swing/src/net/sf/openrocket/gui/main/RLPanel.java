@@ -1,11 +1,7 @@
 package net.sf.openrocket.gui.main;
 
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.FlavorEvent;
-import java.awt.datatransfer.FlavorListener;
-import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
@@ -13,31 +9,23 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.text.DefaultEditorKit;
 
+import net.sf.openrocket.document.Definition;
 import net.sf.openrocket.gui.simulation.MDPDefinitionEditDialog;
 import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.RLModel;
-import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.miginfocom.swing.MigLayout;
-import net.sf.openrocket.aerodynamics.Warning;
-import net.sf.openrocket.aerodynamics.WarningSet;
 import net.sf.openrocket.document.OpenRocketDocument;
-import net.sf.openrocket.document.Simulation;
-import net.sf.openrocket.document.Simulation.Status;
 import net.sf.openrocket.document.events.DocumentChangeEvent;
 import net.sf.openrocket.document.events.DocumentChangeListener;
 import net.sf.openrocket.document.events.SimulationChangeEvent;
@@ -46,24 +34,14 @@ import net.sf.openrocket.gui.adaptors.Column;
 import net.sf.openrocket.gui.adaptors.ColumnTable;
 import net.sf.openrocket.gui.adaptors.ColumnTableModel;
 import net.sf.openrocket.gui.adaptors.ColumnTableRowSorter;
-import net.sf.openrocket.gui.adaptors.ValueColumn;
 import net.sf.openrocket.gui.components.StyledLabel;
-import net.sf.openrocket.gui.simulation.SimulationRunDialog;
 import net.sf.openrocket.gui.simulation.SimulationWarningDialog;
-import net.sf.openrocket.gui.util.Icons;
 import net.sf.openrocket.l10n.Translator;
-import net.sf.openrocket.rocketcomponent.Rocket;
-import net.sf.openrocket.rocketcomponent.FlightConfigurationId;
 import net.sf.openrocket.rocketcomponent.ComponentChangeEvent;
 import net.sf.openrocket.rocketcomponent.ComponentChangeListener;
-import net.sf.openrocket.simulation.FlightData;
 import net.sf.openrocket.startup.Application;
 import net.sf.openrocket.startup.Preferences;
-import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.AlphanumComparator;
-
-import static net.sf.openrocket.document.OpenRocketDocument.SIMULATION_NAME_PREFIX;
-import static net.sf.openrocket.gui.util.SwingPreferences.getMaxThreadCount;
 
 @SuppressWarnings("serial")
 public class RLPanel extends JPanel {
@@ -84,10 +62,11 @@ public class RLPanel extends JPanel {
 
     private final OpenRocketDocument document;
 
-    private final ColumnTableModel simulationTableModel;
-    private final JTable simulationTable;
+    private final ColumnTableModel definitionTableModel;
+    private final JTable definitionTable;
 
     private final JButton editButton;
+    private final JButton disableButton;
     private final JButton resetModelButton;
     private final JButton deleteButton;
 
@@ -108,14 +87,16 @@ public class RLPanel extends JPanel {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    Simulation sim = new Simulation(document.getRocket());
-                    sim.setName(MDPDefinition.toJsonString(ModelBaseImplementation.getLanderDefinition()));
+                    String stringDefinition = MDPDefinition.toJsonString(ModelBaseImplementation.getLanderDefinition());
+                    Definition definition = new Definition("defaultLander", stringDefinition);
 
-                    document.addSimulation(sim);
-                    simulationTableModel.fireTableDataChanged();
-                    simulationTable.clearSelection();
+                    int n = document.definitions.size();
+                    document.definitions.add(definition);
+                    definitionTableModel.fireTableDataChanged();
+                    definitionTable.clearSelection();
+                    definitionTable.addRowSelectionInterval(n, n);
 
-                    openDialog(false, sim);
+                    openDialog(definition);
                 }
             });
             this.add(button, "skip 1, gapright para");
@@ -128,19 +109,39 @@ public class RLPanel extends JPanel {
         editButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int[] selection = simulationTable.getSelectedRows();
+                int[] selection = definitionTable.getSelectedRows();
                 if (selection.length != 1) {
                     return;
                 }
 
-                selection[0] = simulationTable.convertRowIndexToModel(selection[0]);
-                Simulation[] sims = new Simulation[selection.length];
-                sims[0] = document.getSimulation(selection[0]);
+                selection[0] = definitionTable.convertRowIndexToModel(selection[0]);
+                Definition definition = document.definitions.get(selection[0]);
 
-                openDialog(false, sims);
+                openDialog(definition);
             }
         });
         this.add(editButton, "gapright para");
+
+        //// Edit simulation button
+        disableButton = new JButton("Disable MDP Definition");
+        //// Edit the selected simulation
+        disableButton.setToolTipText("Disable an MDP Definition");
+        disableButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int[] selection = definitionTable.getSelectedRows();
+                if (selection.length != 1) {
+                    return;
+                }
+
+                selection[0] = definitionTable.convertRowIndexToModel(selection[0]);
+                Definition definition = document.definitions.get(selection[0]);
+
+                definition.setIgnore(!definition.getIgnore());
+                definitionTableModel.fireTableDataChanged();
+            }
+        });
+        this.add(disableButton, "gapright para");
 
         // MODIFIED CODE HERE
 
@@ -175,7 +176,7 @@ public class RLPanel extends JPanel {
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int[] selection = simulationTable.getSelectedRows();
+                int[] selection = definitionTable.getSelectedRows();
                 if (selection.length == 0) {
                     return;
                 }
@@ -212,13 +213,13 @@ public class RLPanel extends JPanel {
 
                 // Delete simulations
                 for (int i = 0; i < selection.length; i++) {
-                    selection[i] = simulationTable.convertRowIndexToModel(selection[i]);
+                    selection[i] = definitionTable.convertRowIndexToModel(selection[i]);
                 }
                 Arrays.sort(selection);
                 for (int i = selection.length - 1; i >= 0; i--) {
-                    document.removeSimulation(selection[i]);
+                    document.definitions.remove(selection[i]);
                 }
-                simulationTableModel.fireTableDataChanged();
+                definitionTableModel.fireTableDataChanged();
             }
         });
         this.add(deleteButton, "wrap para");
@@ -227,17 +228,57 @@ public class RLPanel extends JPanel {
 
         ////////  The simulation table
 
-        simulationTableModel = new ColumnTableModel(
+        definitionTableModel = new ColumnTableModel(
 
                 //// Simulation name
                 //// Name
-                new Column(trans.get("simpanel.col.Name")) {
+                new Column("Name") {
                     @Override
                     public Object getValueAt(int row) {
-                        if (!displaySimulation(row))
+                        if (row < 0 || row >= document.definitions.size())
                             return null;
 
-                        return document.getSimulation(row).getName();
+                        return document.definitions.get(row).getName();
+                    }
+
+                    @Override
+                    public int getDefaultWidth() {
+                        return 100;
+                    }
+
+                    @Override
+                    public Comparator<String> getComparator() {
+                        return new AlphanumComparator();
+                    }
+                },
+
+                new Column("Ignored") {
+                    @Override
+                    public Object getValueAt(int row) {
+                        if (row < 0 || row >= document.definitions.size())
+                            return null;
+
+                        return String.valueOf(document.definitions.get(row).getIgnore());
+                    }
+
+                    @Override
+                    public int getDefaultWidth() {
+                        return 50;
+                    }
+
+                    @Override
+                    public Comparator<String> getComparator() {
+                        return new AlphanumComparator();
+                    }
+                },
+
+                new Column("Definition") {
+                    @Override
+                    public Object getValueAt(int row) {
+                        if (row < 0 || row >= document.definitions.size())
+                            return null;
+
+                        return document.definitions.get(row).getData();
                     }
 
                     @Override
@@ -250,19 +291,19 @@ public class RLPanel extends JPanel {
                         return new AlphanumComparator();
                     }
                 }
-        ) {
+                ) {
 
             private static final long serialVersionUID = 8686456963492628476L;
 
             @Override
             public int getRowCount() {
-                return document.getSimulationCount();
+                return document.definitions.size();
             }
         };
 
         // Override processKeyBinding so that the JTable does not catch
         // key bindings used in menu accelerators
-        simulationTable = new ColumnTable(simulationTableModel) {
+        definitionTable = new ColumnTable(definitionTableModel) {
 
             private static final long serialVersionUID = -5799340181229735630L;
 
@@ -274,32 +315,33 @@ public class RLPanel extends JPanel {
                 return false;
             }
         };
-        ColumnTableRowSorter simulationTableSorter = new ColumnTableRowSorter(simulationTableModel);
-        simulationTable.setRowSorter(simulationTableSorter);
-        simulationTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        simulationTable.setDefaultRenderer(Object.class, new JLabelRenderer());
-        simulationTableModel.setColumnWidths(simulationTable.getColumnModel());
+        ColumnTableRowSorter simulationTableSorter = new ColumnTableRowSorter(definitionTableModel);
+        definitionTable.setRowSorter(simulationTableSorter);
+        definitionTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        definitionTable.setDefaultRenderer(Object.class, new JLabelRenderer());
+        definitionTableModel.setColumnWidths(definitionTable.getColumnModel());
 
         // Mouse listener to act on double-clicks
-        simulationTable.addMouseListener(new MouseAdapter() {
+        definitionTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2) {
-                    int selectedRow = simulationTable.getSelectedRow();
+                    int selectedRow = definitionTable.getSelectedRow();
                     if (selectedRow < 0) {
                         return;
                     }
-                    int selected = simulationTable.convertRowIndexToModel(selectedRow);
+                    int selected = definitionTable.convertRowIndexToModel(selectedRow);
 
-                    int column = simulationTable.columnAtPoint(e.getPoint());
+                    int column = definitionTable.columnAtPoint(e.getPoint());
                     if (column == 0) {
-                        SimulationWarningDialog.showWarningDialog(RLPanel.this, document.getSimulations().get(selected));
+                        // this will fail
+                        SimulationWarningDialog.showWarningDialog(RLPanel.this, null);
                     } else {
 
-                        simulationTable.clearSelection();
-                        simulationTable.addRowSelectionInterval(selectedRow, selectedRow);
+                        definitionTable.clearSelection();
+                        definitionTable.addRowSelectionInterval(selectedRow, selectedRow);
 
-                        openDialog(document.getSimulations().get(selected));
+                        openDialog(document.definitions.get(selected));
                     }
                 } else if (e.getButton() == MouseEvent.BUTTON3 && e.getClickCount() == 1){
 
@@ -314,7 +356,7 @@ public class RLPanel extends JPanel {
             public void documentChanged(DocumentChangeEvent event) {
                 if (!(event instanceof SimulationChangeEvent))
                     return;
-                simulationTableModel.fireTableDataChanged();
+                definitionTableModel.fireTableDataChanged();
             }
         });
 
@@ -330,29 +372,14 @@ public class RLPanel extends JPanel {
         });
 
 
-        JScrollPane scrollpane = new JScrollPane(simulationTable);
+        JScrollPane scrollpane = new JScrollPane(definitionTable);
         this.add(scrollpane, "spanx, grow, wrap rel");
 
         updateButtonStates();
     }
 
-    private boolean displaySimulation(int row) {
-        if (row < 0 || row >= document.getSimulationCount()) return false;
-        if (document.getSimulation(row).getName().contains("{")) return true;
-        return false;
-    }
-
-    public int getRealSimulationCount() {
-        int realNumber = 0;
-        for (int i = 0; i < document.getSimulationCount(); i++) {
-            if (displaySimulation(i))
-                realNumber++;
-        }
-        return realNumber;
-    }
-
     private void updateButtonStates() {
-        int[] selection = simulationTable.getSelectedRows();
+        int[] selection = definitionTable.getSelectedRows();
         if (selection.length == 0) {
             editButton.setEnabled(false);
             deleteButton.setEnabled(false);
@@ -367,30 +394,22 @@ public class RLPanel extends JPanel {
     }
 
     public ListSelectionModel getSimulationListSelectionModel() {
-        return simulationTable.getSelectionModel();
+        return definitionTable.getSelectionModel();
     }
 
-    private void openDialog(boolean plotMode, final Simulation... sims) {
-        MDPDefinitionEditDialog d = new MDPDefinitionEditDialog(SwingUtilities.getWindowAncestor(this), document, sims);
+    private void openDialog(final Definition... definitions) {
+        MDPDefinitionEditDialog d = new MDPDefinitionEditDialog(SwingUtilities.getWindowAncestor(this), document, definitions);
         d.setVisible(true);
         fireMaintainSelection();
     }
 
-    private void openDialog(final Simulation sim) {
-        boolean plotMode = false;
-        if (sim.hasSimulationData() && (sim.getStatus() == Simulation.Status.UPTODATE || sim.getStatus() == Simulation.Status.EXTERNAL)) {
-            plotMode = true;
-        }
-        openDialog(plotMode, sim);
-    }
-
     private void fireMaintainSelection() {
-        int[] selection = simulationTable.getSelectedRows();
-        simulationTableModel.fireTableDataChanged();
+        int[] selection = definitionTable.getSelectedRows();
+        definitionTableModel.fireTableDataChanged();
         for (int row : selection) {
-            if (row >= simulationTableModel.getRowCount())
+            if (row >= definitionTableModel.getRowCount())
                 break;
-            simulationTable.addRowSelectionInterval(row, row);
+            definitionTable.addRowSelectionInterval(row, row);
         }
     }
 
@@ -431,7 +450,7 @@ public class RLPanel extends JPanel {
                                                        Object value, boolean isSelected, boolean hasFocus, int row,
                                                        int column) {
 
-            if (!displaySimulation(row))
+            if (row < 0 || row >= document.definitions.size())
                 return super.getTableCellRendererComponent(table, value,
                         isSelected, hasFocus, row, column);
 

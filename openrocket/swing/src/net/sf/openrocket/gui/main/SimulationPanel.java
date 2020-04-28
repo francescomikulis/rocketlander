@@ -25,6 +25,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.DefaultEditorKit;
 
+import net.sf.openrocket.document.Definition;
 import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.RLModel;
 import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
@@ -100,12 +101,9 @@ public class SimulationPanel extends JPanel {
 		// MODIFIED CODE HERE //
 
 		ArrayList<MDPDefinition> definitions = new ArrayList<>();
-		for (int i = 0; i < document.getSimulationCount(); i++) {
-			if (!displaySimulation(i)) {
-				String definition = document.getSimulation(i).getName();
-				if (!definition.contains("IGNORE"))
-					definitions.add(MDPDefinition.buildFromJsonString(definition));
-			}
+		for (Definition definition: document.definitions) {
+			if (!definition.getIgnore())
+				definitions.add(MDPDefinition.buildFromJsonString(definition.getData()));
 		}
 		RLModel.getInstance().setDefinitions(definitions);
 	}
@@ -431,7 +429,7 @@ public class SimulationPanel extends JPanel {
 
 					@Override
 					public Object getValueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						// Initialize the label
@@ -485,7 +483,7 @@ public class SimulationPanel extends JPanel {
 				new Column(trans.get("simpanel.col.Name")) {
 					@Override
 					public Object getValueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 						return document.getSimulation(row).getName();
 					}
@@ -505,7 +503,7 @@ public class SimulationPanel extends JPanel {
 				new Column(trans.get("simpanel.col.Configuration")) {
 					@Override
 					public Object getValueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 						
 						Rocket rkt = document.getRocket();
@@ -523,7 +521,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Velocityoffrod"), UnitGroup.UNITS_VELOCITY) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -539,7 +537,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Apogee"), UnitGroup.UNITS_DISTANCE) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -554,7 +552,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Velocityatdeploy"), UnitGroup.UNITS_VELOCITY) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -571,7 +569,7 @@ public class SimulationPanel extends JPanel {
 						UnitGroup.UNITS_SHORT_TIME) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -590,7 +588,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Maxvelocity"), UnitGroup.UNITS_VELOCITY) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -605,7 +603,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Maxacceleration"), UnitGroup.UNITS_ACCELERATION) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -620,7 +618,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Timetoapogee"), UnitGroup.UNITS_FLIGHT_TIME) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -635,7 +633,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Flighttime"), UnitGroup.UNITS_FLIGHT_TIME) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -650,7 +648,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Groundhitvelocity"), UnitGroup.UNITS_VELOCITY) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -665,7 +663,7 @@ public class SimulationPanel extends JPanel {
 				new ValueColumn(trans.get("simpanel.col.Groundhitverticalvelocity"), UnitGroup.UNITS_VELOCITY) {
 					@Override
 					public Double valueAt(int row) {
-						if (!displaySimulation(row))
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
 
 						FlightData data = document.getSimulation(row).getSimulatedData();
@@ -763,12 +761,6 @@ public class SimulationPanel extends JPanel {
 		this.add(scrollpane, "spanx, grow, wrap rel");
 
 		updateButtonStates();
-	}
-
-	private boolean displaySimulation(int row) {
-		if (row < 0 || row >= document.getSimulationCount()) return false;
-		if (document.getSimulation(row).getName().contains("{")) return false;
-		return true;
 	}
 
 	protected void doPopup(MouseEvent e) {
@@ -949,7 +941,7 @@ public class SimulationPanel extends JPanel {
 				Object value, boolean isSelected, boolean hasFocus, int row,
 				int column) {
 
-			if (!displaySimulation(row))
+			if (row < 0 || row >= document.getSimulationCount())
 				return super.getTableCellRendererComponent(table, value,
 						isSelected, hasFocus, row, column);
 
