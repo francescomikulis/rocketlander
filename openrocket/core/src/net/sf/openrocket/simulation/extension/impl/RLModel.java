@@ -39,13 +39,37 @@ public class RLModel {
         // constructor("X", "Y", SimulationType._3D, generalDefinition);
     }
 
+    public void setDefinitions(ArrayList<MDPDefinition> definitions) {
+        boolean actualChange = false;
+        boolean reset = false;
+        for (MDPDefinition definition: definitions) {
+            if (!methods.containsKey(definition.name)) {
+                actualChange = true;
+                break;
+            }
+            String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
+            String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
+            if (!newDefinitionString.equals(oldDefinitionString)) {
+                actualChange = true;
+                reset = true;
+                break;
+            }
+        }
+        if (!actualChange) {
+            actualChange = methods.size() != definitions.size();
+        }
+        if (actualChange) {
+            constructor("X", "Y", SimulationType._3D, reset, definitions.toArray(new MDPDefinition[definitions.size()]));
+        }
+    }
+
     private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, boolean reset, MDPDefinition ... definitions) {
         valueFunctionTable = null;
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
         this.methods = new LinkedHashMap<>();
-        for (MDPDefinition definition: definitions) {
+        for (MDPDefinition definition: sortMDPDefinitionsByPriority(definitions)) {
             methods.put(definition.name, definition.model);
         }
         // setValueFunctionTable
@@ -54,6 +78,26 @@ public class RLModel {
         } else {
             this.valueFunctionTable = RLObjectFileStore.getInstance().readActionValueFunctionFromMethods(methods);
         }
+    }
+
+    private MDPDefinition[] sortMDPDefinitionsByPriority(MDPDefinition[] definitions) {
+        MDPDefinition[] sortedMDPDefinitions = new MDPDefinition[definitions.length];
+        int minPriority = Integer.MAX_VALUE;
+        int maxPriority = Integer.MIN_VALUE;
+        for (MDPDefinition definition: definitions) {
+            minPriority = Math.min(minPriority, definition.priority);
+            maxPriority = Math.max(maxPriority, definition.priority);
+        }
+        int currentIndex = 0;
+        for (int i = minPriority; i <= maxPriority; i++) {
+            for (MDPDefinition definition: definitions) {
+                if (definition.priority == i) {
+                    sortedMDPDefinitions[currentIndex] = definition;
+                    currentIndex++;
+                }
+            }
+        }
+        return sortedMDPDefinitions;
     }
 
     public void resetValueFunctionTable() {

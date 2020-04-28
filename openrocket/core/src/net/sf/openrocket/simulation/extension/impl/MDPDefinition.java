@@ -8,12 +8,14 @@ import java.io.Serializable;
 import java.util.*;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class MDPDefinition implements Serializable {
-    private static Gson gson = new Gson();
+    private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public String name;
     public String methodName;
+    public int priority = 1;
     public transient ModelBaseImplementation model = null;
     public String reward;
     transient Formula _reward;

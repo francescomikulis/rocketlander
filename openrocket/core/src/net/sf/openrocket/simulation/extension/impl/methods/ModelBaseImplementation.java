@@ -179,6 +179,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         MDPDefinition landerDefinition = new MDPDefinition();
         landerDefinition.name = "lander";
         landerDefinition.methodName = "MC";
+        landerDefinition.priority = 1;
         landerDefinition.reward = "-Div(Abs(thrust),100.0)";
         landerDefinition.terminalReward = "-Abs(velocityZ)";
         landerDefinition.stateDefinition = new LinkedHashMap<String, float[]>() {{
@@ -228,6 +229,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         MDPDefinition reacherDefinition = new MDPDefinition();
         reacherDefinition.name = "reacher";
         reacherDefinition.methodName = "TD0";
+        reacherDefinition.priority = 2;
         reacherDefinition.reward = "Add(-Mult(position, 10.0), -velocity)";
         reacherDefinition.symmetryAxes = new String[]{"angle","position","velocity","gimbal"};
         reacherDefinition.stateDefinition = new LinkedHashMap<String, float[]>() {{
@@ -262,6 +264,7 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         MDPDefinition stabilizerDefinition = new MDPDefinition();
         stabilizerDefinition.name = "stabilizer";
         stabilizerDefinition.methodName = "TD0";
+        stabilizerDefinition.priority = 2;
         stabilizerDefinition.reward = "Add(-Pow(Todeg(angle), 2.0), 1.0)";
         stabilizerDefinition.symmetryAxes = new String[]{"angle","angleVelocity","gimbal"};
         stabilizerDefinition.stateDefinition = new LinkedHashMap<String, float[]>() {{

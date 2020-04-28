@@ -160,6 +160,7 @@ public class BasicFrame extends JFrame {
 	private final RocketActions actions;
 
 	private SimulationPanel simulationPanel;
+	private RLPanel rlPanel;
 
 
 	/**
@@ -193,6 +194,7 @@ public class BasicFrame extends JFrame {
 
 
 		// MODIFIED CODE HERE log.debug("Constructing the BasicFrame UI");
+		rlPanel = new RLPanel(document);
 
 		// The main vertical split pane
 		JSplitPane vertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
@@ -208,6 +210,8 @@ public class BasicFrame extends JFrame {
 		tabbedPane.addTab(trans.get("BasicFrame.tab.Flightconfig"), null, new FlightConfigurationPanel(document));
 		//// Flight simulations
 		tabbedPane.addTab(trans.get("BasicFrame.tab.Flightsim"), null, simulationPanel);
+		//// RL Model Configurations
+		tabbedPane.addTab("RL Configurations", null, rlPanel);
 
 		// Add change listener to catch when the tabs are changed.  This is to run simulations 
 		// automagically when the simulation tab is selected.
@@ -1663,6 +1667,7 @@ public class BasicFrame extends JFrame {
 		String tab = tabSource.getTitleAt(tabSource.getSelectedIndex());
 		if (tab.equals(trans.get("BasicFrame.tab.Flightsim"))) {
 			simulationPanel.activating();
+			simulationPanel.reloadRLMethods();
 		}
 	}
 }
