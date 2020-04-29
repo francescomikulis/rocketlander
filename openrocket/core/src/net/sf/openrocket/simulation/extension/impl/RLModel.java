@@ -29,37 +29,40 @@ public class RLModel {
     }
 
     private RLModel(){
-        constructor(false);
+        constructor(false, getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
     }
 
-    private void constructor(boolean reset) {
+    private void constructor(boolean reset, MDPDefinition ... definitions) {
         // this is the default constructor - these hashmap definition should be read from elsewhere
 
-        constructor("X", "Y", SimulationType._3D, reset, getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
+        constructor("X", "Y", SimulationType._3D, reset, definitions);
         // constructor("X", "Y", SimulationType._3D, generalDefinition);
     }
 
     public void setDefinitions(ArrayList<MDPDefinition> definitions) {
         boolean actualChange = false;
-        boolean reset = false;
         for (MDPDefinition definition: definitions) {
             if (!methods.containsKey(definition.name)) {
                 actualChange = true;
-                break;
+                definition.valueFunction = null;
             }
-            String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
-            String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
-            if (!newDefinitionString.equals(oldDefinitionString)) {
+            // String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
+            // String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
+
+            // if (!newDefinitionString.equals(oldDefinitionString)) {
+            // only force reset on index change
+            if (Arrays.equals(methods.get(definition.name).definition.indeces, definition.indeces)) {
+                definition.valueFunction = methods.get(definition.name).definition.valueFunction;
+            } else {
                 actualChange = true;
-                reset = true;
-                break;
+                definition.valueFunction = null;
             }
         }
         if (!actualChange) {
             actualChange = methods.size() != definitions.size();
         }
         if (actualChange) {
-            constructor("X", "Y", SimulationType._3D, reset, definitions.toArray(new MDPDefinition[definitions.size()]));
+            constructor("X", "Y", SimulationType._3D, false, definitions.toArray(new MDPDefinition[definitions.size()]));
         }
     }
 
@@ -73,11 +76,7 @@ public class RLModel {
             methods.put(definition.name, definition.model);
         }
         // setValueFunctionTable
-        if (reset) {
-            this.valueFunctionTable = new OptimizedMap(methods);
-        } else {
-            this.valueFunctionTable = RLObjectFileStore.getInstance().readActionValueFunctionFromMethods(methods);
-        }
+        this.valueFunctionTable = new OptimizedMap(methods, reset);
     }
 
     private MDPDefinition[] sortMDPDefinitionsByPriority(MDPDefinition[] definitions) {
@@ -102,7 +101,11 @@ public class RLModel {
 
     public void resetValueFunctionTable() {
         valueFunctionTable.resetValueFunctionTable(methods);
-        constructor(true);
+        ArrayList<MDPDefinition> definitions = new ArrayList<>();
+        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+            definitions.add(entry.getValue().definition);
+        }
+        constructor(true, definitions.toArray(new MDPDefinition[definitions.size()]));
     }
 
     public OptimizedMap getValueFunctionTable() {

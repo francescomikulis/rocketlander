@@ -25,37 +25,33 @@ public class RLObjectFileStore {
 
     private RLObjectFileStore(){}
 
-    public OptimizedMap readActionValueFunctionFromMethods(LinkedHashMap<String, ModelBaseImplementation> methods) {
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
-            String fileName = actionValueFunctionFileName + entry.getKey() + ".txt";
-            float[] actionValueFunction;
-            boolean exists = false;
-            try {
-                File tempFile = new File(fileName);
-                exists = tempFile.exists();
-            } catch (Exception e) {
-                exists = false;
-            }
-            if (exists) {
-                actionValueFunction = (float[]) readObjects(fileName);
-            } else {
-                actionValueFunction = OptimizedMap.allocateNewValueFunctionTable(entry.getValue().definition.indexProduct);
-            }
-            entry.getValue().definition.valueFunction = actionValueFunction;
+    public boolean tryToReadActionValueFunctionFromDefinition(MDPDefinition definition) {
+        String fileName = actionValueFunctionFileName + definition.name + ".txt";
+        boolean exists = false;
+        try {
+            File tempFile = new File(fileName);
+            exists = tempFile.exists();
+        } catch (Exception e) {
+            exists = false;
         }
-        return new OptimizedMap(methods);
+        if (exists) {
+            float[] valueFunction = (float[]) readObjects(fileName);
+            if (valueFunction.length == definition.indexProduct)
+                definition.valueFunction = valueFunction;
+            else
+                exists = false;  // sizes are different so must re-allocate
+        }
+        return exists;
     }
 
     // starting to attempt to move the actionValueFunction to the MDP Definition
 
-    public static void storeDefinition(HashMap<String, LinkedHashMap> definition, String fileName) {
-        storeObject(definition, fileName);
+    public static void storeDefinition(MDPDefinition definition, String fileName) {
+        storeObject(MDPDefinition.toJsonString(definition), fileName);
     }
 
-    public HashMap<String, LinkedHashMap> readDefinition(String fileName){
-        HashMap<String, LinkedHashMap> definition = (HashMap<String, LinkedHashMap>) readObjects(fileName);
-        return definition;
-        // return new OptimizedMap(null, null, null);
+    public MDPDefinition readDefinition(String fileName){
+        return MDPDefinition.buildFromJsonString((String)readObjects(fileName));
     }
 
     public static void storeActionValueFunctions(){

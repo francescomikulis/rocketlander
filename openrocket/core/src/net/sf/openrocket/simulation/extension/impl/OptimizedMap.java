@@ -45,12 +45,19 @@ public class OptimizedMap {
             MDPDefinition definition = method.definition;
 
             float[] valueFunctionTable = null;
-            if ((!reset) && (definition.valueFunction != null)) {
-                valueFunctionTable = (float[]) definition.valueFunction;
+            boolean readSuccess = true;
+            if (!reset) {
+                if (definition.valueFunction != null)
+                    valueFunctionTable = definition.valueFunction;
+                else {
+                    readSuccess = RLObjectFileStore.getInstance().tryToReadActionValueFunctionFromDefinition(method.definition);
+                    if (readSuccess)
+                        valueFunctionTable = definition.valueFunction;
+                }
             }
-            if (valueFunctionTable == null) {
+
+            if (reset || !readSuccess)
                 valueFunctionTable = allocateNewValueFunctionTable(definition.indexProduct);
-            }
 
             definition.valueFunction = valueFunctionTable;
             method.setValueFunctionTable(this);
@@ -86,14 +93,14 @@ public class OptimizedMap {
     }
 
     public float get(StateActionTuple stateActionTuple) {
-        String definitionName = (String)stateActionTuple.state.definition.name;
+        String definitionName = stateActionTuple.state.definition.name;
         float[] valueFunctionTable = valueFunctionTables.get(definitionName);
         int index = MDPDefinition.computeIndex(stateActionTuple);
         return valueFunctionTable[index];
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        String definitionName = (String)stateActionTuple.state.definition.name;
+        String definitionName = stateActionTuple.state.definition.name;
         float[] valueFunctionTable = valueFunctionTables.get(definitionName);
         int index = MDPDefinition.computeIndex(stateActionTuple);
         valueFunctionTable[index] = newValue;

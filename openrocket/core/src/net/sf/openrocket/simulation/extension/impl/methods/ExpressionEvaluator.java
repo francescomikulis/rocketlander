@@ -442,7 +442,7 @@ public class ExpressionEvaluator {
         String stringFormula = ExpressionEvaluator.getInstance().generateFormula(formula).toString();
         assert stringFormula.equals(formula.replace(" ", ""));
 
-        RLObjectFileStore.getInstance().storeDefinition(_landerDefinition, "sampleMap");
+        RLObjectFileStore.getInstance().storeDefinition(getLanderDefinition(), "sampleMap");
         System.out.println(RLObjectFileStore.getInstance().readDefinition("sampleMap"));
 
         // System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
