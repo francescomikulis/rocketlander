@@ -495,9 +495,11 @@ public class StateActionTuple implements Serializable {
         public boolean add(Action action) {
             if (action.definition.actionDefinition.containsKey("thrust")) {
                 thrustAction = action;
-            } else if (action.definition.actionDefinition.containsKey("gimbalX") || ((action.symmetry != null ) && action.symmetry.equals("X") && action.definition.actionDefinition.containsKey("gimbal"))) {
+            }
+            if (action.definition.actionDefinition.containsKey("gimbalX") || ((action.symmetry != null ) && action.symmetry.equals("X") && action.definition.actionDefinition.containsKey("gimbal"))) {
                 gimbalXAction = action;
-            } else if (action.definition.actionDefinition.containsKey("gimbalY") || ((action.symmetry != null ) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("gimbal"))) {
+            }
+            if (action.definition.actionDefinition.containsKey("gimbalY") || ((action.symmetry != null ) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("gimbal"))) {
                 gimbalYAction = action;
             }
             return super.add(action);
