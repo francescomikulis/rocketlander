@@ -123,21 +123,21 @@ public class RLPanel extends JPanel {
         this.add(editButton, "gapright para");
 
         //// Edit simulation button
-        disableButton = new JButton("Disable MDP Definition");
+        disableButton = new JButton("Disable MDP Definition(s)");
         //// Edit the selected simulation
-        disableButton.setToolTipText("Disable an MDP Definition");
+        disableButton.setToolTipText("Disable MDP Definition(s)");
         disableButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int[] selection = definitionTable.getSelectedRows();
-                if (selection.length != 1) {
+                if (selection.length == 0) {
                     return;
                 }
-
-                selection[0] = definitionTable.convertRowIndexToModel(selection[0]);
-                Definition definition = document.definitions.get(selection[0]);
-
-                definition.setIgnore(!definition.getIgnore());
+                for (int i = 0; i < selection.length; i++) {
+                    selection[i] = definitionTable.convertRowIndexToModel(selection[i]);
+                    Definition definition = document.definitions.get(selection[i]);
+                    definition.setIgnore(!definition.getIgnore());
+                }
                 definitionTableModel.fireTableDataChanged();
             }
         });
@@ -152,10 +152,25 @@ public class RLPanel extends JPanel {
         resetModelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                int[] selection = definitionTable.getSelectedRows();
+                if (selection.length == 0) {
+                    return;
+                }
+                Definition[] definitions = new Definition[selection.length];
+                StringBuilder definitionNames = new StringBuilder();
+                for (int i = 0; i < selection.length; i++) {
+                    selection[i] = definitionTable.convertRowIndexToModel(selection[i]);
+                    definitions[i] = document.definitions.get(selection[i]);
+                    definitionNames.append(definitions[i].getName());
+                    if (i != selection.length - 1)
+                        definitionNames.append(", ");
+                }
+
                 JPanel panel = new JPanel(new MigLayout());
                 int ret = JOptionPane.showConfirmDialog(RLPanel.this,
                         new Object[] {
-                                "Are you sure you want to reset the model?",
+                                "Are you sure you want to reset the model(s)?",
+                                "<html><b>You will reset: " + definitionNames + "</b>",
                                 "<html><i>This operation cannot be undone.</i>",
                                 "",
                                 panel },
@@ -164,7 +179,11 @@ public class RLPanel extends JPanel {
                         JOptionPane.WARNING_MESSAGE);
                 if (ret != JOptionPane.OK_OPTION)
                     return;
-                RLModel.getInstance().resetValueFunctionTable();
+                // perform reset on those definitions
+                MDPDefinition[] mdpDefinitions = new MDPDefinition[definitions.length];
+                for (int i = 0; i < definitions.length; i++)
+                    mdpDefinitions[i] = MDPDefinition.buildFromJsonString(definitions[i].getData());
+                RLModel.getInstance().resetValueFunctionTable(mdpDefinitions);
             }
         });
         this.add(resetModelButton, "gapright para");
@@ -382,12 +401,16 @@ public class RLPanel extends JPanel {
         int[] selection = definitionTable.getSelectedRows();
         if (selection.length == 0) {
             editButton.setEnabled(false);
+            disableButton.setEnabled(false);
+            resetModelButton.setEnabled(false);
             deleteButton.setEnabled(false);
         } else {
             if (selection.length > 1) {
             } else {
             }
             editButton.setEnabled(true);
+            disableButton.setEnabled(true);
+            resetModelButton.setEnabled(true);
             deleteButton.setEnabled(true);
         }
 

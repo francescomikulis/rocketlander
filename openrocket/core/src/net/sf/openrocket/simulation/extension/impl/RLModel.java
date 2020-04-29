@@ -51,7 +51,7 @@ public class RLModel {
 
             // if (!newDefinitionString.equals(oldDefinitionString)) {
             // only force reset on index change
-            if (Arrays.equals(methods.get(definition.name).definition.indeces, definition.indeces)) {
+            if ((methods.get(definition.name) != null) && (methods.get(definition.name).definition != null) && Arrays.equals(methods.get(definition.name).definition.indeces, definition.indeces)) {
                 definition.valueFunction = methods.get(definition.name).definition.valueFunction;
             } else {
                 actualChange = true;
@@ -99,13 +99,9 @@ public class RLModel {
         return sortedMDPDefinitions;
     }
 
-    public void resetValueFunctionTable() {
-        valueFunctionTable.resetValueFunctionTable(methods);
-        ArrayList<MDPDefinition> definitions = new ArrayList<>();
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
-            definitions.add(entry.getValue().definition);
-        }
-        constructor(true, definitions.toArray(new MDPDefinition[definitions.size()]));
+    public void resetValueFunctionTable(MDPDefinition[] definitions) {
+        valueFunctionTable.resetValueFunctionTable(definitions);
+        constructor(true, definitions);
     }
 
     public OptimizedMap getValueFunctionTable() {
@@ -289,6 +285,7 @@ public class RLModel {
         CoupledStates coupledStates = new CoupledStates();
         MDPDefinition firstDefinition = null;
         for (String key: methods.keySet()) { firstDefinition = methods.get(key).definition; break; }
+        if (firstDefinition == null) return new Object[]{null, null};
         coupledStates.add(new State(status, firstDefinition));
 
         int methodCounter = 0;

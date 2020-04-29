@@ -31,10 +31,6 @@ public abstract class ModelBaseImplementation implements ModelInterface {
         this.valueFunctionTable = valueFunctionTable;
     }
 
-    public void removeValueFunctionTable() {
-        this.valueFunctionTable = null;
-    }
-
     public void setStepDiscount(float stepDiscount) { this.stepDiscount = stepDiscount; }
     public void setTerminalDiscount(float terminalDiscount) { this.terminalDiscount = terminalDiscount; }
     public void setAlpha(float alpha) { this.alpha = alpha; }

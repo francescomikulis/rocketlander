@@ -70,31 +70,7 @@ public class MDPDefinitionEditDialog extends JDialog {
 			//// Simulation name:
 			panel.add(new JLabel("Configuration Name"), "growx 0, gapright para");
 			final JTextField field = new JTextField(definitionList[0].getName());
-			field.getDocument().addDocumentListener(new DocumentListener() {
-				@Override
-				public void changedUpdate(DocumentEvent e) {
-					setText();
-				}
-
-				@Override
-				public void insertUpdate(DocumentEvent e) {
-					setText();
-				}
-
-				@Override
-				public void removeUpdate(DocumentEvent e) {
-					setText();
-				}
-
-				private void setText() {
-					String name = field.getText();
-					if (name == null || name.equals(""))
-						return;
-					//System.out.println("Setting name:" + name);
-					definitionList[0].setName(name);
-
-				}
-			});
+			field.setEditable(false);
 			panel.add(field, "growx, wrap");
 
 			panel.add(new JPanel(), "growx, wrap");
@@ -150,8 +126,10 @@ public class MDPDefinitionEditDialog extends JDialog {
 					newDefinition = newDefinition.replaceAll(" ", "");
 
 					MDPDefinition theDefinition = MDPDefinition.buildFromJsonString(newDefinition);
+					String newName = theDefinition.name;
 					String storeDefinitionString = MDPDefinition.toJsonString(theDefinition);
 
+					definition.setName(newName);
 					definition.setData(storeDefinitionString);
 				}
 			});

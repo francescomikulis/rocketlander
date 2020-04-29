@@ -72,7 +72,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         state = newState;
         action = newAction;
 
-        memoizeSmartGuesses(state.toStringNames());
+        if (state != null)
+            memoizeSmartGuesses(state.toStringNames());
 
         return true;
     }
@@ -236,8 +237,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null) return null;
+        if (action == null) {
+            assert state == null;
+            return null;
+        }
 
-        //action = new Action(60.0, move_gimbal_to_y, move_gimbal_to_z);
         RLVectoringThrust *= (action.getDouble("thrust"));
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
@@ -281,11 +285,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
         System.out.println("");
          */
-
-        terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
-        if (!hasCompletedTerminalUpdate) {
-            model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleans);
-            hasCompletedTerminalUpdate = true;
+        if (action != null) {
+            terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
+            if (!hasCompletedTerminalUpdate) {
+                model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleans);
+                hasCompletedTerminalUpdate = true;
+            }
         }
     }
 
@@ -453,6 +458,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private void storeUpdatedFlightConditions() {
+        if (state == null) return;
         String stateNames = state.toStringNames();
         this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate(stateNames, "position"));
         this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate(stateNames, "velocity"));

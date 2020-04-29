@@ -66,13 +66,10 @@ public class OptimizedMap {
         }
     }
 
-    public void resetValueFunctionTable(LinkedHashMap<String, ModelBaseImplementation> methods) {
-        for (Map.Entry<String, ModelBaseImplementation> entry : methods.entrySet()) {
-            MDPDefinition definition = entry.getValue().definition;
-
+    public void resetValueFunctionTable(MDPDefinition[] definitions) {
+        for (MDPDefinition definition : definitions) {
             definition.valueFunction = null;
             valueFunctionTables.remove(definition.name);
-            entry.getValue().removeValueFunctionTable();
         }
     }
 
