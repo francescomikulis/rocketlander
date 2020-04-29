@@ -18,7 +18,7 @@ public class RLModel {
     private Random randomGenerator = new Random();
     OptimizedMap valueFunctionTable;
 
-    private LinkedHashMap<String, ModelBaseImplementation> methods;
+    private LinkedHashMap<String, ModelBaseImplementation> methods = new LinkedHashMap<>();
 
     public String symmetryAxis2D = "X";
     public String symmetryAxis3D = "Y";
@@ -45,13 +45,16 @@ public class RLModel {
             if (!methods.containsKey(definition.name)) {
                 actualChange = true;
                 definition.valueFunction = null;
+                continue;
             }
-            // String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
-            // String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
+            double originalExploration = methods.get(definition.name).definition.exploration;
+            methods.get(definition.name).definition.exploration = definition.exploration;
+            String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
+            String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
+            methods.get(definition.name).definition.exploration = originalExploration;
 
-            // if (!newDefinitionString.equals(oldDefinitionString)) {
-            // only force reset on index change
-            if ((methods.get(definition.name) != null) && (methods.get(definition.name).definition != null) && Arrays.equals(methods.get(definition.name).definition.indeces, definition.indeces)) {
+            // only re-use if the only modified field was at most the exploration parameter
+            if (newDefinitionString.equals(oldDefinitionString)) {
                 definition.valueFunction = methods.get(definition.name).definition.valueFunction;
             } else {
                 actualChange = true;
@@ -62,6 +65,7 @@ public class RLModel {
             actualChange = methods.size() != definitions.size();
         }
         if (actualChange) {
+            methods = new LinkedHashMap<>();
             constructor("X", "Y", SimulationType._3D, false, definitions.toArray(new MDPDefinition[definitions.size()]));
         }
     }
@@ -71,7 +75,6 @@ public class RLModel {
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
-        this.methods = new LinkedHashMap<>();
         for (MDPDefinition definition: sortMDPDefinitionsByPriority(definitions)) {
             methods.put(definition.name, definition.model);
         }
@@ -213,6 +216,14 @@ public class RLModel {
                 possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), state.definition.actionDefinitionIntegers[index])));
             }
             index++;
+        }
+
+        if (actionFields.length == 0) {
+            for (Map.Entry<String, String[]> entry: state.definition.childrenMDPOptions.entrySet()) {
+                actionStrings.add(entry.getKey());
+                ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, entry.getKey()));
+                possibleActionInts.add(childMDPOptions);
+            }
         }
 
         int size = actionStrings.size();

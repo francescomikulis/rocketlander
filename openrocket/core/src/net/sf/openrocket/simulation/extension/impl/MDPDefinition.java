@@ -84,6 +84,7 @@ public class MDPDefinition implements Serializable {
     public static boolean needToChooseNewAction(State newState, State oldState, Action lastAction) {
         if (lastAction == null) return true;
         if (isNoActionState(newState)) return false;
+        if (newState.definition.stateDefinition.size() == 0) return true;
         if (equivalentState(newState, oldState)) return false;
         return true;
     }
