@@ -1,13 +1,8 @@
 package net.sf.openrocket.simulation.extension.impl;
 
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
 import java.util.*;
-
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 /**
     valueFunctionTable
@@ -29,20 +24,17 @@ import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImple
  */
 
 public class OptimizedMap {
-    public HashMap<String, float[]> valueFunctionTables = new HashMap<>();
-
-    public OptimizedMap(LinkedHashMap<String, ModelBaseImplementation> methods) {
+    public OptimizedMap(LinkedHashMap<String, MDPDefinition> methods) {
         constructorCode(methods, false);
     }
 
-    public OptimizedMap(LinkedHashMap<String, ModelBaseImplementation> methods, boolean reset) {
+    public OptimizedMap(LinkedHashMap<String, MDPDefinition> methods, boolean reset) {
         constructorCode(methods, reset);
     }
 
-    private void constructorCode(LinkedHashMap<String, ModelBaseImplementation> methods, boolean reset) {
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
-            ModelBaseImplementation method = entry.getValue();
-            MDPDefinition definition = method.definition;
+    private void constructorCode(LinkedHashMap<String, MDPDefinition> methods, boolean reset) {
+        for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
+            MDPDefinition definition = entry.getValue();
 
             float[] valueFunctionTable = null;
             boolean readSuccess = true;
@@ -50,7 +42,7 @@ public class OptimizedMap {
                 if (definition.valueFunction != null)
                     valueFunctionTable = definition.valueFunction;
                 else {
-                    readSuccess = RLObjectFileStore.getInstance().tryToReadActionValueFunctionFromDefinition(method.definition);
+                    readSuccess = RLObjectFileStore.getInstance().tryToReadActionValueFunctionFromDefinition(definition);
                     if (readSuccess)
                         valueFunctionTable = definition.valueFunction;
                 }
@@ -60,8 +52,8 @@ public class OptimizedMap {
                 valueFunctionTable = allocateNewValueFunctionTable(definition.indexProduct);
 
             definition.valueFunction = valueFunctionTable;
-            method.setValueFunctionTable(this);
-            valueFunctionTables.put(entry.getKey(), valueFunctionTable);
+            for (ModelBaseImplementation model: definition.models)
+                model.setValueFunctionTable(this);
             checkTableValues(definition);
         }
     }
@@ -69,7 +61,6 @@ public class OptimizedMap {
     public void resetValueFunctionTable(MDPDefinition[] definitions) {
         for (MDPDefinition definition : definitions) {
             definition.valueFunction = null;
-            valueFunctionTables.remove(definition.name);
         }
     }
 
@@ -79,8 +70,7 @@ public class OptimizedMap {
     }
 
     public void checkTableValues(MDPDefinition definition) {
-        float[] table = valueFunctionTables.get(definition.name);
-
+        float[] table = definition.valueFunction;
         int product = definition.indexProduct;
         for (int i = 0; i < product; i++) {
             if (Float.isNaN(table[i])) {
@@ -90,15 +80,13 @@ public class OptimizedMap {
     }
 
     public float get(StateActionTuple stateActionTuple) {
-        String definitionName = stateActionTuple.state.definition.name;
-        float[] valueFunctionTable = valueFunctionTables.get(definitionName);
+        float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
         return valueFunctionTable[index];
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        String definitionName = stateActionTuple.state.definition.name;
-        float[] valueFunctionTable = valueFunctionTables.get(definitionName);
+        float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
         valueFunctionTable[index] = newValue;
         return newValue;

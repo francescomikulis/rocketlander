@@ -4,12 +4,10 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.methods.*;
 
 import java.util.*;
-import java.util.function.Function;
 
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
 
-import static net.sf.openrocket.simulation.extension.impl.OptimizedMap.*;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
 
@@ -18,14 +16,19 @@ public class RLModel {
     private Random randomGenerator = new Random();
     OptimizedMap valueFunctionTable;
 
-    private LinkedHashMap<String, ModelBaseImplementation> methods = new LinkedHashMap<>();
+    private LinkedHashMap<String, MDPDefinition> methods = new LinkedHashMap<>();
 
     public String symmetryAxis2D = "X";
     public String symmetryAxis3D = "Y";
     public SimulationType simulationType = SimulationType._3D;
+    public SimulationInitVariation initVariation = SimulationInitVariation.all;
 
     public enum SimulationType {
         _1D, _2D, _3D
+    }
+
+    public enum SimulationInitVariation {
+        fixed, posVel, all
     }
 
     private RLModel(){
@@ -47,18 +50,20 @@ public class RLModel {
                 definition.valueFunction = null;
                 continue;
             }
-            double originalExploration = methods.get(definition.name).definition.exploration;
-            methods.get(definition.name).definition.exploration = definition.exploration;
-            String newDefinitionString = MDPDefinition.toJsonString(methods.get(definition.name).definition).replaceAll(" ", "");
-            String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
-            methods.get(definition.name).definition.exploration = originalExploration;
+            for (ModelBaseImplementation method: methods.get(definition.name).models) {
+                double originalExploration = method.definition.exploration;
+                method.definition.exploration = definition.exploration;
+                String newDefinitionString = MDPDefinition.toJsonString(method.definition).replaceAll(" ", "");
+                String oldDefinitionString = MDPDefinition.toJsonString(definition).replaceAll(" ", "");
+                method.definition.exploration = originalExploration;
 
-            // only re-use if the only modified field was at most the exploration parameter
-            if (newDefinitionString.equals(oldDefinitionString)) {
-                definition.valueFunction = methods.get(definition.name).definition.valueFunction;
-            } else {
-                actualChange = true;
-                definition.valueFunction = null;
+                // only re-use if the only modified field was at most the exploration parameter
+                if (newDefinitionString.equals(oldDefinitionString)) {
+                    definition.valueFunction = method.definition.valueFunction;
+                } else {
+                    actualChange = true;
+                    definition.valueFunction = null;
+                }
             }
         }
         if (!actualChange) {
@@ -76,7 +81,7 @@ public class RLModel {
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
         for (MDPDefinition definition: sortMDPDefinitionsByPriority(definitions)) {
-            methods.put(definition.name, definition.model);
+            methods.put(definition.name, definition);
         }
         // setValueFunctionTable
         this.valueFunctionTable = new OptimizedMap(methods, reset);
@@ -122,7 +127,7 @@ public class RLModel {
         return instance;
     }
 
-    public LinkedHashMap<String, ModelBaseImplementation> getMethods() {
+    public LinkedHashMap<String, MDPDefinition> getMethods() {
         return methods;
     }
 
@@ -281,7 +286,7 @@ public class RLModel {
                 if (selectedMDPName == null) actuallyCreateNewState = false;
 
                 if (actuallyCreateNewState) {
-                    State childState = new State(status, methods.get(selectedMDPName).definition);
+                    State childState = new State(status, methods.get(selectedMDPName));
                     childState.setSymmetry(symmetryAxis);
                     coupledStates.add(childState);
                 }
@@ -295,7 +300,7 @@ public class RLModel {
         ArrayList<Action> actions = new ArrayList<>();
         CoupledStates coupledStates = new CoupledStates();
         MDPDefinition firstDefinition = null;
-        for (String key: methods.keySet()) { firstDefinition = methods.get(key).definition; break; }
+        for (String key: methods.keySet()) { firstDefinition = methods.get(key); break; }
         if (firstDefinition == null) return new Object[]{null, null};
         coupledStates.add(new State(status, firstDefinition));
 
@@ -303,7 +308,7 @@ public class RLModel {
         while (methodCounter != coupledStates.size()) {
             State state = coupledStates.get(methodCounter);
             String methodName = state.definition.name;
-            ModelBaseImplementation method = methods.get(methodName);
+            ModelBaseImplementation method = methods.get(methodName).models[0];
 
             String storageName = methodName;
             if (state.symmetry != null) storageName += state.symmetry;
@@ -407,42 +412,44 @@ public class RLModel {
     }
 
     public void updateStepStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, LinkedHashMap<String, Integer> lastUpdateSizes) {
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+        for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             String methodName = entry.getKey();
-            ModelBaseImplementation method = entry.getValue();
-            Formula reward = method.definition._reward;
+            for (ModelBaseImplementation method: entry.getValue().models) {
+                Formula reward = method.definition._reward;
 
-            if (methods.get(methodName).definition.symmetryAxes == null) {
-                methods.get(methodName).updateStepCustomFunction(SA.get(methodName), reward);
-            } else {
-                if (0.5 < randomGenerator.nextDouble()) {
-                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "X"), reward);
-                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "Y"), reward);
+                if (method.definition.symmetryAxes == null) {
+                    method.updateStepCustomFunction(SA.get(methodName), reward);
                 } else {
-                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "Y"), reward);
-                    methods.get(methodName).updateStepCustomFunction(SA.get(methodName + "X"), reward);
+                    if (0.5 < randomGenerator.nextDouble()) {
+                        method.updateStepCustomFunction(SA.get(methodName + "X"), reward);
+                        method.updateStepCustomFunction(SA.get(methodName + "Y"), reward);
+                    } else {
+                        method.updateStepCustomFunction(SA.get(methodName + "Y"), reward);
+                        method.updateStepCustomFunction(SA.get(methodName + "X"), reward);
+                    }
                 }
             }
         }
     }
 
     public void updateTerminalStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, TerminationBooleans terminationBooleans) {
-        for (Map.Entry<String, ModelBaseImplementation> entry: methods.entrySet()) {
+        for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             String methodName = entry.getKey();
-            ModelBaseImplementation method = entry.getValue();
-            if (method.definition._terminalReward == null) continue;  // terminalReward not specified, skip method!
-            Formula terminalReward = method.definition._terminalReward;
-            Formula reward = method.definition._reward;
+            for (ModelBaseImplementation method: entry.getValue().models) {
+                if (method.definition._terminalReward == null) continue;  // terminalReward not specified, skip method!
+                Formula terminalReward = method.definition._terminalReward;
+                Formula reward = method.definition._reward;
 
-            if ((methods.get(methodName).definition.symmetryAxes == null) || (methods.get(methodName).definition.symmetryAxes.length == 0)) {
-                methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);
-            } else {
-                if (0.5 < randomGenerator.nextDouble()) {
-                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
-                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
+                if ((method.definition.symmetryAxes == null) || (method.definition.symmetryAxes.length == 0)) {
+                    method.updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);
                 } else {
-                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
-                    methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
+                    if (0.5 < randomGenerator.nextDouble()) {
+                        method.updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
+                        method.updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
+                    } else {
+                        method.updateTerminalCustomFunction(SA.get(methodName + "Y"), terminalReward, reward);
+                        method.updateTerminalCustomFunction(SA.get(methodName + "X"), terminalReward, reward);
+                    }
                 }
             }
         }

@@ -55,9 +55,8 @@ public class RLObjectFileStore {
     }
 
     public static void storeActionValueFunctions(){
-        OptimizedMap optimizedMap = RLModel.getInstance().getValueFunctionTable();
-        for (Map.Entry<String, float[]> entry: optimizedMap.valueFunctionTables.entrySet()) {
-            float[] actionValueFunction = entry.getValue();
+        for (Map.Entry<String, MDPDefinition> entry: RLModel.getInstance().getMethods().entrySet()) {
+            float[] actionValueFunction = entry.getValue().valueFunction;
             storeObject(actionValueFunction, actionValueFunctionFileName + entry.getKey() + ".txt");
         }
     }

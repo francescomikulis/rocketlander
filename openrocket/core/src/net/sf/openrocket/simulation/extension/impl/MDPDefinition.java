@@ -16,7 +16,7 @@ public class MDPDefinition implements Serializable {
     public String name;
     public String methodName;
     public int priority = 1;
-    public transient ModelBaseImplementation model = null;
+    public transient ModelBaseImplementation[] models = null;
     public String reward;
     transient Formula _reward;
     public String terminalReward;
@@ -202,6 +202,15 @@ public class MDPDefinition implements Serializable {
     }
 
     public void setupRLMethod() {
+        String methods[] = methodName.replaceAll(" ", "").split(",");
+        models = new ModelBaseImplementation[methods.length];
+        for (int i = 0; i < models.length; i++) {
+            models[i] = setupRLMethod(methods[i]);
+        }
+    }
+
+    public ModelBaseImplementation setupRLMethod(String methodName) {
+        ModelBaseImplementation model;
         switch (methodName.toUpperCase()) {
             case "MC":
                 model = new MonteCarlo(this); break;
@@ -211,12 +220,13 @@ public class MDPDefinition implements Serializable {
                 model = new Sarsa(this); break;
             default:
                 System.out.println("METHOD NAME NOT DEFINED IN THE IMPLEMENTATION.  Must choose between MC, TD0, SARSA.");
-                return;
+                return null;
         }
         model.setTerminalDiscount((float)discount);
         model.setStepDiscount((float)stepDiscount);
         model.setAlpha((float)alpha);
         model.setExploration((float)exploration);
+        return model;
     }
 
     public void generateIterationFields() {

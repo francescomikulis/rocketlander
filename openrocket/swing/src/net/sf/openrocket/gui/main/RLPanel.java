@@ -68,6 +68,7 @@ public class RLPanel extends JPanel {
     private final JButton editButton;
     private final JButton disableButton;
     private final JButton simulationTypeButton;
+    private final JButton simulationInitButton;
     private final JButton resetModelButton;
     private final JButton deleteButton;
 
@@ -165,6 +166,28 @@ public class RLPanel extends JPanel {
             }
         });
         this.add(simulationTypeButton, "gapright para");
+
+        //// Simulation initialization button
+        simulationInitButton = new JButton("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
+        //// Edit Simulation initialization
+        simulationInitButton.setToolTipText("Toggle Simulation Initialization Variation");
+        simulationInitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RLModel.SimulationInitVariation initVariation = RLModel.getInstance().initVariation;
+                RLModel.SimulationInitVariation newInitVariation = null;
+                if (initVariation == RLModel.SimulationInitVariation.fixed) {
+                    newInitVariation = RLModel.SimulationInitVariation.posVel;
+                } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
+                    newInitVariation = RLModel.SimulationInitVariation.all;
+                } else if (initVariation == RLModel.SimulationInitVariation.all) {
+                    newInitVariation = RLModel.SimulationInitVariation.fixed;
+                }
+                RLModel.getInstance().initVariation = newInitVariation;
+                simulationInitButton.setText("SimInitVariation: " + String.valueOf(newInitVariation));
+            }
+        });
+        this.add(simulationInitButton, "gapright para");
 
         // MODIFIED CODE HERE
 

@@ -78,6 +78,69 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return true;
     }
 
+    private Coordinate calculatePositionAndVelocityCoordinate(double maxX, double maxY, double maxZ) {
+        double posX = calculateNumberWithIntegerVariation(0, maxX);
+        double posY = calculateNumberWithIntegerVariation(0, maxY);
+        if(model.simulationType == SimulationType._1D) {
+            posX = 0; posY = 0;
+        }
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                posY = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                posX = 0;
+            }
+        }
+        // dx and dy position only in advanced
+        if(model.initVariation != SimulationInitVariation.all) {
+            posX = 0; posY = 0;
+        }
+        double posZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
+        if(model.initVariation == SimulationInitVariation.fixed) {
+            posZ = maxZ;
+        }
+        return new Coordinate(posX, posY, posZ);
+    }
+
+    private Quaternion calculateInitialOrientation() {
+        double dx = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
+        double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
+        double dz = 90;
+        if(model.simulationType == SimulationType._1D) {
+            dx = 0; dy = 0;
+        }
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                dy = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                dx = 0;
+            }
+        }
+        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel)) {
+            dx = 0; dy = 0;
+        }
+        return new Quaternion(0, dx, dy, dz).normalizeIfNecessary();
+    }
+
+    private Coordinate calculateInitialRotationVelocity() {
+        double dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        double dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        if(model.simulationType == SimulationType._1D) {
+            dx = 0; dy = 0;
+        }
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                dx = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                dy = 0;
+            }
+        }
+        if((model.initVariation != SimulationInitVariation.all)) {
+            dx = 0; dy = 0;
+        }
+        return new Coordinate(dx, dy, 0);
+    }
+
     @Override
     public void startSimulation(SimulationStatus status) {
         // initialize episode
@@ -86,50 +149,19 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
         status.getSimulationConditions().setTimeStep(timeStep);
 
-        double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        double posY = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                posY = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                posX = 0;
-            }
-        }
-        double posZ = calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation);
 
         // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(new Coordinate(posX, posY, posZ));
-        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation)));
-        //status.setRocketPosition(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchAltitude(), variation)));
+        status.setRocketPosition(calculatePositionAndVelocityCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + variation, variation))));
-        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
+        Coordinate rocketVelocity = calculatePositionAndVelocityCoordinate(0, 0,MIN_VELOCITY + variation);
+        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
 
-        double dx = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
-        double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
-        double dz = 90;
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                dy = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                dx = 0;
-            }
-        }
-        status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        // NOTE: IMPORTANT - DISABLED RANDOM ANGLE STARTS HERE!
+        status.setRocketOrientationQuaternion(calculateInitialOrientation());
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
 
-        dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                dx = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                dy = 0;
-            }
-        }
-        status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
+        // set the rocket rotational velocity
+        status.setRocketRotationVelocity(calculateInitialRotationVelocity());
 
         status.setLaunchRodCleared(true);
 
