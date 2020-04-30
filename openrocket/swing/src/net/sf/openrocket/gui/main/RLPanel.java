@@ -67,6 +67,7 @@ public class RLPanel extends JPanel {
 
     private final JButton editButton;
     private final JButton disableButton;
+    private final JButton simulationTypeButton;
     private final JButton resetModelButton;
     private final JButton deleteButton;
 
@@ -142,6 +143,28 @@ public class RLPanel extends JPanel {
             }
         });
         this.add(disableButton, "gapright para");
+
+        //// Simulation type button
+        simulationTypeButton = new JButton("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
+        //// Edit Simulation type
+        simulationTypeButton.setToolTipText("Toggle Simulation Type");
+        simulationTypeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RLModel.SimulationType simulationType = RLModel.getInstance().simulationType;
+                RLModel.SimulationType newSimulationType = null;
+                if (simulationType == RLModel.SimulationType._1D) {
+                    newSimulationType = RLModel.SimulationType._2D;
+                } else if (simulationType == RLModel.SimulationType._2D) {
+                    newSimulationType = RLModel.SimulationType._3D;
+                } else if (simulationType == RLModel.SimulationType._3D) {
+                    newSimulationType = RLModel.SimulationType._1D;
+                }
+                RLModel.getInstance().simulationType = newSimulationType;
+                simulationTypeButton.setText("SimulationType: " + String.valueOf(newSimulationType));
+            }
+        });
+        this.add(simulationTypeButton, "gapright para");
 
         // MODIFIED CODE HERE
 

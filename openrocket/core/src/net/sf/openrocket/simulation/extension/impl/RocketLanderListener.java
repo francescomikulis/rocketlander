@@ -168,6 +168,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         setRollToZero(status);  // prevent rocket from spinning
         if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
+            status.setRocketRotationVelocity(new Coordinate(0, 0, 0));
         } else if(model.simulationType == SimulationType._2D) {
             Quaternion currentQuaternion = status.getRocketOrientationQuaternion();
             Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
@@ -243,14 +244,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
 
         RLVectoringThrust *= (action.getDouble("thrust"));
+        if (model.simulationType == SimulationType._1D) {
+            action.setDouble("gimbalX", 0.0);
+            action.setDouble("gimbalY", 0.0);
+        } else if (model.simulationType == SimulationType._2D) {
+            action.setDouble("gimbalY", 0.0);
+        }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
-        if (model.simulationType == SimulationType._1D) {
-            gimbalX = 0.0;
-            gimbalY = 0.0;
-        } else if (model.simulationType == SimulationType._2D) {
-            gimbalY = 0.0;
-        }
         return calculateAcceleration(status, gimbalX, gimbalY);
     }
 
@@ -261,15 +262,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         setupStateActionAndStore(status);
         storeUpdatedFlightConditions();
 
-        /*
-        if (terminationBooleans.simulationFailed() || (status.getSimulationTime() > MAX_TIME)) {
-            throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
-        }
-         */
-
         model.updateStepStateActionValueFunction(episodeStateActions, lastStepUpdateSizes);
         for (String method: episodeStateActions.keySet()) {
             lastStepUpdateSizes.put(method, episodeStateActions.get(method).size());
+        }
+
+        // terminationBooleans.simulationFailed()
+        if (status.getSimulationTime() > 8.0) {
+            throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
     }
 

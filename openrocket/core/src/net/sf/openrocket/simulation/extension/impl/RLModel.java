@@ -24,7 +24,7 @@ public class RLModel {
     public String symmetryAxis3D = "Y";
     public SimulationType simulationType = SimulationType._3D;
 
-    enum SimulationType {
+    public enum SimulationType {
         _1D, _2D, _3D
     }
 
@@ -35,7 +35,7 @@ public class RLModel {
     private void constructor(boolean reset, MDPDefinition ... definitions) {
         // this is the default constructor - these hashmap definition should be read from elsewhere
 
-        constructor("X", "Y", SimulationType._3D, reset, definitions);
+        constructor(symmetryAxis2D, symmetryAxis3D, simulationType, reset, definitions);
         // constructor("X", "Y", SimulationType._3D, generalDefinition);
     }
 
@@ -66,7 +66,7 @@ public class RLModel {
         }
         if (actualChange) {
             methods = new LinkedHashMap<>();
-            constructor("X", "Y", SimulationType._3D, false, definitions.toArray(new MDPDefinition[definitions.size()]));
+            constructor(symmetryAxis2D, symmetryAxis3D, simulationType, false, definitions.toArray(new MDPDefinition[definitions.size()]));
         }
     }
 
@@ -434,7 +434,7 @@ public class RLModel {
             Formula terminalReward = method.definition._terminalReward;
             Formula reward = method.definition._reward;
 
-            if (methods.get(methodName).definition.symmetryAxes == null) {
+            if ((methods.get(methodName).definition.symmetryAxes == null) || (methods.get(methodName).definition.symmetryAxes.length == 0)) {
                 methods.get(methodName).updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);
             } else {
                 if (0.5 < randomGenerator.nextDouble()) {

@@ -524,8 +524,10 @@ public class StateActionTuple implements Serializable {
             return action.getDouble(field);
         }
 
-        public double getDouble(String field, String axis) {
-            return getAction(field + axis).getDouble(field);
+        public void setDouble(String field, double value) {
+            Action action = getAction(field);
+            if (action == null) return;
+            action.setDouble(field, value);
         }
 
         @Override

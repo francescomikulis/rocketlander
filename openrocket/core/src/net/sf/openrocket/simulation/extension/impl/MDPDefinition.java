@@ -91,7 +91,7 @@ public class MDPDefinition implements Serializable {
 
     public static boolean isNoActionState(State state) {
         if (state == null) return true;
-        if (state.definition.noActionState == null) return false;
+        if ((state.definition.noActionState == null) || (state.definition.noActionState.size() == 0)) return false;
 
         for (Map.Entry<String, float[]> entry: state.definition.noActionState.entrySet()) {
             String field = entry.getKey();
@@ -189,7 +189,7 @@ public class MDPDefinition implements Serializable {
     }
 
     public void generateSymmetryFormulas() {
-        if (symmetryAxes == null) return;
+        if ((symmetryAxes == null) || (symmetryAxes.length == 0)) return;
         symmetryAxesHashSet = new HashSet<>(Arrays.asList(symmetryAxes));
 
         symmetryFormulas = new LinkedHashMap<>();
@@ -323,7 +323,7 @@ public class MDPDefinition implements Serializable {
 
 
     private void buildChildrenMDPIntegerOptions() {
-        if (childrenMDPOptions == null) return;
+        if ((childrenMDPOptions == null) || (childrenMDPOptions.size() == 0)) return;
 
         LinkedHashMap<String, Integer> MDPIntegerHashMap = new LinkedHashMap<>();
         for (Map.Entry<String, String[]> entry: childrenMDPOptions.entrySet()) {

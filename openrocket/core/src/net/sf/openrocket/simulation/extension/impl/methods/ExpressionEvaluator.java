@@ -433,6 +433,7 @@ public class ExpressionEvaluator {
         ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
         // test - assigning a symmetry formula creates formula
+        object.definition = getStabilizerDefinition();
         object.setSymmetry("X");
         assert object.definition.symmetryFormulas.containsKey("X");
         assert object.definition.symmetryFormulas.get("X").containsKey("position");
@@ -446,6 +447,9 @@ public class ExpressionEvaluator {
         System.out.println(RLObjectFileStore.getInstance().readDefinition("sampleMap"));
 
         // System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
+
+        String f = "Add(Abs(0), -Mult(Abs(velocityZ),10))";
+        System.out.println(ExpressionEvaluator.getInstance().generateFormula(f).evaluate(object));
 
         // precision verification test - ensure correct rounding
         double[] values = new double[]{0.4, 0.5, 0.6};

@@ -25,7 +25,12 @@ public class MonteCarlo extends ModelBaseImplementation {
         int lastTimeStep = SA.size() - 1;
         StateActionTuple lastStateActionTuple = SA.get(lastTimeStep);
         int actualSteps = 0;
-        float G = terminalReward.apply(lastStateActionTuple.state);
+
+        double positionPenalty = 0;
+        double positionZ = Math.abs(lastStateActionTuple.state.getDouble("positionZ"));
+        if (positionZ > 1.0)
+            positionPenalty = 1000.0 * positionZ;
+        float G = terminalReward.apply(lastStateActionTuple.state) - (float)positionPenalty;
         int numExplorationSteps = 0;
 
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
