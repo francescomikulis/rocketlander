@@ -6,6 +6,7 @@ import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.F
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -41,14 +42,17 @@ public class MDPDefinition implements Serializable {
     public LinkedHashMap<String, float[]> successConditions = null;
 
     public transient float[] valueFunction = null;
+    public transient ReentrantLock[] locks = null;
 
     public transient int indexProduct = 0;
     public transient int temporaryIndexProductForAction = 0;
     public transient int[] indeces = null;
+    public transient LinkedHashMap<String, Integer> reverseIndeces = null;
     public transient int[][] stateDefinitionIntegers = null;
     public transient int[][] actionDefinitionIntegers = null;
     public transient LinkedHashMap<String, Integer> childrenMDPIntegerOptions = null;
     public transient LinkedHashMap<String, Float> precisions = null;
+    public transient LinkedHashMap<String, Float> rangeShifts = null;
 
 
     public MDPDefinition() {
@@ -76,6 +80,18 @@ public class MDPDefinition implements Serializable {
 
     public static String toJsonString(MDPDefinition definition) {
         return gson.toJson(definition);
+    }
+
+    public void setValueFunction(float[] valueFunction) {
+        this.valueFunction = valueFunction;
+        if (valueFunction == null) {
+            locks = null;
+            return;
+        }
+        locks = new ReentrantLock[valueFunction.length];
+        for (int i = 0; i < valueFunction.length; i++) {
+            locks[i] = new ReentrantLock();
+        }
     }
 
 
@@ -362,24 +378,35 @@ public class MDPDefinition implements Serializable {
 
     public void predefineAllPrecisions() {
         precisions = new LinkedHashMap<>();
+        rangeShifts = new LinkedHashMap<>();
         for (String stateField: stateDefinitionFields) {
             float precision = getPrecisionFromField(stateField);
             precisions.put(stateField, precision);
+            float rangeShift = getRangeShiftFromField(stateField);
+            rangeShifts.put(stateField, rangeShift);
             if ((symmetryAxesHashSet != null) && symmetryAxesHashSet.contains(stateField)) {
                 // maybe bad idea to do this
                 precisions.put(stateField + "X", precision);
                 precisions.put(stateField + "Y", precision);
                 precisions.put(stateField + "Z", precision);
+                rangeShifts.put(stateField + "X", rangeShift);
+                rangeShifts.put(stateField + "Y", rangeShift);
+                rangeShifts.put(stateField + "Z", rangeShift);
             }
         }
         for (String actionField: actionDefinitionFields) {
             float precision = getPrecisionFromField(actionField);
             precisions.put(actionField, precision);
+            float rangeShift = getRangeShiftFromField(actionField);
+            rangeShifts.put(actionField, rangeShift);
             if ((symmetryAxesHashSet != null) && symmetryAxesHashSet.contains(actionField)) {
                 // maybe bad idea to do this
                 precisions.put(actionField + "X", precision);
                 precisions.put(actionField + "Y", precision);
                 precisions.put(actionField + "Z", precision);
+                rangeShifts.put(actionField + "X", rangeShift);
+                rangeShifts.put(actionField + "Y", rangeShift);
+                rangeShifts.put(actionField + "Z", rangeShift);
             }
         }
     }
@@ -398,13 +425,40 @@ public class MDPDefinition implements Serializable {
         return 0.0000001f;
     }
 
+    private float _getRangeShiftFromField(float[] definition) {
+        // how much needs to be subtracted for the first positive value to be zero
+        float currentValue = definition[0];
+        while (currentValue <= 0) {
+            currentValue += definition[2];
+        }
+        return currentValue;
+    }
+
+    public float getRangeShiftFromField(String field) {
+        if (stateDefinition.containsKey(field)) {
+            return _getRangeShiftFromField(stateDefinition.get(field));
+        } else if (actionDefinition.containsKey(field)) {
+            return _getRangeShiftFromField(actionDefinition.get(field));
+        }
+        if (field.contains("X")) {
+            return getRangeShiftFromField(field.replace("X", ""));
+        } else if (field.contains("Y")) {
+            return getRangeShiftFromField(field.replace("Y", ""));
+        }
+        return 0;
+    }
+
     private void generateStateActionDefinitionIntegers() {
         StateActionTuple.State state = new StateActionTuple.State(null);
         state.definition = this;
 
+        reverseIndeces = new LinkedHashMap<>();
+
         stateDefinitionIntegers = new int[stateDefinition.size()][];
         int i = 0;
         for (String field: stateDefinitionFields) {
+            reverseIndeces.put(field, i);
+
             float[] fieldDefinition = stateDefinition.get(field);
             float minFloatValue = fieldDefinition[0];  // low
             int minIntValue = (int)state.setDouble(field, minFloatValue).get(field);
@@ -420,6 +474,8 @@ public class MDPDefinition implements Serializable {
         actionDefinitionIntegers = new int[actionDefinition.size()][];
         i = 0;
         for (String field: actionDefinitionFields) {
+            reverseIndeces.put(field, i + stateDefinitionFields.length);
+
             float[] fieldDefinition = actionDefinition.get(field);
             float minFloatValue = fieldDefinition[0];  // low
             int minIntValue = (int)action.setDouble(field, minFloatValue).get(field);

@@ -37,7 +37,7 @@ public class RLObjectFileStore {
         if (exists) {
             float[] valueFunction = (float[]) readObjects(fileName);
             if (valueFunction.length == definition.indexProduct)
-                definition.valueFunction = valueFunction;
+                definition.setValueFunction(valueFunction);
             else
                 exists = false;  // sizes are different so must re-allocate
         }

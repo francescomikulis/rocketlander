@@ -152,17 +152,8 @@ public class RLPanel extends JPanel {
         simulationTypeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                RLModel.SimulationType simulationType = RLModel.getInstance().simulationType;
-                RLModel.SimulationType newSimulationType = null;
-                if (simulationType == RLModel.SimulationType._1D) {
-                    newSimulationType = RLModel.SimulationType._2D;
-                } else if (simulationType == RLModel.SimulationType._2D) {
-                    newSimulationType = RLModel.SimulationType._3D;
-                } else if (simulationType == RLModel.SimulationType._3D) {
-                    newSimulationType = RLModel.SimulationType._1D;
-                }
-                RLModel.getInstance().simulationType = newSimulationType;
-                simulationTypeButton.setText("SimulationType: " + String.valueOf(newSimulationType));
+                RLModel.getInstance().stepNextSimulationType();
+                simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
             }
         });
         this.add(simulationTypeButton, "gapright para");
@@ -174,17 +165,8 @@ public class RLPanel extends JPanel {
         simulationInitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                RLModel.SimulationInitVariation initVariation = RLModel.getInstance().initVariation;
-                RLModel.SimulationInitVariation newInitVariation = null;
-                if (initVariation == RLModel.SimulationInitVariation.fixed) {
-                    newInitVariation = RLModel.SimulationInitVariation.posVel;
-                } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
-                    newInitVariation = RLModel.SimulationInitVariation.all;
-                } else if (initVariation == RLModel.SimulationInitVariation.all) {
-                    newInitVariation = RLModel.SimulationInitVariation.fixed;
-                }
-                RLModel.getInstance().initVariation = newInitVariation;
-                simulationInitButton.setText("SimInitVariation: " + String.valueOf(newInitVariation));
+                RLModel.getInstance().stepNextInitialVariation();
+                simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
             }
         });
         this.add(simulationInitButton, "gapright para");

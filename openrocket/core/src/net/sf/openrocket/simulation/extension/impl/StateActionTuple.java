@@ -172,7 +172,7 @@ public class StateActionTuple implements Serializable {
         }
 
         public double getDouble(String field) {
-            return get(field) * definition.precisions.getOrDefault(field, 0.0000001f);
+            return get(field) * definition.precisions.getOrDefault(field, 0.0000001f) + definition.rangeShifts.getOrDefault(field, 0.0f);
         }
 
         public StateActionClass set(String field, int value) {
@@ -187,7 +187,7 @@ public class StateActionTuple implements Serializable {
 
         public StateActionClass setDouble(String field, double value) {
             float precision = definition.precisions.getOrDefault(field, 0.0000001f);
-            valueMap.put(field, group_by_precision(value, precision));
+            valueMap.put(field, group_by_precision(value - definition.rangeShifts.getOrDefault(field, 0.0f), precision));
             return this;
         }
 

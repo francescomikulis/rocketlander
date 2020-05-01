@@ -37,13 +37,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     TerminationBooleans terminationBooleans;
     private LinkedHashMap<String, Integer> lastStepUpdateSizes = new LinkedHashMap<>();
     private static double variation = 2;
-    private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double timeStep = 0.02;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
 
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
     private RigidBody RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private RigidBody OLD_RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
+    // private Double RLVectoringInitialThrust = 0.0;
     private double RLVectoringThrust;
 
     private boolean hasCompletedTerminalUpdate = false;
@@ -256,6 +257,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public double postSimpleThrustCalculation(SimulationStatus status, double thrust) {
+        // currently not used - thrust goes up over the first second
+        // RLVectoringInitialThrust = Math.max(thrust, RLVectoringInitialThrust);
         RLVectoringThrust = thrust;
         return Double.NaN;
     }
@@ -275,7 +278,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
             return null;
         }
 
-        RLVectoringThrust *= (action.getDouble("thrust"));
+        double thrust = action.getDouble("thrust");
+        RLVectoringThrust *= thrust;
         if (model.simulationType == SimulationType._1D) {
             action.setDouble("gimbalX", 0.0);
             action.setDouble("gimbalY", 0.0);
@@ -300,7 +304,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
 
         // terminationBooleans.simulationFailed()
-        if (status.getSimulationTime() > 8.0) {
+        if (status.getSimulationTime() > 7.0) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
     }
@@ -511,7 +515,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private Double getSmartGuess(String stateNames, String originalField) {
-        if (!dataStoreState.containsKey(stateNames)) {
+        if (!dataStoreState.containsKey(stateNames) || (dataStoreState.get(stateNames).size() == 0)) {
             memoizeSmartGuesses(stateNames);
         }
 
@@ -520,8 +524,27 @@ public class RocketLanderListener extends AbstractSimulationListener {
         } else {
             int index = (int)dataStoreState.get(stateNames).get(originalField)[0];
             String realField = (String)dataStoreState.get(stateNames).get(originalField)[1];
-            return state.get(index).getDouble(realField);
+
+            // return state.get(index).getDouble(realField);
+            return getRealRepresentationDouble(state.get(index), realField);
         }
+    }
+
+    // this forces the value to be within boundaries
+    private double getRealRepresentationDouble(State state, String field) {
+        int[] minMax = state.definition.stateDefinitionIntegers[state.definition.reverseIndeces.get(field)];
+        int originalIntValue = state.get(field);
+        double result = 0.0;
+        if (originalIntValue < minMax[0]) {
+            result = state.set(field, minMax[0]).getDouble(field);
+            state.set(field, originalIntValue);
+        } else if (originalIntValue > minMax[1]) {
+            result = state.set(field, minMax[1]).getDouble(field);
+            state.set(field, originalIntValue);
+        } else {
+            result = state.getDouble(field);
+        }
+        return result;
     }
 
     private void memoizeSmartGuesses(String stateNames) {
@@ -532,7 +555,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         storeSmartGuess(stateNames, "positionZ");
         storeSmartGuess(stateNames, "angleX");
         storeSmartGuess(stateNames, "angleY");
-        storeSmartGuess(stateNames,"angleZ");
+        storeSmartGuess(stateNames, "angleZ");
         storeSmartGuess(stateNames, "angleVelocityX");
         storeSmartGuess(stateNames, "angleVelocityY");
         storeSmartGuess(stateNames, "angleVelocityZ");
@@ -598,6 +621,37 @@ public class RocketLanderListener extends AbstractSimulationListener {
                     if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
                         continue;
                     if (definitionField.toLowerCase().contains(lowercaseField)) {
+                        dataStoreStateIndexField.put(originalField, i);
+                        dataStoreStateFieldName.put(originalField, definitionField);
+                        dataStoreState.get(stateNames).get(originalField)[0] = i;
+                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
+                        return s.getDouble(definitionField);
+                    }
+                }
+            }
+        }
+        // edge case for a mal-enforced symmetryAxis - fallback to verifying for non-symmetrical MDPs
+        for (int i = 0; i < state.size(); i++) {
+            State s = state.get(i);
+            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
+                for (String definitionField : s.definition.stateDefinitionFields) {
+                    if (definitionField.toLowerCase().equals(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
+                        dataStoreStateIndexField.put(originalField, i);
+                        dataStoreStateFieldName.put(originalField, definitionField);
+                        dataStoreState.get(stateNames).get(originalField)[0] = i;
+                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
+                        return s.getDouble(definitionField);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < state.size(); i++) {
+            State s = state.get(i);
+            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
+                for (String definitionField: s.definition.stateDefinitionFields) {
+                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
+                        continue;
+                    if (definitionField.toLowerCase().contains(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
                         dataStoreStateIndexField.put(originalField, i);
                         dataStoreStateFieldName.put(originalField, definitionField);
                         dataStoreState.get(stateNames).get(originalField)[0] = i;

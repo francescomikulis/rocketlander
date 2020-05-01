@@ -21,14 +21,14 @@ public class RLModel {
     public String symmetryAxis2D = "X";
     public String symmetryAxis3D = "Y";
     public SimulationType simulationType = SimulationType._3D;
-    public SimulationInitVariation initVariation = SimulationInitVariation.all;
+    public SimulationInitVariation initVariation = SimulationInitVariation.fixed;
 
     public enum SimulationType {
         _1D, _2D, _3D
     }
 
     public enum SimulationInitVariation {
-        fixed, posVel, all
+        fixed, posVel, posVelAngle, all
     }
 
     private RLModel(){
@@ -47,7 +47,7 @@ public class RLModel {
         for (MDPDefinition definition: definitions) {
             if (!methods.containsKey(definition.name)) {
                 actualChange = true;
-                definition.valueFunction = null;
+                definition.setValueFunction(null);
                 continue;
             }
             for (ModelBaseImplementation method: methods.get(definition.name).models) {
@@ -59,10 +59,10 @@ public class RLModel {
 
                 // only re-use if the only modified field was at most the exploration parameter
                 if (newDefinitionString.equals(oldDefinitionString)) {
-                    definition.valueFunction = method.definition.valueFunction;
+                    definition.setValueFunction(method.definition.valueFunction);
                 } else {
                     actualChange = true;
-                    definition.valueFunction = null;
+                    definition.setValueFunction(null);
                 }
             }
         }
@@ -459,6 +459,35 @@ public class RLModel {
         } else {
             System.out.print("-");
         }
+    }
+
+
+    /* Interface actions for the RLPanel in the UI */
+
+    public void stepNextSimulationType() {
+        RLModel.SimulationType newSimulationType = null;
+        if (simulationType == RLModel.SimulationType._1D) {
+            newSimulationType = RLModel.SimulationType._2D;
+        } else if (simulationType == RLModel.SimulationType._2D) {
+            newSimulationType = RLModel.SimulationType._3D;
+        } else if (simulationType == RLModel.SimulationType._3D) {
+            newSimulationType = RLModel.SimulationType._1D;
+        }
+        simulationType = newSimulationType;
+    }
+
+    public void stepNextInitialVariation() {
+        SimulationInitVariation newInitVariation = null;
+        if (initVariation == RLModel.SimulationInitVariation.fixed) {
+            newInitVariation = RLModel.SimulationInitVariation.posVel;
+        } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
+            newInitVariation = SimulationInitVariation.posVelAngle;
+        } else if (initVariation == RLModel.SimulationInitVariation.posVelAngle) {
+            newInitVariation = RLModel.SimulationInitVariation.all;
+        } else if (initVariation == RLModel.SimulationInitVariation.all) {
+            newInitVariation = RLModel.SimulationInitVariation.fixed;
+        }
+        initVariation = newInitVariation;
     }
 }
 

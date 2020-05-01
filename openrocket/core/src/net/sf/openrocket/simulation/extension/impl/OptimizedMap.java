@@ -3,6 +3,7 @@ package net.sf.openrocket.simulation.extension.impl;
 import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
     valueFunctionTable
@@ -51,7 +52,7 @@ public class OptimizedMap {
             if (reset || !readSuccess)
                 valueFunctionTable = allocateNewValueFunctionTable(definition.indexProduct);
 
-            definition.valueFunction = valueFunctionTable;
+            definition.setValueFunction(valueFunctionTable);
             for (ModelBaseImplementation model: definition.models)
                 model.setValueFunctionTable(this);
             checkTableValues(definition);
@@ -60,7 +61,7 @@ public class OptimizedMap {
 
     public void resetValueFunctionTable(MDPDefinition[] definitions) {
         for (MDPDefinition definition : definitions) {
-            definition.valueFunction = null;
+            definition.setValueFunction(null);
         }
     }
 
@@ -82,13 +83,20 @@ public class OptimizedMap {
     public float get(StateActionTuple stateActionTuple) {
         float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
-        return valueFunctionTable[index];
+        final ReentrantLock lock = stateActionTuple.state.definition.locks[index];
+        lock.lock();
+        float result = valueFunctionTable[index];
+        lock.unlock();
+        return result;
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
         float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
+        final ReentrantLock lock = stateActionTuple.state.definition.locks[index];
+        lock.lock();
         valueFunctionTable[index] = newValue;
+        lock.unlock();
         return newValue;
     }
 }
