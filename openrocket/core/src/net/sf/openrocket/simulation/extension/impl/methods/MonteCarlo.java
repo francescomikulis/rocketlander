@@ -7,6 +7,7 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.function.BiFunction;
@@ -33,19 +34,30 @@ public class MonteCarlo extends ModelBaseImplementation {
         float G = terminalReward.apply(lastStateActionTuple.state) - (float)positionPenalty;
         int numExplorationSteps = 0;
 
+        // thread-safe lock
+        HashSet<Integer> lockedIndeces = new HashSet<>();
+        int[] indeces = valueFunctionTable.getIndecesAndLockAll(SA, lockedIndeces);
+
+        final float[] valueFunction = lastStateActionTuple.state.definition.valueFunction;
+        float[] values = new float[SA.size()];
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = SA.get(timeStep);
 
-            // skip if the states are equivalent under the equivalentStateFunction
-            if (MDPDefinition.equivalentState(lastStateActionTuple.state, stateActionTuple.state)) continue;
-            lastStateActionTuple = stateActionTuple;
-
             actualSteps += 1;
-            float originalValue = valueFunction(stateActionTuple);
+            float originalValue = valueFunction[indeces[timeStep]];
             if (originalValue == 0.0f) numExplorationSteps++;
-            valueFunctionTable.put(stateActionTuple, originalValue + alpha * (G - originalValue));
+            values[timeStep] = originalValue + alpha * (G - originalValue);
             G = (terminalDiscount * G) + reward.apply(stateActionTuple.state);
         }
+
+        // thread-safe unlock
+        valueFunctionTable.setValueAtIndecesAndUnlockAll(
+                lastStateActionTuple.state.definition,
+                lockedIndeces,
+                indeces,
+                values
+        );
+
         // System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
     }
 

@@ -10,6 +10,7 @@ import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.F
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
+import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
@@ -272,7 +273,8 @@ public class StateActionTuple implements Serializable {
             }
             setDouble("angleX", angleX);
             setDouble("angleY", angleY);
-            setDouble("angleZ", Math.sqrt(1.0 - angleX * angleX - angleY * angleY));
+            // logic obtained directly from the rocket zenith orientation in OpenRocket
+            setDouble("angleZ", Math.atan2(rocketDirection.z, MathUtil.hypot(rocketDirection.x, rocketDirection.y)));
 
             // original angle approach
             //setDouble("angleX", Math.acos(rocketDirection.x) * Math.signum(rocketDirection.y));

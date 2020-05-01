@@ -42,6 +42,7 @@ public class MDPDefinition implements Serializable {
     public LinkedHashMap<String, float[]> successConditions = null;
 
     public transient float[] valueFunction = null;
+    public transient ReentrantLock mainLock = new ReentrantLock();
     public transient ReentrantLock[] locks = null;
 
     public transient int indexProduct = 0;
@@ -53,6 +54,8 @@ public class MDPDefinition implements Serializable {
     public transient LinkedHashMap<String, Integer> childrenMDPIntegerOptions = null;
     public transient LinkedHashMap<String, Float> precisions = null;
     public transient LinkedHashMap<String, Float> rangeShifts = null;
+
+    public transient boolean tryToReadFromFile = true;
 
 
     public MDPDefinition() {
@@ -425,10 +428,18 @@ public class MDPDefinition implements Serializable {
         return 0.0000001f;
     }
 
+    private boolean _closeEnoughToBeConsideredZero(float value, float precision) {
+        float remainder = Math.abs(value - (int)value);
+        float threshold = 0.01f * precision;  // within a hundredth of the precision
+        return remainder < threshold;
+    }
+
     private float _getRangeShiftFromField(float[] definition) {
         // how much needs to be subtracted for the first positive value to be zero
         float currentValue = definition[0];
-        while (currentValue <= 0) {
+        while (currentValue < 0) {
+            if (_closeEnoughToBeConsideredZero(currentValue, definition[2]))
+                return 0;
             currentValue += definition[2];
         }
         return currentValue;

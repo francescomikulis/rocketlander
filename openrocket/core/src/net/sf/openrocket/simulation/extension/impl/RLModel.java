@@ -23,6 +23,9 @@ public class RLModel {
     public SimulationType simulationType = SimulationType._3D;
     public SimulationInitVariation initVariation = SimulationInitVariation.fixed;
 
+    private StringBuilder stringBuilder = new StringBuilder();
+    private boolean smartPrintBuffer = false;
+
     public enum SimulationType {
         _1D, _2D, _3D
     }
@@ -32,13 +35,13 @@ public class RLModel {
     }
 
     private RLModel(){
-        constructor(false, getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
+        constructor(getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
     }
 
-    private void constructor(boolean reset, MDPDefinition ... definitions) {
+    private void constructor(MDPDefinition ... definitions) {
         // this is the default constructor - these hashmap definition should be read from elsewhere
 
-        constructor(symmetryAxis2D, symmetryAxis3D, simulationType, reset, definitions);
+        constructor(symmetryAxis2D, symmetryAxis3D, simulationType, definitions);
         // constructor("X", "Y", SimulationType._3D, generalDefinition);
     }
 
@@ -71,20 +74,33 @@ public class RLModel {
         }
         if (actualChange) {
             methods = new LinkedHashMap<>();
-            constructor(symmetryAxis2D, symmetryAxis3D, simulationType, false, definitions.toArray(new MDPDefinition[definitions.size()]));
+            constructor(symmetryAxis2D, symmetryAxis3D, simulationType, definitions.toArray(new MDPDefinition[definitions.size()]));
         }
     }
 
-    private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, boolean reset, MDPDefinition ... definitions) {
+    private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, MDPDefinition ... definitions) {
         valueFunctionTable = null;
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
-        for (MDPDefinition definition: sortMDPDefinitionsByPriority(definitions)) {
+
+        // merge previously stored definitions because still valid!
+        MDPDefinition[] mergedDefinitions = new MDPDefinition[methods.size() + definitions.length];
+        int mergedIndex = 0;
+        for (MDPDefinition definition: methods.values()) {
+            mergedDefinitions[mergedIndex] = definition;
+            mergedIndex++;
+        }
+        for (MDPDefinition definition: definitions) {
+            mergedDefinitions[mergedIndex] = definition;
+            mergedIndex++;
+        }
+
+        for (MDPDefinition definition: sortMDPDefinitionsByPriority(mergedDefinitions)) {
             methods.put(definition.name, definition);
         }
         // setValueFunctionTable
-        this.valueFunctionTable = new OptimizedMap(methods, reset);
+        this.valueFunctionTable = new OptimizedMap(methods);
     }
 
     private MDPDefinition[] sortMDPDefinitionsByPriority(MDPDefinition[] definitions) {
@@ -109,7 +125,10 @@ public class RLModel {
 
     public void resetValueFunctionTable(MDPDefinition[] definitions) {
         valueFunctionTable.resetValueFunctionTable(definitions);
-        constructor(true, definitions);
+        for (MDPDefinition definition: definitions) {
+            methods.remove(definition.name);
+        }
+        constructor(definitions);
     }
 
     public OptimizedMap getValueFunctionTable() {
@@ -455,12 +474,36 @@ public class RLModel {
         }
 
         if (terminationBooleans.totalSuccess()) {
-            System.out.print("+");
+            stringBuilder.append('+');
         } else {
-            System.out.print("-");
+            stringBuilder.append('-');
+        }
+        if (!smartPrintBuffer) {
+            printAndClearStringBuffer(false);
         }
     }
 
+
+    /* Interface actions for the SimulationPanel in the UI */
+
+    public void setSmartPrintBuffer(boolean smartPrintBuffer) {
+        if (stringBuilder.length() != 0)
+            printAndClearStringBuffer();
+        this.smartPrintBuffer = smartPrintBuffer;
+    }
+
+    public void printAndClearStringBuffer() {
+        printAndClearStringBuffer(true);
+    }
+
+    public void printAndClearStringBuffer(boolean goNewline) {
+        String result = stringBuilder.toString();
+        stringBuilder.setLength(0);
+        if (goNewline)
+            System.out.println(result);
+        else
+            System.out.print(result);
+    }
 
     /* Interface actions for the RLPanel in the UI */
 

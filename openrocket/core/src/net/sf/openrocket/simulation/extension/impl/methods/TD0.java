@@ -25,20 +25,14 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         StateActionTuple old = SA.get(SA.size() - 2);
         StateActionTuple current = SA.get(SA.size() - 1);
 
-        // skip if the states are equivalent under the equivalentStateFunction
-        if (MDPDefinition.equivalentState(old.state, current.state)) return;
-
-        float oldValue = valueFunction(old);
         float currentValue = valueFunction(current);
         float rewardValue = reward.apply(current.state);
-        if (Float.isNaN(rewardValue))
-            System.out.println("NAN REWARD!");
 
+        // thread safety
+        int index = valueFunctionTable.getIndexAndLock(old);
+        float oldValue = old.state.definition.valueFunction[index];
         float newValue = oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue);
-        if (Float.isNaN(newValue))
-            System.out.println("NAN UPDATE!");
-
-        valueFunctionTable.put(old, newValue);
+        valueFunctionTable.setValueAtIndexAndUnlock(old, index, newValue);
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }

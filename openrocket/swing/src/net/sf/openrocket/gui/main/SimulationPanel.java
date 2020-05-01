@@ -191,9 +191,9 @@ public class SimulationPanel extends JPanel {
 		// MODIFIED CODE HERE
 
 		//// Run Multiple simulations
-		runMultipleButton = new JButton(trans.get("simpanel.but.runmultiplesimulations"));
+		runMultipleButton = new JButton("Run 500 Simulations");
 		//// Re-run the selected simulations
-		runMultipleButton.setToolTipText(trans.get("simpanel.but.ttip.runmultiplesimu"));
+		runMultipleButton.setToolTipText("Run 500 Simulations");
 		runMultipleButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -201,18 +201,8 @@ public class SimulationPanel extends JPanel {
 				if (selection.length == 0) {
 					return;
 				}
-				int multiplier = 1;
-				JPanel panel = new JPanel(new MigLayout());
-				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"With which multipier?", "", panel}, 1);
-				try {
-					if (multiplierFromPanel == null)
-						return;
-					multiplier = Integer.parseInt(multiplierFromPanel);
-				} catch (Exception exc) {
-					return;
-				}
 
-				/*
+				int multiplier = 500;
 				Simulation[] sims = new Simulation[selection.length * multiplier];
 
 				for (int i = 0; i < selection.length; i++) {
@@ -224,29 +214,11 @@ public class SimulationPanel extends JPanel {
 						sims[i * multiplier + mult] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
-
+				RLModel.getInstance().setSmartPrintBuffer(true);
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
-				*/
-
-
-				selection[0] = simulationTable.convertRowIndexToModel(selection[0]);
-				Simulation baseSimulation = document.getSimulation(selection[0]);
-				for (int i = 0; i < multiplier; i++) {
-					Simulation[] newSims = new Simulation[1];
-					newSims[0] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
-					SimulationRunDialog dialog = new SimulationRunDialog(document, newSims);
-					if (i % 5 == 0) {
-						System.gc();
-						System.runFinalization();
-					}
-				}
-
-				Simulation[] sims = new Simulation[1];
-				sims[0] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
-				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
-						SimulationPanel.this), document, sims).setVisible(true);
+				RLModel.getInstance().setSmartPrintBuffer(false);
 
 				// new SimulationRunDialog(document, sims);  // without UI
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
@@ -266,9 +238,9 @@ public class SimulationPanel extends JPanel {
 				if (selection.length == 0) {
 					return;
 				}
-				int multiplier = 1;
+				int multiplier = 200;
 				JPanel panel = new JPanel(new MigLayout());
-				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"Number of duplicates for the current selection?", "", panel}, 1);
+				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"Number of duplicates for the current selection?", "", panel}, multiplier);
 				try {
 					if (multiplierFromPanel == null)
 						return;
@@ -277,9 +249,9 @@ public class SimulationPanel extends JPanel {
 					return;
 				}
 
-				double trainMinutes = 1.0;
+				double trainMinutes = 0.2;
 				JPanel repPanel = new JPanel(new MigLayout());
-				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, 1.0);
+				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, trainMinutes);
 				try {
 					if (trainMinutesFromPanel == null)
 						return;
@@ -296,6 +268,8 @@ public class SimulationPanel extends JPanel {
 					// first one needs to be kept same object to preserve panel UI update
 					baseSims[i] = baseSimulation;
 				}
+
+				RLModel.getInstance().setSmartPrintBuffer(true);
 
 				long startTime = System.currentTimeMillis();
 				long startSaveTime = startTime;
@@ -315,7 +289,7 @@ public class SimulationPanel extends JPanel {
 							SimulationPanel.this), document, copiedSims).setVisible(true);
 					// new SimulationRunDialog(document, copiedSims);  // without UI
 					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
-					fireMaintainSelection();
+					RLModel.getInstance().printAndClearStringBuffer();
 
 					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
 						RLObjectFileStore.storeActionValueFunctions();
@@ -326,6 +300,7 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, baseSims).setVisible(true);
+				RLModel.getInstance().setSmartPrintBuffer(false);
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
