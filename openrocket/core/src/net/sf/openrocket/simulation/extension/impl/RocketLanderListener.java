@@ -145,9 +145,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public void startSimulation(SimulationStatus status) {
         // initialize episode
-        for (String method: model.getMethodNames()) {
-            episodeStateActions.put(method, new ArrayList<>());
-        }
+        episodeStateActions = model.initializeEpisodeStateActions();
         status.getSimulationConditions().setTimeStep(timeStep);
 
 

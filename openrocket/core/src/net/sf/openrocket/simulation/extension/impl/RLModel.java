@@ -150,8 +150,12 @@ public class RLModel {
         return methods;
     }
 
-    public Set<String> getMethodNames() {
-        return methods.keySet();
+    public LinkedHashMap<String, ArrayList<StateActionTuple>> initializeEpisodeStateActions() {
+        LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
+        for (String method: methods.keySet()) {
+            episodeStateActions.put(method, new ArrayList<>());
+        }
+        return episodeStateActions;
     }
 
     private HashSet<Integer> generatePossibleActionValuesInts(int value, int[] definition) {
