@@ -134,9 +134,11 @@ public class OptimizedMap {
         final ReentrantLock[] locks = definition.locks;
         final float[] valueFunction = definition.valueFunction;
         for (int i = 0; i < indeces.length; i++) {
+            valueFunction[indeces[i]] = values[i];
+        }
+        // unlock on completion - MUST BE AFTER ALL UPDATES
+        for (int i = 0; i < indeces.length; i++) {
             int index = indeces[i];
-            valueFunction[index] = values[i];
-            // release locks as soon as possible
             if (unlockIndeces.contains(index)) {
                 locks[index].unlock();
                 unlockIndeces.remove(index);
