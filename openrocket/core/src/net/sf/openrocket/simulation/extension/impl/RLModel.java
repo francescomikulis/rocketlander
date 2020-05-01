@@ -246,8 +246,11 @@ public class RLModel {
             index++;
         }
 
-        if (actionFields.length == 0) {
+        if ((state.definition.childrenMDPOptions != null) && (state.definition.childrenMDPOptions.size() != 0)) {
             for (Map.Entry<String, String[]> entry: state.definition.childrenMDPOptions.entrySet()) {
+                // if already choosing the child MDP in the actionDefinition skip this logic - else it's needed to still compute children
+                if (state.definition.actionDefinition.containsKey(entry.getKey()))
+                    continue;
                 actionStrings.add(entry.getKey());
                 ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, entry.getKey()));
                 possibleActionInts.add(childMDPOptions);

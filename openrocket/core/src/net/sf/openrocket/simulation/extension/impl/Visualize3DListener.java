@@ -94,15 +94,10 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		try {
 			actualMotorThrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
 		} catch (Exception e) {}
+		// thurst and gimbal angles not yet present in the simulationStatus
 		offset = arrayAdd(bytes, actualMotorThrust * RLL.getThrust(rocketLanderListener), offset);
-		// gimbal angles not yet present in the simulationStatus
-		if (rocketLanderListener == null) {
-			offset = arrayAdd(bytes, 0.0, offset);
-			offset = arrayAdd(bytes, 0.0, offset);
-		} else {
-			offset = arrayAdd(bytes, RLL.getGimbalX(rocketLanderListener), offset);
-			offset = arrayAdd(bytes, RLL.getGimbalY(rocketLanderListener), offset);
-		}
+		offset = arrayAdd(bytes, RLL.getGimbalX(rocketLanderListener), offset);
+		offset = arrayAdd(bytes, RLL.getGimbalY(rocketLanderListener), offset);
 		return bytes;
 	}
 
@@ -124,6 +119,9 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		}
 
 		public static float getActionDoubleValue(Object rocketLanderListener, String field){
+			if (rocketLanderListener == null)
+				return 0.0f;
+
 			Object action = getAction(rocketLanderListener);
 			Object result = callMethod(action, action.getClass(), "getDouble", field);
 			if (result == null) return 0.0f;

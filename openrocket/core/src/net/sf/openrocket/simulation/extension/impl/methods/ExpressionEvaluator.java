@@ -182,7 +182,7 @@ public class ExpressionEvaluator {
         @Override
         public String toString() {
             String string = identifier;
-            if (sign == -1) string = "-";
+            if (sign == -1) string = "-" + identifier;
 
             if (inputs != null) {
                 ArrayList<String> stringArrayList = new ArrayList<>();
@@ -439,7 +439,7 @@ public class ExpressionEvaluator {
         assert object.definition.symmetryFormulas.get("X").containsKey("position");
 
         // test - input string equals output string
-        formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";
+        formula = "And(Gt(-Abs(positionX), 4.0), Le(-Abs(angleX), Asin(Div(PI,8))))";
         String stringFormula = ExpressionEvaluator.getInstance().generateFormula(formula).toString();
         assert stringFormula.equals(formula.replace(" ", ""));
 
