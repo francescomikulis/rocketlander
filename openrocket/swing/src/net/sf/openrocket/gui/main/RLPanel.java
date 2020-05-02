@@ -68,6 +68,7 @@ public class RLPanel extends JPanel {
     private final JButton editButton;
     private final JButton disableButton;
     private final JButton simulationTypeButton;
+    private final JButton simulationAxisButton;
     private final JButton simulationInitButton;
     private final JButton resetModelButton;
     private final JButton deleteButton;
@@ -157,6 +158,19 @@ public class RLPanel extends JPanel {
             }
         });
         this.add(simulationTypeButton, "gapright para");
+
+        //// Simulation 2D axis button
+        simulationAxisButton = new JButton("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
+        //// Edit Simulation type
+        simulationAxisButton.setToolTipText("Toggle Simulation 2D Axis");
+        simulationAxisButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RLModel.getInstance().stepNextSimulation2DAxis();
+                simulationAxisButton.setText("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
+            }
+        });
+        this.add(simulationAxisButton, "gapright para");
 
         //// Simulation initialization button
         simulationInitButton = new JButton("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));

@@ -79,7 +79,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return true;
     }
 
-    private Coordinate calculatePositionAndVelocityCoordinate(double maxX, double maxY, double maxZ) {
+    private Coordinate calculatePositionCoordinate(double maxX, double maxY, double maxZ) {
         double posX = calculateNumberWithIntegerVariation(0, maxX);
         double posY = calculateNumberWithIntegerVariation(0, maxY);
         if(model.simulationType == SimulationType._1D) {
@@ -93,7 +93,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
             }
         }
         // dx and dy position only in advanced
-        if(model.initVariation != SimulationInitVariation.all) {
+        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel) || (model.initVariation == SimulationInitVariation.posVelAngle)) {
             posX = 0; posY = 0;
         }
         double posZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
@@ -101,6 +101,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
             posZ = maxZ;
         }
         return new Coordinate(posX, posY, posZ);
+    }
+
+    private Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
+        double velZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
+        if(model.initVariation == SimulationInitVariation.fixed) {
+            velZ = maxZ;
+        }
+        return new Coordinate(0, 0, velZ);
     }
 
     private Quaternion calculateInitialOrientation() {
@@ -117,7 +125,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 dx = 0;
             }
         }
-        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel)) {
+        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel) || (model.initVariation == SimulationInitVariation.posVelLoc)) {
             dx = 0; dy = 0;
         }
         return new Quaternion(0, dx, dy, dz).normalizeIfNecessary();
@@ -150,10 +158,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
         // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(calculatePositionAndVelocityCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
+        status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        Coordinate rocketVelocity = calculatePositionAndVelocityCoordinate(0, 0,MIN_VELOCITY + variation);
+        Coordinate rocketVelocity = calculateVelocityCoordinate(0, 0,MIN_VELOCITY + variation);
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
 
         status.setRocketOrientationQuaternion(calculateInitialOrientation());
@@ -282,7 +290,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
             action.setDouble("gimbalX", 0.0);
             action.setDouble("gimbalY", 0.0);
         } else if (model.simulationType == SimulationType._2D) {
-            action.setDouble("gimbalY", 0.0);
+            if (model.symmetryAxis2D.equals("X"))
+                action.setDouble("gimbalY", 0.0);
+            else if (model.symmetryAxis2D.equals("Y"))
+                action.setDouble("gimbalX", 0.0);
         }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");

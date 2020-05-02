@@ -31,7 +31,7 @@ public class RLModel {
     }
 
     public enum SimulationInitVariation {
-        fixed, posVel, posVelAngle, all
+        fixed, posVel, posVelLoc, posVelAngle, all
     }
 
     private RLModel(){
@@ -526,11 +526,21 @@ public class RLModel {
         simulationType = newSimulationType;
     }
 
+    public void stepNextSimulation2DAxis() {
+        if (symmetryAxis2D.equals("X")) {
+            symmetryAxis2D = "Y";
+        } else {
+            symmetryAxis2D = "X";
+        }
+    }
+
     public void stepNextInitialVariation() {
         SimulationInitVariation newInitVariation = null;
         if (initVariation == RLModel.SimulationInitVariation.fixed) {
             newInitVariation = RLModel.SimulationInitVariation.posVel;
         } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
+            newInitVariation = SimulationInitVariation.posVelLoc;
+        } else if (initVariation == RLModel.SimulationInitVariation.posVelLoc) {
             newInitVariation = SimulationInitVariation.posVelAngle;
         } else if (initVariation == RLModel.SimulationInitVariation.posVelAngle) {
             newInitVariation = RLModel.SimulationInitVariation.all;
