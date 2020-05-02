@@ -557,7 +557,7 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 	
 
 	private void storeData(RK4SimulationStatus status, DataStore store) {
-		
+
 		FlightDataBranch data = status.getFlightData();
 		boolean extra = status.getSimulationConditions().isCalculateExtras();
 		
