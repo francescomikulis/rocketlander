@@ -5,6 +5,7 @@ import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,7 +26,6 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	public void startSimulation(SimulationStatus status) {
 		client.setConnectionString(visualize3D.getConnectionString());
 		client.Connect();
-
 		// RocketLanderListener integration for gimbal
 		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
 		for (SimulationListener listener: listeners) {
@@ -37,6 +37,13 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	@Override
 	public void postStep(SimulationStatus status) {
+		// RocketLanderListener integration for gimbal
+		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
+		for (SimulationListener listener: listeners) {
+			if (listener.getClass().toString().contains("RocketLanderListener")) {
+				rocketLanderListener = listener;
+			}
+		}
 		if (!client.Connected()){
 			client.Connect();
 		} else{
@@ -125,6 +132,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			Object action = getAction(rocketLanderListener);
 			Object result = callMethod(action, action.getClass(), "getDouble", field);
 			if (result == null) return 0.0f;
+			System.out.println(((Double)result).floatValue());
 			return ((Double)result).floatValue();
 		}
 

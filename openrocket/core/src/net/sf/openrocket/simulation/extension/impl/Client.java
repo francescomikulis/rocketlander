@@ -37,18 +37,21 @@ public class Client {
         this.port = Integer.parseInt(parts[1]);
     }
 
-    public void Connect(){
+    public boolean Connect(){
         // establish a connection
         try {
             try { socket = new Socket(this.address, this.port); } catch (Exception e) {
-                System.out.println("BAD BAD BAD");
+                System.out.println("Blender not running!");
                 System.out.println(e);
+                return false;
             }
 
             // sends output to the socket
             out = new DataOutputStream(socket.getOutputStream());
+            return true;
         } catch (Exception e) {
             System.out.println(e);
+            return false;
         }
     }
 
