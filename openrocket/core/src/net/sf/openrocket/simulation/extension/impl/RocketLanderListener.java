@@ -11,6 +11,7 @@ import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
+import net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
 
 import net.sf.openrocket.util.MathUtil;
@@ -19,13 +20,14 @@ import net.sf.openrocket.util.Quaternion;
 import java.lang.reflect.Array;
 import java.util.*;
 
+import static net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.getLanderDefinition;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
-    private static final double MAX_POSITION = 10;
+    private static final double MAX_POSITION = 6;
 
     private RLModel model = RLModel.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
@@ -93,11 +95,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
             }
         }
         // dx and dy position only in advanced
-        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel) || (model.initVariation == SimulationInitVariation.posVelAngle)) {
+        if((model.initVariation == fixed) || (model.initVariation == posVel) || (model.initVariation == posVelAngle)) {
             posX = 0; posY = 0;
         }
         double posZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
-        if(model.initVariation == SimulationInitVariation.fixed) {
+        if((model.initVariation == fixed) || (model.initVariation == loc)) {
             posZ = maxZ;
         }
         return new Coordinate(posX, posY, posZ);
@@ -105,7 +107,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
         double velZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
-        if(model.initVariation == SimulationInitVariation.fixed) {
+        if((model.initVariation == fixed) || (model.initVariation == loc)) {
             velZ = maxZ;
         }
         return new Coordinate(0, 0, velZ);
@@ -125,7 +127,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 dx = 0;
             }
         }
-        if((model.initVariation == SimulationInitVariation.fixed) || (model.initVariation == SimulationInitVariation.posVel) || (model.initVariation == SimulationInitVariation.posVelLoc)) {
+        if((model.initVariation == fixed) || (model.initVariation == posVel) || (model.initVariation == loc) || (model.initVariation == posVelLoc)) {
             dx = 0; dy = 0;
         }
         return new Quaternion(0, dx, dy, dz).normalizeIfNecessary();
@@ -144,7 +146,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 dy = 0;
             }
         }
-        if((model.initVariation != SimulationInitVariation.all)) {
+        if((model.initVariation != all)) {
             dx = 0; dy = 0;
         }
         return new Coordinate(dx, dy, 0);

@@ -31,7 +31,7 @@ public class RLModel {
     }
 
     public enum SimulationInitVariation {
-        fixed, posVel, posVelLoc, posVelAngle, all
+        fixed, posVel, loc, posVelLoc, posVelAngle, all
     }
 
     private RLModel(){
@@ -176,7 +176,8 @@ public class RLModel {
             String selectedMDPName = null;
             for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
                 Formula formula = (Formula) advancedIfElseFormula.get(i)[0];
-                if (formula.evaluate(state) != 0) {  // 0 is false, 1 is true
+                String tempMDPName = (String) advancedIfElseFormula.get(i)[1];
+                if (methods.containsKey(tempMDPName) && (formula.evaluate(state) != 0)) {  // 0 is false, 1 is true
                     selectedMDPName = (String) advancedIfElseFormula.get(i)[1];
                     break;
                 }
@@ -539,7 +540,9 @@ public class RLModel {
         if (initVariation == RLModel.SimulationInitVariation.fixed) {
             newInitVariation = RLModel.SimulationInitVariation.posVel;
         } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
-            newInitVariation = SimulationInitVariation.posVelLoc;
+            newInitVariation = SimulationInitVariation.loc;
+        } else if (initVariation == RLModel.SimulationInitVariation.loc) {
+                newInitVariation = SimulationInitVariation.posVelLoc;
         } else if (initVariation == RLModel.SimulationInitVariation.posVelLoc) {
             newInitVariation = SimulationInitVariation.posVelAngle;
         } else if (initVariation == RLModel.SimulationInitVariation.posVelAngle) {
