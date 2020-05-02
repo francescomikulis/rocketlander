@@ -267,7 +267,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public double postSimpleThrustCalculation(SimulationStatus status, double thrust) {
         // currently not used - thrust goes up over the first second
         // RLVectoringInitialThrust = Math.max(thrust, RLVectoringInitialThrust);
-        RLVectoringThrust = thrust;
+        RLVectoringThrust = 200;
         return Double.NaN;
     }
 
@@ -378,8 +378,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double forceX = -RLVectoringThrust * gimbalComponentX;
-        double forceY = -RLVectoringThrust * gimbalComponentY;
+        double forceX = RLVectoringThrust * gimbalComponentX;
+        double forceY = RLVectoringThrust * gimbalComponentY;
         double forceZ = RLVectoringThrust * gimbalComponentZ;  // note double negative
 
         // System.out.println(gimbalComponentX + " " + gimbalComponentY + " " + gimbalComponentZ);
@@ -438,8 +438,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
         double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
-        double gimbalMomentX = -momentArm * forceY;
-        double gimbalMomentY = momentArm * forceX;
+        double gimbalMomentX = momentArm * -forceY;
+        double gimbalMomentY = -momentArm * -forceX;
 
         // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbalMomentX;

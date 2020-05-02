@@ -1,5 +1,6 @@
 package net.sf.openrocket.simulation.extension.impl;
 
+import net.sf.openrocket.optimization.general.Function;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.methods.*;
 
@@ -178,7 +179,7 @@ public class RLModel {
                 Formula formula = (Formula) advancedIfElseFormula.get(i)[0];
                 String tempMDPName = (String) advancedIfElseFormula.get(i)[1];
                 if (methods.containsKey(tempMDPName) && (formula.evaluate(state) != 0)) {  // 0 is false, 1 is true
-                    selectedMDPName = (String) advancedIfElseFormula.get(i)[1];
+                    selectedMDPName = tempMDPName;
                     break;
                 }
             }
@@ -188,6 +189,15 @@ public class RLModel {
                 } else {
                     // default to last one!
                     selectedMDPName = (String)advancedIfElseFormula.get(advancedIfElseFormula.size() - 1)[1];
+                    // if the last one isn't defined, restart the switch from the top until one is defined
+                    if (!methods.containsKey(selectedMDPName)) {
+                        for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
+                            selectedMDPName = (String) advancedIfElseFormula.get(i)[1];
+                            if (methods.containsKey(selectedMDPName)) {
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             // overrides the traditional options calculations of that MDP Field Name
@@ -414,8 +424,12 @@ public class RLModel {
             greedy = false;
         }
 
+        float stateReward = method.definition._reward.evaluateFloat(state);
         for (Action action: possibleActions) {
             float v = method.valueFunction(state, action);
+            if (v == 0.0f) {
+                v = stateReward + method.definition._reward.evaluateFloat(action);
+            }
             if (greedy) {
                 if (v > val) {
                     // value is best compared to all previous encounters.  Reset bestAction ArrayList.
