@@ -26,11 +26,11 @@ import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.conve
 public class RRTListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
-    private static final double MAX_POSITION = 3;
+    private static final double MAX_POSITION = 8;
     private RRTExtension rrtExtension;
     private Random random;
     private static double variation = 2;
-    private static double timeStep = 0.01;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double timeStep = 0.1;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
@@ -67,8 +67,8 @@ public class RRTListener extends AbstractSimulationListener {
         double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        dx = calculateNumberWithIntegerVariation(0, variation * 10) * Math.PI / 180;
+        dy = calculateNumberWithIntegerVariation(0, variation * 10) * Math.PI / 180;
         status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
@@ -123,7 +123,7 @@ public class RRTListener extends AbstractSimulationListener {
     @Override
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null || action == null) return null;
-        RLVectoringThrust *= action.thrust;
+        RLVectoringThrust = RLVectoringThrust* action.thrust;
         double gimbalX = action.gimbleX;
         double gimbalY = action.gimbleY;
         return calculateAcceleration(status, gimbalX, gimbalY);
@@ -147,7 +147,12 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        RRTNode n = rrt.current;
+        RRTNode n;
+        if (action==null) {
+             n = rrt.current;
+        } else{
+            n = rrt.minNode;
+        }
         ArrayList<SimulationStatus> ss = new ArrayList<>();
         ArrayList<RRT.Action> aa = new ArrayList<>();
         while (n.parent != null) {

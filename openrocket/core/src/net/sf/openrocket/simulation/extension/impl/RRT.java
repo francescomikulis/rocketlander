@@ -10,6 +10,8 @@ import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
+import java.util.Random;
+
 public class RRT {
     private RRTNode root = null;
     private ArrayList<RRTNode> nodes = null;
@@ -55,20 +57,20 @@ public class RRT {
         boolean b9 =  n.status.getRocketPosition().y > goal.y.min             &&         n.status.getRocketPosition().y < goal.y.max;
         boolean b10 =  n.status.getRocketPosition().z > goal.z.min            &&         n.status.getRocketPosition().z < goal.z.max;
         //return (b1 && b2 && b3 && b4 && b5 && b6 && b7 && b8 && b9 && b10);
-        return (b8 && b9 && b10 && b4 && b1);
+        return (b10 && b4 && b2 && b3);
     }
 
     void setGoalTarget(){
         Coordinate coord = target.status.getRocketPosition();
         coord = coord.setX(getMean(goal.x));
         coord =coord.setY(getMean(goal.y));
-        coord =coord.setZ(getMean(goal.z));
+        coord =coord.setZ(0);
         target.status.setRocketPosition(coord);
 
         coord = target.status.getRocketVelocity();
         coord =coord.setX(getMean(goal.vx));
         coord =coord.setY(getMean(goal.vy));
-        coord =coord.setZ(getMean(goal.vz));
+        coord =coord.setZ(-.5);
         target.status.setRocketVelocity(coord);
 
         coord = target.status.getRocketRotationVelocity();
@@ -78,9 +80,9 @@ public class RRT {
         target.status.setRocketRotationVelocity(coord);
 
         coord = target.directionZ;
-        coord =coord.setX(getMean(goal.ax));
-        coord =coord.setY(getMean(goal.ay));
-        coord =coord.setZ(getMean(goal.az));
+        coord =coord.setX(0);
+        coord =coord.setY(0);
+        coord =coord.setZ(1);
         target.directionZ = coord;
 
         target.status.setSimulationTime(getMean(goal.t));
@@ -88,9 +90,9 @@ public class RRT {
 
     void setRandomTarget(){
         Coordinate coord = target.status.getRocketPosition();
-        coord = coord.setX(getRandom(boundaries.x)+minNode.status.getRocketPosition().x);
-        coord =coord.setY(getRandom(boundaries.y)+minNode.status.getRocketPosition().y);
-        coord = coord.setZ(getRandom(boundaries.z)+minNode.status.getRocketPosition().z);
+        coord = coord.setX(getRandom(boundaries.x)+0*minNode.status.getRocketPosition().x);
+        coord =coord.setY(getRandom(boundaries.y)+0*minNode.status.getRocketPosition().y);
+        coord = coord.setZ(getRandom(boundaries.z)+0*minNode.status.getRocketPosition().z);
         target.status.setRocketPosition(coord);
 
         coord = target.status.getRocketVelocity();
@@ -135,6 +137,17 @@ public class RRT {
             RRTNode n = getNearest(options, target);
             if (n!=null)
                 addNode(n); // add the node which is closest to the target
+            if (nodes.size()>15000){
+                RRTNode tmp = root;
+                nodes = new ArrayList<>();
+                nodes.add(tmp);
+                globalMin = 99999;
+            }
+          //  if (Math.random() < 0.5) {
+           //     Random random = new Random();
+            //    int d = Math.abs(random.nextInt()) % nodes.size();
+             //   nodes.remove(d);
+           // }
             options = new ArrayList<>(); //reset list
             current = null;
             counter = 0;
@@ -147,7 +160,7 @@ public class RRT {
                 RRTNode tmp = getNearest(nodes, target);
 
             } else {
-                tries = 100;
+                tries = 10;
                 setRandomTarget();
             }
             current = getNearest(nodes, target);
@@ -217,7 +230,7 @@ public class RRT {
         double day = cord1.y - cord2.y;
         double daz = cord1.z - cord2.z;
         double dt = n1.status.getSimulationTime()-n2.status.getSimulationTime();
-        return dx*dx + dy*dy + dz*dz + dvz*dvz+dvx*dvx + dvy*dvy+daz*daz*100;// + dax*dax + day*day + daz*daz+dt*dt;+ dvx*dvx + dvy*dvy +
+        return  2*dz*dz + 1*dvz*dvz + 1*dvx*dvx + 1*dvy*dvy + daz*daz*10;// + dax*dax + day*day + daz*daz+dt*dt;+ dvx*dvx + dvy*dvy + 10*dx*dx +10*dy*dy
     }
 
     public static class Action{
