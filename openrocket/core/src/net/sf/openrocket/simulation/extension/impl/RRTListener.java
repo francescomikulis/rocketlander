@@ -38,7 +38,19 @@ public class RRTListener extends AbstractSimulationListener {
     // RRT
     private RRT rrt = null;
     private RRT.Action action = null;
+    private CoupledActions visualizeAction;
     // nodes = SimulationStatus status
+    ArrayList<SimulationStatus> ss = new ArrayList<>();
+    ArrayList<RRT.Action> aa = new ArrayList<>();
+    int currentIndex = 0;
+
+    /** Used by the Visualize3DListener extension */
+    public CoupledActions getLastAction() {
+        RRT.Action action = aa.get(currentIndex);
+        visualizeAction = new CoupledActions(new StateActionTuple.Action((float)action.thrust, (float)action.gimbleX, (float)action.gimbleY, null));
+        currentIndex--;
+        return visualizeAction;
+    }
 
     RRTListener(RRTExtension rrtExtension) {
         this.rrtExtension = rrtExtension;
@@ -166,6 +178,14 @@ public class RRTListener extends AbstractSimulationListener {
             }
         }
         if (visualize3DListener ==null)  return;
+
+        currentIndex = ss.size() - 1;
+
+        visualize3DListener.setListenerActionName("RRTListener");
+        visualize3DListener.setVisualizeDuringPostStep(true);
+        for (int i = ss.size() - 1; i >= 0; i--) {
+            visualize3DListener.postStep(ss.get(i));
+        }
 
         //Client client =
         //client.setConnectionString("127.0.0.1:8080");

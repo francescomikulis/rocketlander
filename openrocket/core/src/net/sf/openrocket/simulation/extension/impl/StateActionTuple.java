@@ -334,7 +334,7 @@ public class StateActionTuple implements Serializable {
             constructorCodeInts(values, definition);
         }
 
-        private Action(float thrust, float gimbalX, float gimbalY, MDPDefinition definition) {
+        public Action(float thrust, float gimbalX, float gimbalY, MDPDefinition definition) {
             HashMap<String, Float> values = new HashMap<String, Float>() {{
                 put("thrust", thrust);
                 put("gimbalX", gimbalX);
