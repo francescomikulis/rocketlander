@@ -10,16 +10,14 @@ import net.sf.openrocket.simulation.extension.impl.StateActionTuple.CoupledActio
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.CoupledStates;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.State;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
+import net.sf.openrocket.simulation.listeners.SimulationListener;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.GeodeticComputationStrategy;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Random;
+import java.util.*;
 
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 
@@ -30,7 +28,7 @@ public class RRTListener extends AbstractSimulationListener {
     private RRTExtension rrtExtension;
     private Random random;
     private static double variation = 2;
-    private static double timeStep = 0.1;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
@@ -67,8 +65,8 @@ public class RRTListener extends AbstractSimulationListener {
         double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
         double dz = 90;
         status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        dx = calculateNumberWithIntegerVariation(0, variation * 10) * Math.PI / 180;
-        dy = calculateNumberWithIntegerVariation(0, variation * 10) * Math.PI / 180;
+        dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
         status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
@@ -123,7 +121,7 @@ public class RRTListener extends AbstractSimulationListener {
     @Override
     public AccelerationData preAccelerationCalculation(SimulationStatus status) {
         if (RLVectoringFlightConditions == null || action == null) return null;
-        RLVectoringThrust = RLVectoringThrust* action.thrust;
+        RLVectoringThrust *= action.thrust;
         double gimbalX = action.gimbleX;
         double gimbalY = action.gimbleY;
         return calculateAcceleration(status, gimbalX, gimbalY);
@@ -160,17 +158,29 @@ public class RRTListener extends AbstractSimulationListener {
             n = n.parent;
             ss.add(n.status);
         }
-
-
-        Client client = Client.getInstance();
-        client.setConnectionString("127.0.0.1:8080");
-        client.Connect();
-        for (int i = ss.size()-1; i >= 0; i--) {
-            byte[] bytes = serialize_single_timeStep(ss.get(i), aa.get(i));
-            client.write(bytes, 0, bytes.length);
-
+        Visualize3DListener visualize3DListener = null;
+        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
+        for (SimulationListener listener: listeners) {
+            if (listener.getClass().toString().contains("Visualize3DListener")) {
+                visualize3DListener = (Visualize3DListener) listener;
+            }
         }
-        client.close();
+        if (visualize3DListener ==null)  return;
+
+        //Client client =
+        //client.setConnectionString("127.0.0.1:8080");
+        //boolean b = client.Connect();
+        //if (b) {
+            for (int i = ss.size() - 1; i >= 0; i--) {
+                byte[] bytes = serialize_single_timeStep(ss.get(i), aa.get(i));
+              //  try {
+                //    visualize3DListener..postStep(ss.get(i));
+                //} catch (SimulationException e) {
+                 //   e.printStackTrace();
+                //}
+            }
+         //   client.close();
+        //}
     }
 
 

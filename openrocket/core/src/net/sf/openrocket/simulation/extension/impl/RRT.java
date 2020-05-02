@@ -137,7 +137,7 @@ public class RRT {
             RRTNode n = getNearest(options, target);
             if (n!=null)
                 addNode(n); // add the node which is closest to the target
-            if (nodes.size()>15000){
+            if (nodes.size()>5000){
                 RRTNode tmp = root;
                 nodes = new ArrayList<>();
                 nodes.add(tmp);
