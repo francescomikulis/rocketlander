@@ -187,6 +187,7 @@ public class RLModel {
                 if (advancedIfElseFormula.size() == 0) {
                     System.out.println("Unable to generate MDP selection!");
                 } else {
+                    // System.out.println("Defaulting MDP SELECTION - BAD.");
                     // default to last one!
                     selectedMDPName = (String)advancedIfElseFormula.get(advancedIfElseFormula.size() - 1)[1];
                     // if the last one isn't defined, restart the switch from the top until one is defined
@@ -521,10 +522,17 @@ public class RLModel {
     public void printAndClearStringBuffer(boolean goNewline) {
         String result = stringBuilder.toString();
         stringBuilder.setLength(0);
+        String successInfo = "";
+        if (result.length() > 1) {
+            int num_successes = 0;
+            for (int i = 0; i < result.length(); i++) {
+                if (result.charAt(i) == '+') num_successes++;
+            }
+            successInfo = " --> %" + (((double) num_successes) * 100.0 / (double) (result.length()));
+        }
         if (goNewline)
-            System.out.println(result);
-        else
-            System.out.print(result);
+            successInfo += "\n";
+        System.out.print(result + successInfo);
     }
 
     /* Interface actions for the RLPanel in the UI */

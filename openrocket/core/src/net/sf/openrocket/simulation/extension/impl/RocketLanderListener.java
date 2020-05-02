@@ -318,6 +318,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (status.getSimulationTime() > 7.0) {
             throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
         }
+
+        // conditional end simulation on zero positionZ
+        String stateNames = state.toStringNames();
+        int index = (int)dataStoreState.get(stateNames).get("positionZ")[0];
+        String realField = (String)dataStoreState.get(stateNames).get("positionZ")[1];
+        if (state.get(index).get(realField) == 0){
+            throw new SimulationException("Simulation completed.  Reached zero positionZ in the state definition.");
+        }
     }
 
     @Override

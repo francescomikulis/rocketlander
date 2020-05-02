@@ -30,7 +30,7 @@ public class MonteCarlo extends ModelBaseImplementation {
         double positionPenalty = 0;
         double positionZ = Math.abs(lastStateActionTuple.state.getDouble("positionZ"));
         if (positionZ > 1.0)
-            positionPenalty = 1000000.0 * positionZ;
+            positionPenalty = 10000.0 * positionZ;
         float G = terminalReward.apply(lastStateActionTuple.state) - (float)positionPenalty;
         int numExplorationSteps = 0;
 
