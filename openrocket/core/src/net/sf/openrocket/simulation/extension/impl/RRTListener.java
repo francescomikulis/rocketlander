@@ -35,6 +35,7 @@ public class RRTListener extends AbstractSimulationListener {
     private RigidBody RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private RigidBody OLD_RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private double RLVectoringThrust;
+    boolean end = false;
     // RRT
     private RRT rrt = null;
     private RRT.Action action = null;
@@ -51,6 +52,16 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public void startSimulation(SimulationStatus status) {
+        Visualize3DListener visualize3DListener = null;
+        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
+        for (SimulationListener listener: listeners) {
+            if (listener.getClass().toString().contains("Visualize3DListener")) {
+                visualize3DListener = (Visualize3DListener) listener;
+            }
+        }
+        if (visualize3DListener != null)  visualize3DListener.visualize = false;
+
+
         // initialize episode
         status.getSimulationConditions().setTimeStep(timeStep);
         double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
@@ -145,6 +156,8 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
+        if (end) return;
+        end = true;
         RRTNode n;
         if (action==null) {
              n = rrt.current;
@@ -165,22 +178,18 @@ public class RRTListener extends AbstractSimulationListener {
                 visualize3DListener = (Visualize3DListener) listener;
             }
         }
-        if (visualize3DListener ==null)  return;
-
-        //Client client =
-        //client.setConnectionString("127.0.0.1:8080");
-        //boolean b = client.Connect();
-        //if (b) {
+        if (visualize3DListener == null)  return;
+        visualize3DListener.visualize = true;
+        Client client = visualize3DListener.client;
+        boolean b = client.Connect();
+        if (b) {
             for (int i = ss.size() - 1; i >= 0; i--) {
                 byte[] bytes = serialize_single_timeStep(ss.get(i), aa.get(i));
-              //  try {
-                //    visualize3DListener..postStep(ss.get(i));
-                //} catch (SimulationException e) {
-                 //   e.printStackTrace();
-                //}
+                client.write(bytes,0, bytes.length);
+                visualize3DListener.waitdt(status);
             }
-         //   client.close();
-        //}
+            client.close();
+        }
     }
 
 

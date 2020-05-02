@@ -17,6 +17,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	Visualize3D visualize3D;
 	Client client = Client.getInstance();
 	long curTime;
+	public boolean visualize = true;
 
 	Visualize3DListener(Visualize3D visualize3D) {
 		this.visualize3D = visualize3D;
@@ -37,6 +38,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	@Override
 	public void postStep(SimulationStatus status) {
+		if (!visualize) return;
 		// RocketLanderListener integration for gimbal
 		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
 		for (SimulationListener listener: listeners) {
@@ -58,7 +60,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		client.close();
 	}
 
-	private void waitdt(SimulationStatus status){
+	public void waitdt(SimulationStatus status){
 		int timeStep;
 		try {
 			double val = 1000 * status.getPreviousTimeStep() / visualize3D.getTimeRate();
