@@ -8,6 +8,7 @@ import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
+import net.sf.openrocket.simulation.listeners.SimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
 import net.sf.openrocket.simulation.extension.impl.RLModel.*;
@@ -242,6 +243,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     @Override
     public boolean preStep(SimulationStatus status) {
         stabilizeRocketBasedOnSimType(status);
+
+        // RocketLanderListener integration for gimbal
+        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
+        for (SimulationListener listener: listeners) {
+            if (listener.getClass().toString().contains("Visualize3DListener")) {
+                ((Visualize3DListener)listener).setListener(this);
+            }
+        }
         return true;
     }
 
