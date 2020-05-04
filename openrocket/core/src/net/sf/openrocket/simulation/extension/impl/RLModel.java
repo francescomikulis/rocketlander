@@ -250,7 +250,7 @@ public class RLModel {
                 ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, realField));
                 possibleActionInts.add(childMDPOptions);
                 if (childMDPOptions.size() != 1) {
-                    System.out.println("Formula evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
+                    // System.out.println("Formula evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
                 }
             } else {
                 possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), state.definition.actionDefinitionIntegers[index])));
@@ -371,9 +371,13 @@ public class RLModel {
             addHierarchicalMDPSelection(status, coupledStates, bestAction);
 
             // propagate selection
-            for (State s: coupledStates)
-                bestAction.applyDefinitionValuesToState(s);
             actions.add(bestAction);
+            for (Action a: actions) {
+                for (State s : coupledStates) {
+                    a.applyDefinitionValuesToState(s);
+                }
+            }
+
             methodCounter += 1;
         }
 
