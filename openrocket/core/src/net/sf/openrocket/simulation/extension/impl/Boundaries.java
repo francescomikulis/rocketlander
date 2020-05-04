@@ -12,9 +12,15 @@ public class Boundaries {
     class Limits{
         public double min;
         public double max;
+        public double increment;
         Limits(double minIn ,double maxIn){
             min = minIn;
             max = maxIn;
+        }
+        Limits(double minIn ,double maxIn, double increment){
+            min = minIn;
+            max = maxIn;
+            this.increment = increment;
         }
     }
     public Limits t = new Limits(0,6);
@@ -23,26 +29,26 @@ public class Boundaries {
     public Limits z = new Limits(0,30);
     public Limits vx = new Limits(-1,1);
     public Limits vy = new Limits(-1,1);
-    public Limits vz = new Limits(-25,-.1);
+    public Limits vz = new Limits(-15,-.1);
     public Limits ax = new Limits(-.3, .3);
     public Limits ay = new Limits(-.3, .3);
-    public Limits az = new Limits(1, 1);
+    public Limits az = new Limits(0.99, 1);
     public Limits avx = new Limits(-.3, .3);
     public Limits avy = new Limits(-.3, .3);
     public Limits avz = new Limits(0, 0);
-    public Limits thrust = new Limits(0, 1);
-    public Limits gimbleX = new Limits(-2*Math.PI/180, 2*Math.PI/180);
-    public Limits gimbleY = new Limits(-2*Math.PI/180, 2*Math.PI/180);
-    public Limits lateralThrustX = new Limits(0, 1);
-    public Limits lateralThrustY = new Limits(0, 1);
+    public Limits thrust = new Limits(0, 1, 0.25);
+    public Limits gimbleX = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
+    public Limits gimbleY = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
+    public Limits lateralThrustX = new Limits(-.25, .25, .25);
+    public Limits lateralThrustY = new Limits(-.25, .25, .25);
     Boundaries(String goalInidactor){
         x = new Limits(-40,40);
         y = new Limits(-40,40);
         z = new Limits(0,1);
-        vx = new Limits(-2,2);
-        vy = new Limits(-2,2);
+        vx = new Limits(-1,1);
+        vy = new Limits(-1,1);
         vz = new Limits(-2,2);
-        az = new Limits(0.2, 1);
+        az = new Limits(0.99, 1);
         avx = new Limits(-.3, .3);
         avy = new Limits(-.3, .3);
         t = new Limits(2,6);

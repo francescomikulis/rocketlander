@@ -8,6 +8,7 @@ import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
+import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 import java.util.Random;
@@ -24,6 +25,7 @@ public class RRT {
     double globalMin = 1000;
     RRTNode minNode;
     int tries=10;
+    int NUM_GOAL_TRIES = 100;
     Action a;
 
     RRT(RRTNode rootIn){
@@ -57,7 +59,7 @@ public class RRT {
         boolean b9 =  n.status.getRocketPosition().y > goal.y.min             &&         n.status.getRocketPosition().y < goal.y.max;
         boolean b10 =  n.status.getRocketPosition().z > goal.z.min            &&         n.status.getRocketPosition().z < goal.z.max;
         //return (b1 && b2 && b3 && b4 && b5 && b6 && b7 && b8 && b9 && b10);
-        return (b10 && b4 && b2 && b3);
+        return (b1 && b10 && b4 && b2 && b3);
     }
 
     void setGoalTarget(){
@@ -120,6 +122,12 @@ public class RRT {
         return limits.min + Math.random() * (limits.max - limits.min);
     }
 
+    double getRandomAction(Boundaries.Limits limits){
+        int range = (int) Math.round((limits.max - limits.min) / limits.increment + 0.5);
+        int incrementMultipler = (int) Math.round(Math.random() * range);
+        return limits.min + incrementMultipler * (limits.increment);
+    }
+
     double getMean(Boundaries.Limits limits){
         return 0.5* (limits.max + limits.min);
     }
@@ -154,13 +162,13 @@ public class RRT {
         }
         if (current == null){ // need to  sample new point
 
-            if (Math.random()< 0.01){
-                tries = 1001;
+            if (Math.random()< 0.1){
+                tries = NUM_GOAL_TRIES;
                 setGoalTarget();
                 RRTNode tmp = getNearest(nodes, target);
 
             } else {
-                tries = 10;
+                tries = 50;
                 setRandomTarget();
             }
             current = getNearest(nodes, target);
@@ -174,11 +182,11 @@ public class RRT {
             }
         }
         assignStatus(current.status, status);
-        a = new Action(getRandom(boundaries.gimbleX),
-                    getRandom(boundaries.gimbleY),
-                    getRandom(boundaries.thrust),
-                getRandom(boundaries.lateralThrustX),
-                getRandom(boundaries.lateralThrustY));
+        a = new Action(getRandomAction(boundaries.gimbleX),
+                getRandomAction(boundaries.gimbleY),
+                getRandomAction(boundaries.thrust),
+                getRandomAction(boundaries.lateralThrustX),
+                getRandomAction(boundaries.lateralThrustY));
         return a;
     }
 
@@ -194,7 +202,7 @@ public class RRT {
             if (tmp < min) {
                 min = tmp;
                 ret = rrtNode;
-                if (min < globalMin && tries==1001){
+                if (min < globalMin && tries==NUM_GOAL_TRIES){
                     globalMin = min;
                     minNode = rrtNode;
                     System.out.println(globalMin);
@@ -204,6 +212,9 @@ public class RRT {
                     System.out.println("Velocity: x: "+minNode.status.getRocketVelocity().x+
                             " y: "+minNode.status.getRocketVelocity().y+
                             " z: "+minNode.status.getRocketVelocity().z);
+                    System.out.println("Angle: x: "+minNode.status.getRocketOrientationQuaternion().rotateZ().x+
+                            " y: "+minNode.status.getRocketOrientationQuaternion().rotateZ().y+
+                            " z: "+minNode.status.getRocketOrientationQuaternion().rotateZ().z);
                 }
 
             }
