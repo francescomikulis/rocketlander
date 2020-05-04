@@ -27,6 +27,7 @@ public class MDPDefinition implements Serializable {
     public double alpha = 0.1;
     public double exploration = 0.05;
     public String[] symmetryAxes = null;
+    public boolean inheritSymmetryAxis = false;
     public transient HashSet<String> symmetryAxesHashSet = null;
     public LinkedHashMap<String, float[]> stateDefinition = null;
     public transient String[] stateDefinitionFields = null;

@@ -307,6 +307,11 @@ public class RLModel {
                     }
                 }
 
+                // hack to 'pass down' the symmetry for mid-level MDPs
+                if (action.definition.inheritSymmetryAxis) {
+                    MDPActionSelectionField += action.symmetry;
+                }
+
                 boolean actuallyCreateNewState = true;
                 String symmetryAxis = null;
                 if (MDPActionSelectionField.contains("X")) symmetryAxis = "X";
