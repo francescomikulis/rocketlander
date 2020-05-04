@@ -24,6 +24,8 @@ public class RLModel {
     public SimulationType simulationType = SimulationType._3D;
     public SimulationInitVariation initVariation = SimulationInitVariation.posVelAngle;
 
+    public RLDataStoreState dataStoreState;
+
     private StringBuilder stringBuilder = new StringBuilder();
     private boolean smartPrintBuffer = false;
 
@@ -47,6 +49,7 @@ public class RLModel {
     }
 
     public void setDefinitions(ArrayList<MDPDefinition> definitions) {
+        dataStoreState = new RLDataStoreState();
         boolean actualChange = false;
         for (MDPDefinition definition: definitions) {
             if (!methods.containsKey(definition.name)) {
@@ -80,6 +83,7 @@ public class RLModel {
     }
 
     private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, MDPDefinition ... definitions) {
+        dataStoreState = new RLDataStoreState();
         valueFunctionTable = null;
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;

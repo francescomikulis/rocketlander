@@ -77,7 +77,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         action = newAction;
 
         if (state != null)
-            memoizeSmartGuesses(state.toStringNames());
+            model.dataStoreState.memoizeSmartGuesses(state);
 
         return true;
     }
@@ -330,9 +330,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         // conditional end simulation on zero positionZ
         String stateNames = state.toStringNames();
-        if (dataStoreState.get(stateNames).get("positionZ") != null) {
-            int index = (int) dataStoreState.get(stateNames).get("positionZ")[0];
-            String realField = (String) dataStoreState.get(stateNames).get("positionZ")[1];
+        if (model.dataStoreState.get(stateNames).get("positionZ") != null) {
+            int index = (int) model.dataStoreState.get(stateNames).get("positionZ")[0];
+            String realField = (String) model.dataStoreState.get(stateNames).get("positionZ")[1];
             if (state.get(index).get(realField) == 0) {
                 throw new SimulationException("Simulation completed.  Reached zero positionZ in the state definition.");
             }
@@ -495,24 +495,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
     }
 
-
-
-    /**
-     * Below here is code related to the storing of data for the flight status.  Used for plotting.
-     * Very magical code - auto-parses the values even when non-traditional nomenclature is used.
-     *
-     * Initialize the hashmaps with memoizeSmartGuesses()
-     * Then simply call the storeUpdatedFlightConditions() and applyCustomFlightConditions()
-     * This will modify the flightStatus and trigger the data storage for plotting.
-     * **/
-
-    // Object[0th] entry is the integer of the access to the index of the state arralist
-    // Object[1st] entry is the real name of that field
-    HashMap<String, HashMap<String, Object[]>> dataStoreState = new HashMap<>();
-
-    HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
-    HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
-
     private void applyCustomFlightConditions(FlightConditions toConditions) {
         if (this.RLVectoringFlightConditions == null) return;
         toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
@@ -525,11 +507,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private void storeUpdatedFlightConditions() {
         if (state == null) return;
-        String stateNames = state.toStringNames();
-        this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate(stateNames, "position"));
-        this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate(stateNames, "velocity"));
-        this.RLVectoringFlightConditions.setRLAngle(getSmartGuessCoordinate(stateNames, "angle"));
-        this.RLVectoringFlightConditions.setRLAngleVelocity(getSmartGuessCoordinate(stateNames, "angleVelocity"));
+        this.RLVectoringFlightConditions.setRLPosition(model.dataStoreState.getSmartGuessCoordinate(state, "position"));
+        this.RLVectoringFlightConditions.setRLVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "velocity"));
+        this.RLVectoringFlightConditions.setRLAngle(model.dataStoreState.getSmartGuessCoordinate(state, "angle"));
+        this.RLVectoringFlightConditions.setRLAngleVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "angleVelocity"));
 
         // multiplication is for visualization purposes
         this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
@@ -538,159 +519,5 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalY = action.getDouble("gimbalY");
         double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
         this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
-    }
-
-    private Coordinate getSmartGuessCoordinate(String stateNames, String field) {
-        return new Coordinate(getSmartGuess(stateNames, field + "X"), getSmartGuess(stateNames, field + "Y"), getSmartGuess(stateNames,field + "Z"));
-    }
-
-    private Double getSmartGuess(String stateNames, String originalField) {
-        if (!dataStoreState.containsKey(stateNames) || (dataStoreState.get(stateNames).size() == 0)) {
-            memoizeSmartGuesses(stateNames);
-        }
-
-        if (!dataStoreState.get(stateNames).containsKey(originalField)) {
-            return state.get(0).getDouble(originalField);
-        } else {
-            int index = (int)dataStoreState.get(stateNames).get(originalField)[0];
-            String realField = (String)dataStoreState.get(stateNames).get(originalField)[1];
-
-            // return state.get(index).getDouble(realField);
-            return getRealRepresentationDouble(state.get(index), realField);
-        }
-    }
-
-    // this forces the value to be within boundaries
-    private double getRealRepresentationDouble(State state, String field) {
-        int[] minMax = state.definition.stateDefinitionIntegers[state.definition.reverseIndeces.get(field)];
-        int originalIntValue = state.get(field);
-        double result = 0.0;
-        if (originalIntValue < minMax[0]) {
-            result = state.set(field, minMax[0]).getDouble(field);
-            state.set(field, originalIntValue);
-        } else if (originalIntValue > minMax[1]) {
-            result = state.set(field, minMax[1]).getDouble(field);
-            state.set(field, originalIntValue);
-        } else {
-            result = state.getDouble(field);
-        }
-        return result;
-    }
-
-    private void memoizeSmartGuesses(String stateNames) {
-        if (dataStoreState.containsKey(stateNames)) return;
-        dataStoreState.put(stateNames, new HashMap<>());
-        storeSmartGuess(stateNames, "positionX");
-        storeSmartGuess(stateNames, "positionY");
-        storeSmartGuess(stateNames, "positionZ");
-        storeSmartGuess(stateNames, "angleX");
-        storeSmartGuess(stateNames, "angleY");
-        storeSmartGuess(stateNames, "angleZ");
-        storeSmartGuess(stateNames, "angleVelocityX");
-        storeSmartGuess(stateNames, "angleVelocityY");
-        storeSmartGuess(stateNames, "angleVelocityZ");
-        storeSmartGuess(stateNames, "velocityX", "angle");
-        storeSmartGuess(stateNames, "velocityY", "angle");
-        storeSmartGuess(stateNames, "velocityZ", "angle");
-    }
-
-    private Double storeSmartGuess(String stateNames, String originalField) {
-        return storeSmartGuess(stateNames, originalField, null);
-    }
-
-    private Double storeSmartGuess(String stateNames, String originalField, String skipContainsString) {
-        String field = originalField + "";
-        String potentialAxis = field.substring(field.length() - 1);
-        boolean preferSymmetry = false;
-        if (potentialAxis.equals("X") || potentialAxis.equals("Y")) {
-            preferSymmetry = true;
-            field = field.substring(0, field.length() - 1);
-        } else {
-            if (!potentialAxis.equals("Z")) potentialAxis = null;
-        }
-        dataStoreState.get(stateNames).put(originalField, new Object[2]);
-        Double result = storeSmartGuessCoordinateComponent(stateNames, originalField, field, potentialAxis, preferSymmetry, skipContainsString);
-        if (result == null) {
-            // remove that field because it was not found!
-            dataStoreState.get(stateNames).remove(originalField);
-            // no MDP has that field defined!
-            result = state.get(0).getDouble(originalField);
-        }
-        return result;
-    }
-
-    private Double storeSmartGuessCoordinateComponent(String stateNames, String originalField, String field, String enforceSymmetryAxis, boolean preferSymmetry, String skipContainsString) {
-        String lowercaseField = field.toLowerCase();
-        if (preferSymmetry) {
-            return storeBestGuessField(stateNames, originalField, lowercaseField, enforceSymmetryAxis, skipContainsString);
-        } else {
-            // lowercaseField has the required axis
-            return storeBestGuessField(stateNames, originalField, lowercaseField, null, skipContainsString);
-        }
-    }
-
-    private Double storeBestGuessField(String stateNames, String originalField, String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : s.definition.stateDefinitionFields) {
-                    if (definitionField.toLowerCase().equals(lowercaseField)) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField: s.definition.stateDefinitionFields) {
-                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
-                        continue;
-                    if (definitionField.toLowerCase().contains(lowercaseField)) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        // edge case for a mal-enforced symmetryAxis - fallback to verifying for non-symmetrical MDPs
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
-                for (String definitionField : s.definition.stateDefinitionFields) {
-                    if (definitionField.toLowerCase().equals(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
-                for (String definitionField: s.definition.stateDefinitionFields) {
-                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
-                        continue;
-                    if (definitionField.toLowerCase().contains(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        return null;
     }
 }
