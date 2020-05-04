@@ -5,19 +5,16 @@ import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
 
-import java.awt.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.List;
 
 public class Visualize3DListener extends AbstractSimulationListener {
-	SimulationListener rocketLanderListener = null;
+	SimulationListener listener = null;
 	Visualize3D visualize3D;
 	Client client = Client.getInstance();
 	long curTime;
-	public boolean visualize = true;
+	private boolean visualizeDuringPostStep = true;
 
 	Visualize3DListener(Visualize3D visualize3D) {
 		this.visualize3D = visualize3D;
@@ -27,52 +24,47 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	public void startSimulation(SimulationStatus status) {
 		client.setConnectionString(visualize3D.getConnectionString());
 		client.Connect();
-		// RocketLanderListener integration for gimbal
-		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-		for (SimulationListener listener: listeners) {
-			if (listener.getClass().toString().contains("RocketLanderListener")) {
-				rocketLanderListener = listener;
-			}
-		}
+	}
+
+	public void setListener(SimulationListener listener) {
+		this.listener = listener;
 	}
 
 	@Override
 	public void postStep(SimulationStatus status) {
-		if (!visualize) return;
-		// RocketLanderListener integration for gimbal
-		List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-		for (SimulationListener listener: listeners) {
-			if (listener.getClass().toString().contains("RocketLanderListener")) {
-				rocketLanderListener = listener;
+		if (visualizeDuringPostStep) {
+			if (!client.Connected()) {
+				client.Connect();
+			} else {
+				byte[] bytes = serialize_single_timeStep(status);
+				client.write(bytes, 0, bytes.length);
 			}
+			waitdt(status);
 		}
-		if (!client.Connected()){
-			client.Connect();
-		} else{
-			byte[] bytes = serialize_single_timeStep(status);
-			client.write(bytes, 0, bytes.length);
-		}
-		waitdt(status);
 	}
 
 	@Override
 	public void endSimulation(SimulationStatus status, SimulationException exception) {
+		if (visualizeDuringPostStep)
+			closeClient();
+	}
+
+	public void closeClient() {
 		client.close();
 	}
 
-	public void waitdt(SimulationStatus status){
-		int timeStep;
-		try {
-			double val = 1000 * status.getPreviousTimeStep() / visualize3D.getTimeRate();
-			timeStep = (int) Math.floor(val);
-			long realTimeStep = (System.currentTimeMillis() - curTime);
-			if (realTimeStep < timeStep)
-				Thread.sleep(timeStep - realTimeStep);
-			curTime = System.currentTimeMillis();
+	public void setVisualizeDuringPostStep(boolean visualize) {
+		this.visualizeDuringPostStep = visualize;
+	}
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+	private void waitdt(SimulationStatus status){
+		int timeStep;
+		double val = 1000 * status.getPreviousTimeStep() / visualize3D.getTimeRate();
+		timeStep = (int) Math.floor(val);
+		long realTimeStep = (System.currentTimeMillis() - curTime);
+		while (realTimeStep < timeStep)
+			realTimeStep = (System.currentTimeMillis() - curTime);
+		curTime = System.currentTimeMillis();
 	}
 
 	private static int arrayAdd(byte[] bytes, double value, int offset) {
@@ -104,9 +96,15 @@ public class Visualize3DListener extends AbstractSimulationListener {
 			actualMotorThrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
 		} catch (Exception e) {}
 		// thurst and gimbal angles not yet present in the simulationStatus
-		offset = arrayAdd(bytes, actualMotorThrust * RLL.getThrust(rocketLanderListener), offset);
-		offset = arrayAdd(bytes, RLL.getGimbalX(rocketLanderListener), offset);
-		offset = arrayAdd(bytes, RLL.getGimbalY(rocketLanderListener), offset);
+		if (listener != null) {
+			offset = arrayAdd(bytes, 200 * RLL.getThrust(listener), offset);
+			offset = arrayAdd(bytes, RLL.getGimbalX(listener), offset);
+			offset = arrayAdd(bytes, RLL.getGimbalY(listener), offset);
+		} else {
+			offset = arrayAdd(bytes, actualMotorThrust, offset);
+			offset = arrayAdd(bytes, 0.0, offset);
+			offset = arrayAdd(bytes, 0.0, offset);
+		}
 		return bytes;
 	}
 
@@ -115,26 +113,25 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	 **/
 
 	public static class RLL {
-		public static float getGimbalX(Object rocketLanderListener) {
-			return getActionDoubleValue(rocketLanderListener, "gimbalX");
+		public static float getGimbalX(Object listener) {
+			return getActionDoubleValue(listener, "gimbalX");
 		}
 
-		public static float getGimbalY(Object rocketLanderListener) {
-			return getActionDoubleValue(rocketLanderListener, "gimbalY");
+		public static float getGimbalY(Object listener) {
+			return getActionDoubleValue(listener, "gimbalY");
 		}
 
-		public static float getThrust(Object rocketLanderListener) {
-			return getActionDoubleValue(rocketLanderListener, "thrust");
+		public static float getThrust(Object listener) {
+			return getActionDoubleValue(listener, "thrust");
 		}
 
-		public static float getActionDoubleValue(Object rocketLanderListener, String field){
-			if (rocketLanderListener == null)
+		public static float getActionDoubleValue(Object listener, String field){
+			if (listener == null)
 				return 0.0f;
 
-			Object action = getAction(rocketLanderListener);
+			Object action = getAction(listener);
 			Object result = callMethod(action, action.getClass(), "getDouble", field);
 			if (result == null) return 0.0f;
-			System.out.println(((Double)result).floatValue());
 			return ((Double)result).floatValue();
 		}
 

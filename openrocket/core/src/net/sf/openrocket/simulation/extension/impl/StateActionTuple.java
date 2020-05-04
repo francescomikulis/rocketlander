@@ -119,7 +119,7 @@ public class StateActionTuple implements Serializable {
             }
 
             if (skipFormulas) return;
-            if (definition._formulas != null) {
+            if ((definition != null) && (definition._formulas != null)) {
                 for (Map.Entry<String, Formula> entry: definition._formulas.entrySet()) {
                     setDouble(entry.getKey(), evaluateFormula(entry.getValue(), this));
                 }
@@ -173,7 +173,11 @@ public class StateActionTuple implements Serializable {
         }
 
         public double getDouble(String field) {
-            return get(field) * definition.precisions.getOrDefault(field, 0.0000001f) + definition.rangeShifts.getOrDefault(field, 0.0f);
+            if (definition == null) {
+                return get(field) * 0.0000001f;
+            } else {
+                return get(field) * definition.precisions.getOrDefault(field, 0.0000001f) + definition.rangeShifts.getOrDefault(field, 0.0f);
+            }
         }
 
         public StateActionClass set(String field, int value) {
@@ -187,8 +191,13 @@ public class StateActionTuple implements Serializable {
         }
 
         public StateActionClass setDouble(String field, double value) {
-            float precision = definition.precisions.getOrDefault(field, 0.0000001f);
-            valueMap.put(field, group_by_precision(value - definition.rangeShifts.getOrDefault(field, 0.0f), precision));
+            if (definition == null) {
+                float precision = 0.0000001f;
+                valueMap.put(field, group_by_precision(value, precision));
+            } else {
+                float precision = definition.precisions.getOrDefault(field, 0.0000001f);
+                valueMap.put(field, group_by_precision(value - definition.rangeShifts.getOrDefault(field, 0.0f), precision));
+            }
             return this;
         }
 
@@ -334,7 +343,7 @@ public class StateActionTuple implements Serializable {
             constructorCodeInts(values, definition);
         }
 
-        private Action(float thrust, float gimbalX, float gimbalY, MDPDefinition definition) {
+        public Action(float thrust, float gimbalX, float gimbalY, MDPDefinition definition) {
             HashMap<String, Float> values = new HashMap<String, Float>() {{
                 put("thrust", thrust);
                 put("gimbalX", gimbalX);
@@ -351,7 +360,8 @@ public class StateActionTuple implements Serializable {
         }
 
         private void constructorCodeDoubles(HashMap<String, Float> values, MDPDefinition definition) {
-            System.out.println("This constructor is not recommended because it loses precision!!!");
+            if (definition != null)
+                System.out.println("This constructor is not recommended because it loses precision!!!");
             this.definition = definition;
             for (Map.Entry<String, Float> entry: values.entrySet())
                 setDouble(entry.getKey(), entry.getValue());
@@ -474,6 +484,11 @@ public class StateActionTuple implements Serializable {
         private Action gimbalXAction = null;
         private Action gimbalYAction = null;
 
+        public CoupledActions(Action action) {
+            thrustAction = action;
+            gimbalXAction = action;
+            gimbalYAction = action;
+        }
 
         public CoupledActions(Action... _actions) {
             constructorCode(_actions);
@@ -495,14 +510,20 @@ public class StateActionTuple implements Serializable {
 
         @Override
         public boolean add(Action action) {
-            if (action.definition.actionDefinition.containsKey("thrust")) {
+            if (action.definition == null) {
                 thrustAction = action;
-            }
-            if (action.definition.actionDefinition.containsKey("gimbalX") || ((action.symmetry != null ) && action.symmetry.equals("X") && action.definition.actionDefinition.containsKey("gimbal"))) {
                 gimbalXAction = action;
-            }
-            if (action.definition.actionDefinition.containsKey("gimbalY") || ((action.symmetry != null ) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("gimbal"))) {
                 gimbalYAction = action;
+            } else {
+                if (action.definition.actionDefinition.containsKey("thrust")) {
+                    thrustAction = action;
+                }
+                if (action.definition.actionDefinition.containsKey("gimbalX") || ((action.symmetry != null) && action.symmetry.equals("X") && action.definition.actionDefinition.containsKey("gimbal"))) {
+                    gimbalXAction = action;
+                }
+                if (action.definition.actionDefinition.containsKey("gimbalY") || ((action.symmetry != null) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("gimbal"))) {
+                    gimbalYAction = action;
+                }
             }
             return super.add(action);
         }

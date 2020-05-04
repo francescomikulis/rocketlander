@@ -35,11 +35,22 @@ public class RRTListener extends AbstractSimulationListener {
     private RigidBody RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private RigidBody OLD_RLVectoringStructureMassData = new RigidBody(new Coordinate(0, 0, 0), 0, 0, 0);
     private double RLVectoringThrust;
-    boolean end = false;
     // RRT
     private RRT rrt = null;
     private RRT.Action action = null;
+    private CoupledActions visualizeAction;
     // nodes = SimulationStatus status
+    ArrayList<SimulationStatus> ss;
+    ArrayList<RRT.Action> aa;
+    int currentIndex = 0;
+    boolean hasCompletedTerminalUpdate = false;
+
+    /** Used by the Visualize3DListener extension */
+    public CoupledActions getLastAction() {
+        RRT.Action action = aa.get(currentIndex);
+        visualizeAction = new CoupledActions(new StateActionTuple.Action((float)action.thrust, (float)action.gimbleX, (float)action.gimbleY, null));
+        return visualizeAction;
+    }
 
     RRTListener(RRTExtension rrtExtension) {
         this.rrtExtension = rrtExtension;
@@ -52,16 +63,7 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public void startSimulation(SimulationStatus status) {
-        Visualize3DListener visualize3DListener = null;
-        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-        for (SimulationListener listener: listeners) {
-            if (listener.getClass().toString().contains("Visualize3DListener")) {
-                visualize3DListener = (Visualize3DListener) listener;
-            }
-        }
-        if (visualize3DListener != null)  visualize3DListener.visualize = false;
-
-
+        hasCompletedTerminalUpdate = false;
         // initialize episode
         status.getSimulationConditions().setTimeStep(timeStep);
         double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
@@ -82,6 +84,20 @@ public class RRTListener extends AbstractSimulationListener {
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
         rrt = new RRT(root);
+
+        disableVisualization(status);
+    }
+
+    private void disableVisualization(SimulationStatus status) {
+        Visualize3DListener visualize3DListener = null;
+        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
+        for (SimulationListener listener: listeners) {
+            if (listener.getClass().toString().contains("Visualize3DListener")) {
+                visualize3DListener = (Visualize3DListener) listener;
+            }
+        }
+        if (visualize3DListener == null)  return;
+        visualize3DListener.setVisualizeDuringPostStep(false);
     }
 
 
@@ -93,6 +109,7 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public boolean preStep(SimulationStatus status) {
+        disableVisualization(status);
         if (status.getRocketPosition().z != 0)
             action = rrt.setStatus(status);
         setRollToZero(status);
@@ -156,16 +173,17 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
-        if (end) return;
-        end = true;
+        if (hasCompletedTerminalUpdate) return;
+
+        hasCompletedTerminalUpdate = true;
         RRTNode n;
-        if (action==null) {
-             n = rrt.current;
-        } else{
+        if (action == null) {
+            n = rrt.current;
+        } else {
             n = rrt.minNode;
         }
-        ArrayList<SimulationStatus> ss = new ArrayList<>();
-        ArrayList<RRT.Action> aa = new ArrayList<>();
+        ss = new ArrayList<>();
+        aa = new ArrayList<>();
         while (n.parent != null) {
             aa.add(n.action);
             n = n.parent;
@@ -173,23 +191,19 @@ public class RRTListener extends AbstractSimulationListener {
         }
         Visualize3DListener visualize3DListener = null;
         List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-        for (SimulationListener listener: listeners) {
+        for (SimulationListener listener : listeners) {
             if (listener.getClass().toString().contains("Visualize3DListener")) {
                 visualize3DListener = (Visualize3DListener) listener;
             }
         }
-        if (visualize3DListener == null)  return;
-        visualize3DListener.visualize = true;
-        Client client = visualize3DListener.client;
-        boolean b = client.Connect();
-        if (b) {
-            for (int i = ss.size() - 1; i >= 0; i--) {
-                byte[] bytes = serialize_single_timeStep(ss.get(i), aa.get(i));
-                client.write(bytes,0, bytes.length);
-                visualize3DListener.waitdt(status);
-            }
-            client.close();
+        if (visualize3DListener == null) return;
+
+        visualize3DListener.setListener(this);
+        visualize3DListener.setVisualizeDuringPostStep(true);
+        for (currentIndex = ss.size() - 1; currentIndex >= 0; currentIndex--) {
+            visualize3DListener.postStep(ss.get(currentIndex));
         }
+        visualize3DListener.closeClient();
     }
 
 

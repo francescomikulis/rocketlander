@@ -29,7 +29,7 @@ public class MonteCarlo extends ModelBaseImplementation {
 
         double positionPenalty = 0;
         double positionZ = Math.abs(lastStateActionTuple.state.getDouble("positionZ"));
-        if (positionZ > 1.0)
+        if (positionZ > 0.5)
             positionPenalty = 10000.0 * positionZ;
         float G = terminalReward.apply(lastStateActionTuple.state) - (float)positionPenalty;
         int numExplorationSteps = 0;
@@ -59,6 +59,16 @@ public class MonteCarlo extends ModelBaseImplementation {
         );
 
         // System.out.println("Exploration ratio " + (numExplorationSteps * 100.0f)/actualSteps + "% out of " + actualSteps + " states");
+    }
+
+    private int getActualIntPositionZ(State state) {
+        int minIntField = Integer.MAX_VALUE;
+        for (String field: state.definition.stateDefinitionFields) {
+            if (field.toLowerCase().contains("positionz")) {
+                minIntField = Math.min(minIntField, state.get(field));
+            }
+        }
+        return minIntField;
     }
 
     /** Traditional Implementation **/
