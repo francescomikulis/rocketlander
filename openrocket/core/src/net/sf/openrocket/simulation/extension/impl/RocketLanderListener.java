@@ -29,6 +29,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
     private static final double MAX_POSITION = 6;
+    private static final double MAX_LAT_VELOCITY = 6;
 
     private RLModel model = RLModel.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
@@ -77,7 +78,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         action = newAction;
 
         if (state != null)
-            memoizeSmartGuesses(state.toStringNames());
+            model.dataStoreState.memoizeSmartGuesses(state);
 
         return true;
     }
@@ -111,7 +112,19 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if((model.initVariation == fixed) || (model.initVariation == loc)) {
             velZ = maxZ;
         }
-        return new Coordinate(0, 0, velZ);
+        double velX = calculateNumberWithIntegerVariation(0, maxX);
+        double velY = calculateNumberWithIntegerVariation(0, maxY);
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                velY = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                velX = 0;
+            }
+        }
+        if((model.initVariation != all)) {
+            velX = 0; velY = 0;
+        }
+        return new Coordinate(velX, velY, velZ);
     }
 
     private Quaternion calculateInitialOrientation() {
@@ -164,7 +177,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        Coordinate rocketVelocity = calculateVelocityCoordinate(0, 0,MIN_VELOCITY + variation);
+        Coordinate rocketVelocity = calculateVelocityCoordinate(MAX_LAT_VELOCITY, MAX_LAT_VELOCITY, MIN_VELOCITY + variation);
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
 
         status.setRocketOrientationQuaternion(calculateInitialOrientation());
@@ -308,7 +321,37 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
-        return calculateAcceleration(status, gimbalX, gimbalY);
+
+        double[] forceComponents = calculateGimbalAndLateralThrustComponents(gimbalX, gimbalY);
+        return calculateAcceleration(status, forceComponents[0], forceComponents[1], forceComponents[2], forceComponents[3]);
+    }
+
+    private double[] calculateGimbalAndLateralThrustComponents(double gimbalX, double gimbalY) {
+        boolean isLateralOnlyX = false;
+        boolean isLateralOnlyY = false;
+        double lateralThrustX = 0;
+        double lateralThrustY = 0;
+        for (Action a: action) {
+            if (a.definition.lateralThrust) {
+                if (a.definition.actionDefinition.containsKey("gimbalX") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
+                    isLateralOnlyX = true;
+                    lateralThrustX = Math.min(Math.asin(gimbalX) * 3, 1.0);
+                    gimbalX = 0;
+                }
+                if (a.definition.actionDefinition.containsKey("gimbalY") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
+                    isLateralOnlyY = true;
+                    lateralThrustY = Math.min(Math.asin(gimbalY) * 3, 1.0);
+                    gimbalY = 0;
+                }
+            }
+        }
+        if (!isLateralOnlyX) {  // traditional rotation occurs in X
+            gimbalX = Math.asin(gimbalX);
+        }
+        if (!isLateralOnlyY) {  // traditional rotation occurs in Y
+            gimbalY = Math.asin(gimbalY);
+        }
+        return new double[]{gimbalX, gimbalY, lateralThrustX, lateralThrustY};
     }
 
 
@@ -330,9 +373,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         // conditional end simulation on zero positionZ
         String stateNames = state.toStringNames();
-        if (dataStoreState.get(stateNames).get("positionZ") != null) {
-            int index = (int) dataStoreState.get(stateNames).get("positionZ")[0];
-            String realField = (String) dataStoreState.get(stateNames).get("positionZ")[1];
+        if (model.dataStoreState.get(stateNames).get("positionZ") != null) {
+            int index = (int) model.dataStoreState.get(stateNames).get("positionZ")[0];
+            String realField = (String) model.dataStoreState.get(stateNames).get("positionZ")[1];
             if (state.get(index).get(realField) == 0) {
                 throw new SimulationException("Simulation completed.  Reached zero positionZ in the state definition.");
             }
@@ -367,7 +410,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double lateralThrustX, Double lateralThrustY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -390,18 +433,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalComponentY = Math.sin(gimbalZ) * Math.sin(gimbalY);
         double gimbalComponentZ = Math.cos(gimbalZ);
          */
-        double gimbalComponentX = Math.sin(gimbalX);
-        double gimbalComponentY = Math.sin(gimbalY);
         double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
 
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double forceX = RLVectoringThrust * gimbalComponentX;
-        double forceY = RLVectoringThrust * gimbalComponentY;
-        double forceZ = RLVectoringThrust * gimbalComponentZ;  // note double negative
-
-        // System.out.println(gimbalComponentX + " " + gimbalComponentY + " " + gimbalComponentZ);
+        double forceX = RLVectoringThrust * (gimbalComponentX + lateralThrustX);
+        double forceY = RLVectoringThrust * (gimbalComponentY + lateralThrustY);
+        double forceZ = RLVectoringThrust * gimbalComponentZ;
 
         // final directed force calculations
         double finalForceX = forceX;// - fN;  // TODO: FIX THIS URGENTLY
@@ -456,9 +495,15 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
         double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
+        assert RLVectoringThrust >= 0;
+
+        // thrust vectoring force
+        double rotationalForceX = RLVectoringThrust * gimbalComponentX;
+        double rotationalForceY = RLVectoringThrust * gimbalComponentY;
+
         double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
-        double gimbalMomentX = momentArm * -forceY;
-        double gimbalMomentY = -momentArm * -forceX;
+        double gimbalMomentX = momentArm * -rotationalForceY;
+        double gimbalMomentY = -momentArm * -rotationalForceX;
 
         // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbalMomentX;
@@ -481,6 +526,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 0);
         // AngularAccZ is 0 because no roll.  If not, this should be: momZ / RLVectoringStructureMassData.getRotationalInertia()
 
+        // disable rotation on lateral-only force
+        if ((gimbalComponentX == 0) && (gimbalComponentY == 0))
+            angularAcceleration = new Coordinate(0, 0, 0);
+
         double rollAcceleration = angularAcceleration.z;
         // TODO: LOW: This should be hypot, but does it matter?
         double lateralPitchAcceleration = MathUtil.max(Math.abs(angularAcceleration.x),
@@ -495,24 +544,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return new AccelerationData(null, null, linearAcceleration, angularAcceleration, status.getRocketOrientationQuaternion());
     }
 
-
-
-    /**
-     * Below here is code related to the storing of data for the flight status.  Used for plotting.
-     * Very magical code - auto-parses the values even when non-traditional nomenclature is used.
-     *
-     * Initialize the hashmaps with memoizeSmartGuesses()
-     * Then simply call the storeUpdatedFlightConditions() and applyCustomFlightConditions()
-     * This will modify the flightStatus and trigger the data storage for plotting.
-     * **/
-
-    // Object[0th] entry is the integer of the access to the index of the state arralist
-    // Object[1st] entry is the real name of that field
-    HashMap<String, HashMap<String, Object[]>> dataStoreState = new HashMap<>();
-
-    HashMap<String, Integer> dataStoreStateIndexField = new HashMap<>();
-    HashMap<String, String> dataStoreStateFieldName = new HashMap<>();
-
     private void applyCustomFlightConditions(FlightConditions toConditions) {
         if (this.RLVectoringFlightConditions == null) return;
         toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
@@ -525,11 +556,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     private void storeUpdatedFlightConditions() {
         if (state == null) return;
-        String stateNames = state.toStringNames();
-        this.RLVectoringFlightConditions.setRLPosition(getSmartGuessCoordinate(stateNames, "position"));
-        this.RLVectoringFlightConditions.setRLVelocity(getSmartGuessCoordinate(stateNames, "velocity"));
-        this.RLVectoringFlightConditions.setRLAngle(getSmartGuessCoordinate(stateNames, "angle"));
-        this.RLVectoringFlightConditions.setRLAngleVelocity(getSmartGuessCoordinate(stateNames, "angleVelocity"));
+        this.RLVectoringFlightConditions.setRLPosition(model.dataStoreState.getSmartGuessCoordinate(state, "position"));
+        this.RLVectoringFlightConditions.setRLVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "velocity"));
+        this.RLVectoringFlightConditions.setRLAngle(model.dataStoreState.getSmartGuessCoordinate(state, "angle"));
+        this.RLVectoringFlightConditions.setRLAngleVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "angleVelocity"));
 
         // multiplication is for visualization purposes
         this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
@@ -538,159 +568,5 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalY = action.getDouble("gimbalY");
         double gimbalZ = Math.sqrt(1.0 - gimbalX * gimbalX - gimbalY * gimbalY);
         this.RLVectoringFlightConditions.setRLGimbal(new Coordinate(gimbalX, gimbalY, gimbalZ));
-    }
-
-    private Coordinate getSmartGuessCoordinate(String stateNames, String field) {
-        return new Coordinate(getSmartGuess(stateNames, field + "X"), getSmartGuess(stateNames, field + "Y"), getSmartGuess(stateNames,field + "Z"));
-    }
-
-    private Double getSmartGuess(String stateNames, String originalField) {
-        if (!dataStoreState.containsKey(stateNames) || (dataStoreState.get(stateNames).size() == 0)) {
-            memoizeSmartGuesses(stateNames);
-        }
-
-        if (!dataStoreState.get(stateNames).containsKey(originalField)) {
-            return state.get(0).getDouble(originalField);
-        } else {
-            int index = (int)dataStoreState.get(stateNames).get(originalField)[0];
-            String realField = (String)dataStoreState.get(stateNames).get(originalField)[1];
-
-            // return state.get(index).getDouble(realField);
-            return getRealRepresentationDouble(state.get(index), realField);
-        }
-    }
-
-    // this forces the value to be within boundaries
-    private double getRealRepresentationDouble(State state, String field) {
-        int[] minMax = state.definition.stateDefinitionIntegers[state.definition.reverseIndeces.get(field)];
-        int originalIntValue = state.get(field);
-        double result = 0.0;
-        if (originalIntValue < minMax[0]) {
-            result = state.set(field, minMax[0]).getDouble(field);
-            state.set(field, originalIntValue);
-        } else if (originalIntValue > minMax[1]) {
-            result = state.set(field, minMax[1]).getDouble(field);
-            state.set(field, originalIntValue);
-        } else {
-            result = state.getDouble(field);
-        }
-        return result;
-    }
-
-    private void memoizeSmartGuesses(String stateNames) {
-        if (dataStoreState.containsKey(stateNames)) return;
-        dataStoreState.put(stateNames, new HashMap<>());
-        storeSmartGuess(stateNames, "positionX");
-        storeSmartGuess(stateNames, "positionY");
-        storeSmartGuess(stateNames, "positionZ");
-        storeSmartGuess(stateNames, "angleX");
-        storeSmartGuess(stateNames, "angleY");
-        storeSmartGuess(stateNames, "angleZ");
-        storeSmartGuess(stateNames, "angleVelocityX");
-        storeSmartGuess(stateNames, "angleVelocityY");
-        storeSmartGuess(stateNames, "angleVelocityZ");
-        storeSmartGuess(stateNames, "velocityX", "angle");
-        storeSmartGuess(stateNames, "velocityY", "angle");
-        storeSmartGuess(stateNames, "velocityZ", "angle");
-    }
-
-    private Double storeSmartGuess(String stateNames, String originalField) {
-        return storeSmartGuess(stateNames, originalField, null);
-    }
-
-    private Double storeSmartGuess(String stateNames, String originalField, String skipContainsString) {
-        String field = originalField + "";
-        String potentialAxis = field.substring(field.length() - 1);
-        boolean preferSymmetry = false;
-        if (potentialAxis.equals("X") || potentialAxis.equals("Y")) {
-            preferSymmetry = true;
-            field = field.substring(0, field.length() - 1);
-        } else {
-            if (!potentialAxis.equals("Z")) potentialAxis = null;
-        }
-        dataStoreState.get(stateNames).put(originalField, new Object[2]);
-        Double result = storeSmartGuessCoordinateComponent(stateNames, originalField, field, potentialAxis, preferSymmetry, skipContainsString);
-        if (result == null) {
-            // remove that field because it was not found!
-            dataStoreState.get(stateNames).remove(originalField);
-            // no MDP has that field defined!
-            result = state.get(0).getDouble(originalField);
-        }
-        return result;
-    }
-
-    private Double storeSmartGuessCoordinateComponent(String stateNames, String originalField, String field, String enforceSymmetryAxis, boolean preferSymmetry, String skipContainsString) {
-        String lowercaseField = field.toLowerCase();
-        if (preferSymmetry) {
-            return storeBestGuessField(stateNames, originalField, lowercaseField, enforceSymmetryAxis, skipContainsString);
-        } else {
-            // lowercaseField has the required axis
-            return storeBestGuessField(stateNames, originalField, lowercaseField, null, skipContainsString);
-        }
-    }
-
-    private Double storeBestGuessField(String stateNames, String originalField, String lowercaseField, String enforceSymmetryAxis, String skipContainsString) {
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField : s.definition.stateDefinitionFields) {
-                    if (definitionField.toLowerCase().equals(lowercaseField)) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if (((s.symmetry == null) && (enforceSymmetryAxis == null)) || ((s.symmetry != null) && (enforceSymmetryAxis != null) && (s.symmetry.equals(enforceSymmetryAxis)))) {
-                for (String definitionField: s.definition.stateDefinitionFields) {
-                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
-                        continue;
-                    if (definitionField.toLowerCase().contains(lowercaseField)) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        // edge case for a mal-enforced symmetryAxis - fallback to verifying for non-symmetrical MDPs
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
-                for (String definitionField : s.definition.stateDefinitionFields) {
-                    if (definitionField.toLowerCase().equals(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < state.size(); i++) {
-            State s = state.get(i);
-            if ((s.symmetry == null) && (enforceSymmetryAxis != null)) {
-                for (String definitionField: s.definition.stateDefinitionFields) {
-                    if ((skipContainsString != null) && definitionField.toLowerCase().contains(skipContainsString))
-                        continue;
-                    if (definitionField.toLowerCase().contains(lowercaseField + enforceSymmetryAxis.toLowerCase())) {
-                        dataStoreStateIndexField.put(originalField, i);
-                        dataStoreStateFieldName.put(originalField, definitionField);
-                        dataStoreState.get(stateNames).get(originalField)[0] = i;
-                        dataStoreState.get(stateNames).get(originalField)[1] = definitionField;
-                        return s.getDouble(definitionField);
-                    }
-                }
-            }
-        }
-        return null;
     }
 }

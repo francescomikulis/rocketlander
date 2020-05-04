@@ -16,7 +16,7 @@ public class RRTNode {
         statusIn = copy(statusIn);
         status = statusIn;
         parent = parentIn;
-        action = new RRT.Action(0,0,0);
+        action = new RRT.Action(0,0,0, 0, 0);
         Quaternion q = status.getRocketOrientationQuaternion();
         Coordinate directionZ = new Coordinate(0,0,1);
         directionZ = q.rotate(directionZ);
