@@ -176,7 +176,9 @@ public class RRT {
         assignStatus(current.status, status);
         a = new Action(getRandom(boundaries.gimbleX),
                     getRandom(boundaries.gimbleY),
-                    getRandom(boundaries.thrust));
+                    getRandom(boundaries.thrust),
+                getRandom(boundaries.lateralThrustX),
+                getRandom(boundaries.lateralThrustY));
         return a;
     }
 
@@ -234,13 +236,17 @@ public class RRT {
     }
 
     public static class Action{
+        double thrust;
         double gimbleX;
         double gimbleY;
-        double thrust;
-        Action(double gimbleX, double gimbleY, double thrust){
+        double lateralThrustX;
+        double lateralThrustY;
+        Action(double gimbleX, double gimbleY, double thrust, double lateralThrustX, double lateralThrustY){
             this.thrust = thrust;
             this.gimbleX = gimbleX;
             this.gimbleY = gimbleY;
+            this.lateralThrustX = lateralThrustX;
+            this.lateralThrustY = lateralThrustY;
         }
     }
 }
