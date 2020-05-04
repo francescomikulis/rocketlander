@@ -330,10 +330,12 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
         // conditional end simulation on zero positionZ
         String stateNames = state.toStringNames();
-        int index = (int)dataStoreState.get(stateNames).get("positionZ")[0];
-        String realField = (String)dataStoreState.get(stateNames).get("positionZ")[1];
-        if (state.get(index).get(realField) == 0){
-            throw new SimulationException("Simulation completed.  Reached zero positionZ in the state definition.");
+        if (dataStoreState.get(stateNames).get("positionZ") != null) {
+            int index = (int) dataStoreState.get(stateNames).get("positionZ")[0];
+            String realField = (String) dataStoreState.get(stateNames).get("positionZ")[1];
+            if (state.get(index).get(realField) == 0) {
+                throw new SimulationException("Simulation completed.  Reached zero positionZ in the state definition.");
+            }
         }
     }
 
