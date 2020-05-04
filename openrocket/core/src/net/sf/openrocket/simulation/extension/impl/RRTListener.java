@@ -19,6 +19,8 @@ import net.sf.openrocket.util.Quaternion;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.customInitialConditions;
+import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.printStatusInformation;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 
 public class RRTListener extends AbstractSimulationListener {
@@ -28,7 +30,7 @@ public class RRTListener extends AbstractSimulationListener {
     private RRTExtension rrtExtension;
     private Random random;
     private static double variation = 2;
-    private static double timeStep = 0.05;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double timeStep = 0.1;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
     private AerodynamicForces RLVectoringAerodynamicForces = null;
@@ -66,21 +68,9 @@ public class RRTListener extends AbstractSimulationListener {
         hasCompletedTerminalUpdate = false;
         // initialize episode
         status.getSimulationConditions().setTimeStep(timeStep);
-        double posX = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        double posY = calculateNumberWithIntegerVariation(0, MAX_POSITION);
-        double posZ = calculateNumberWithIntegerVariation(MAX_ALTITUDE - variation, variation);
-        // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(new Coordinate(posX, posY, posZ));
-        // set the rocket velocity at the rocket velocity as defined by the extension
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(MIN_VELOCITY + variation, variation))));
-        //status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(new Coordinate(0, 0, calculateNumberWithIntegerVariation(rocketLander.getLaunchVelocity(), variation))));
-        double dx = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
-        double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
-        double dz = 90;
-        status.setRocketOrientationQuaternion(new Quaternion(0, dx, dy, dz).normalizeIfNecessary());
-        dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        status.setRocketRotationVelocity(new Coordinate(dx, dy, 0));
+
+        customInitialConditions(status);
+
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
         rrt = new RRT(root);
@@ -175,6 +165,9 @@ public class RRTListener extends AbstractSimulationListener {
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         if (hasCompletedTerminalUpdate) return;
+
+        printStatusInformation(rrt.current.status);
+        System.out.println("Number of nodes expanded: " + rrt.numNodesExpanded);
 
         hasCompletedTerminalUpdate = true;
         RRTNode n;

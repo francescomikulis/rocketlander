@@ -8,6 +8,7 @@ import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
+import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
 import java.util.Random;
@@ -21,23 +22,43 @@ public class RRT {
     private Boundaries boundaries = new Boundaries();
     private Boundaries goal = new Boundaries("goal");
     int counter = 0;
-    double globalMin = 1000;
+    double globalMin = Double.MAX_VALUE;
+    public double globalMax;
+    public double originalGlobalMax;
     RRTNode minNode;
     int tries=10;
+    int NUM_GOAL_TRIES = 100;
     Action a;
+    public int numNodesExpanded = 0;
 
     RRT(RRTNode rootIn){
         root = rootIn;
         nodes = new ArrayList<>();
         options = new ArrayList<>();
         SimulationStatus s = copy(root.status);
+
+        setOriginalGlobalMax(s);
+
         target = new RRTNode(s,null);
         nodes.add(root);
         minNode = root;
     }
+
+    public void setOriginalGlobalMax(SimulationStatus s) {
+        target = new RRTNode(s,null);
+        setGoalTarget();
+
+        double maxDist = distance(root, target);
+        originalGlobalMax = maxDist;
+        globalMax = maxDist;
+
+        target = new RRTNode(s,null);
+    }
+
     public static SimulationStatus copy(SimulationStatus status){
         //SimulationConditions sc = new SimulationConditions();
-        SimulationStatus s = new SimulationStatus(status.getConfiguration().clone(), status.getSimulationConditions().clone());
+        // SimulationStatus s = new SimulationStatus(status.getConfiguration().clone(), status.getSimulationConditions().clone());
+        SimulationStatus s = status.hackyCopy();
         assignStatus(status,s);
        // FlightConfiguration simulationConfig = simulationConditions.getRocket().getFlightConfiguration( this.fcid).clone();
         //final String branchName = simulationConfig.getRocket().getTopmostStage().getName();
@@ -46,6 +67,8 @@ public class RRT {
     }
 
     boolean checkGoal(RRTNode n){
+        boolean angleX =              n.directionZ.x > goal.ax.min            &&                         n.directionZ.x < goal.ax.max;
+        boolean angleY =              n.directionZ.y > goal.ay.min            &&                         n.directionZ.y < goal.ay.max;
         boolean b1 =                  n.directionZ.z > goal.az.min            &&                         n.directionZ.z < goal.az.max;
         boolean b2 =  n.status.getRocketVelocity().x > goal.vx.min            &&         n.status.getRocketVelocity().x < goal.vx.max;
         boolean b3 =  n.status.getRocketVelocity().y > goal.vy.min            &&         n.status.getRocketVelocity().y < goal.vy.max;
@@ -57,32 +80,32 @@ public class RRT {
         boolean b9 =  n.status.getRocketPosition().y > goal.y.min             &&         n.status.getRocketPosition().y < goal.y.max;
         boolean b10 =  n.status.getRocketPosition().z > goal.z.min            &&         n.status.getRocketPosition().z < goal.z.max;
         //return (b1 && b2 && b3 && b4 && b5 && b6 && b7 && b8 && b9 && b10);
-        return (b10 && b4 && b2 && b3);
+        return (angleX && angleY && b10 && b4 && b2 && b3);
     }
 
     void setGoalTarget(){
         Coordinate coord = target.status.getRocketPosition();
-        coord = coord.setX(getMean(goal.x));
-        coord =coord.setY(getMean(goal.y));
-        coord =coord.setZ(0);
+        coord = coord.setX(getRandom(goal.x));
+        coord =coord.setY(getRandom(goal.y));
+        coord =coord.setZ(getRandom(goal.z));
         target.status.setRocketPosition(coord);
 
         coord = target.status.getRocketVelocity();
-        coord =coord.setX(getMean(goal.vx));
-        coord =coord.setY(getMean(goal.vy));
-        coord =coord.setZ(-.5);
+        coord =coord.setX(getRandom(goal.vx));
+        coord =coord.setY(getRandom(goal.vy));
+        coord =coord.setZ(getRandom(goal.vz));
         target.status.setRocketVelocity(coord);
 
         coord = target.status.getRocketRotationVelocity();
-        coord =coord.setX(getMean(goal.avx));
-        coord =coord.setY(getMean(goal.avy));
-        coord =coord.setZ(getMean(goal.avz));
+        coord =coord.setX(getRandom(goal.avx));
+        coord =coord.setY(getRandom(goal.avy));
+        coord =coord.setZ(getRandom(goal.avz));
         target.status.setRocketRotationVelocity(coord);
 
         coord = target.directionZ;
-        coord =coord.setX(0);
-        coord =coord.setY(0);
-        coord =coord.setZ(1);
+        coord =coord.setX(getRandom(goal.ax));
+        coord =coord.setY(getRandom(goal.ay));
+        coord =coord.setZ(getRandom(goal.az));
         target.directionZ = coord;
 
         target.status.setSimulationTime(getMean(goal.t));
@@ -120,6 +143,12 @@ public class RRT {
         return limits.min + Math.random() * (limits.max - limits.min);
     }
 
+    double getRandomAction(Boundaries.Limits limits){
+        int range = (int) Math.round((limits.max - limits.min) / limits.increment + 0.5);
+        int incrementMultipler = (int) Math.round(Math.random() * range);
+        return limits.min + incrementMultipler * (limits.increment);
+    }
+
     double getMean(Boundaries.Limits limits){
         return 0.5* (limits.max + limits.min);
     }
@@ -142,6 +171,7 @@ public class RRT {
                 nodes = new ArrayList<>();
                 nodes.add(tmp);
                 globalMin = 99999;
+                globalMax = originalGlobalMax;
             }
           //  if (Math.random() < 0.5) {
            //     Random random = new Random();
@@ -154,13 +184,13 @@ public class RRT {
         }
         if (current == null){ // need to  sample new point
 
-            if (Math.random()< 0.01){
-                tries = 1001;
+            if (Math.random()< 0.1){
+                tries = NUM_GOAL_TRIES;
                 setGoalTarget();
                 RRTNode tmp = getNearest(nodes, target);
 
             } else {
-                tries = 10;
+                tries = 50;
                 setRandomTarget();
             }
             current = getNearest(nodes, target);
@@ -174,16 +204,17 @@ public class RRT {
             }
         }
         assignStatus(current.status, status);
-        a = new Action(getRandom(boundaries.gimbleX),
-                    getRandom(boundaries.gimbleY),
-                    getRandom(boundaries.thrust),
-                getRandom(boundaries.lateralThrustX),
-                getRandom(boundaries.lateralThrustY));
+        a = new Action(getRandomAction(boundaries.gimbleX),
+                getRandomAction(boundaries.gimbleY),
+                getRandomAction(boundaries.thrust),
+                getRandomAction(boundaries.lateralThrustX),
+                getRandomAction(boundaries.lateralThrustY));
         return a;
     }
 
     void addNode(RRTNode node){
         nodes.add(node);
+        numNodesExpanded++;
     }
 
     RRTNode getNearest(ArrayList<RRTNode> nodeList, RRTNode node){
@@ -194,9 +225,10 @@ public class RRT {
             if (tmp < min) {
                 min = tmp;
                 ret = rrtNode;
-                if (min < globalMin && tries==1001){
+                if (min < globalMin && tries==NUM_GOAL_TRIES){
                     globalMin = min;
                     minNode = rrtNode;
+                    /*
                     System.out.println(globalMin);
                     System.out.println("Position: x: "+minNode.status.getRocketPosition().x+
                             " y: "+minNode.status.getRocketPosition().y+
@@ -204,6 +236,11 @@ public class RRT {
                     System.out.println("Velocity: x: "+minNode.status.getRocketVelocity().x+
                             " y: "+minNode.status.getRocketVelocity().y+
                             " z: "+minNode.status.getRocketVelocity().z);
+                    System.out.println("Angle: x: "+minNode.status.getRocketOrientationQuaternion().rotateZ().x+
+                            " y: "+minNode.status.getRocketOrientationQuaternion().rotateZ().y+
+                            " z: "+minNode.status.getRocketOrientationQuaternion().rotateZ().z);
+                     */
+                    System.out.println((1.0 - globalMin/globalMax) * 100 + "%");
                 }
 
             }
@@ -232,7 +269,7 @@ public class RRT {
         double day = cord1.y - cord2.y;
         double daz = cord1.z - cord2.z;
         double dt = n1.status.getSimulationTime()-n2.status.getSimulationTime();
-        return  2*dz*dz + 1*dvz*dvz + 1*dvx*dvx + 1*dvy*dvy + daz*daz*10;// + dax*dax + day*day + daz*daz+dt*dt;+ dvx*dvx + dvy*dvy + 10*dx*dx +10*dy*dy
+        return  2*dz*dz + 5*dvz*dvz + 1*dvx*dvx + 1*dvy*dvy + dax*dax*1000 + day*day*1000;// + dax*dax + day*day + daz*daz+dt*dt;+ dvx*dvx + dvy*dvy + 10*dx*dx +10*dy*dy
     }
 
     public static class Action{
