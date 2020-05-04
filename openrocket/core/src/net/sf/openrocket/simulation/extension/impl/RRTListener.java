@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.customInitialConditions;
+import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.printStatusInformation;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 
 public class RRTListener extends AbstractSimulationListener {
@@ -165,6 +166,7 @@ public class RRTListener extends AbstractSimulationListener {
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         if (hasCompletedTerminalUpdate) return;
 
+        printStatusInformation(rrt.current.status);
         System.out.println("Number of nodes expanded: " + rrt.numNodesExpanded);
 
         hasCompletedTerminalUpdate = true;
