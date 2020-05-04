@@ -221,7 +221,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
         setRollToZero(status);  // prevent rocket from spinning
-        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
         if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
             status.setRocketRotationVelocity(new Coordinate(0, 0, 0));
@@ -322,20 +321,35 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
-        double gimbalRotationX = gimbalX;
-        double gimbalRotationY = gimbalY;
+
+        boolean isLateralOnlyX = false;
+        boolean isLateralOnlyY = false;
         for (Action a: action) {
             if (a.definition.name.equals("slower")) {
                 if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
-                    gimbalRotationX = 0;
+                    isLateralOnlyX = true;
+                    gimbalX = Math.asin(gimbalX) * 3;
                 }
                 if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
-                    gimbalRotationY = 0;
+                    isLateralOnlyY = true;
+                    gimbalY = Math.asin(gimbalY) * 3;
                 }
             }
         }
+        double gimbalComponentX = gimbalX;
+        double gimbalRotationComponentX = 0;
+        if (!isLateralOnlyX) {
+            gimbalComponentX = Math.asin(gimbalX);
+            gimbalRotationComponentX = gimbalComponentX;
+        }
+        double gimbalComponentY = gimbalY;
+        double gimbalRotationComponentY = 0;
+        if (!isLateralOnlyY) {
+            gimbalComponentY = Math.asin(gimbalY);
+            gimbalRotationComponentY = gimbalComponentY;
+        }
 
-        return calculateAcceleration(status, gimbalX, gimbalY, gimbalRotationX, gimbalRotationY);
+        return calculateAcceleration(status, gimbalComponentX, gimbalComponentY, gimbalRotationComponentX, gimbalRotationComponentY);
     }
 
 
@@ -394,7 +408,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY, Double gimbalRotationX, Double gimbalRotationY) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double gimbalRotationComponentX, Double gimbalRotationComponentY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -417,9 +431,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalComponentY = Math.sin(gimbalZ) * Math.sin(gimbalY);
         double gimbalComponentZ = Math.cos(gimbalZ);
          */
-        double gimbalComponentX = Math.sin(gimbalX);
-        double gimbalComponentY = Math.sin(gimbalY);
         double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
+        // complete force on Z if gimbal is actually set to zero
+        if ((gimbalRotationComponentX == 0) && (gimbalRotationComponentY == 0))
+            gimbalComponentZ = 1.0;
 
         assert RLVectoringThrust >= 0;
 
@@ -482,9 +497,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // Shift moments to CG
         double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
         double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
-
-        double gimbalRotationComponentX = Math.sin(gimbalRotationX);
-        double gimbalRotationComponentY = Math.sin(gimbalRotationY);
 
         assert RLVectoringThrust >= 0;
 
