@@ -22,7 +22,7 @@ public class RLModel {
     public String symmetryAxis2D = "X";
     public String symmetryAxis3D = "Y";
     public SimulationType simulationType = SimulationType._3D;
-    public SimulationInitVariation initVariation = SimulationInitVariation.posVelAngle;
+    public SimulationInitVariation initVariation = SimulationInitVariation.all;
 
     public RLDataStoreState dataStoreState;
 

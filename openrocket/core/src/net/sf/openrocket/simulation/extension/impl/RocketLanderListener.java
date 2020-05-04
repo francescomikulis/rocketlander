@@ -322,34 +322,38 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
 
+        double[] gimbalComponents = calculateGimbalAndGimbalRotationComponents(gimbalX, gimbalY);
+        return calculateAcceleration(status, gimbalComponents[0], gimbalComponents[1], gimbalComponents[2], gimbalComponents[3]);
+    }
+
+    private double[] calculateGimbalAndGimbalRotationComponents(double gimbalX, double gimbalY) {
         boolean isLateralOnlyX = false;
         boolean isLateralOnlyY = false;
         for (Action a: action) {
-            if (a.definition.name.equals("slower")) {
-                if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
+            if (a.definition.lateralThrust) {
+                if (a.definition.actionDefinition.containsKey("gimbalX") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
                     isLateralOnlyX = true;
-                    gimbalX = Math.asin(gimbalX) * 3;
+                    gimbalX = Math.min(Math.asin(gimbalX) * 3, 1.0);
                 }
-                if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
+                if (a.definition.actionDefinition.containsKey("gimbalY") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
                     isLateralOnlyY = true;
-                    gimbalY = Math.asin(gimbalY) * 3;
+                    gimbalY = Math.min(Math.asin(gimbalY) * 3, 1.0);
                 }
             }
         }
         double gimbalComponentX = gimbalX;
         double gimbalRotationComponentX = 0;
-        if (!isLateralOnlyX) {
+        if (!isLateralOnlyX) {  // traditional rotation occurs in X
             gimbalComponentX = Math.asin(gimbalX);
             gimbalRotationComponentX = gimbalComponentX;
         }
         double gimbalComponentY = gimbalY;
         double gimbalRotationComponentY = 0;
-        if (!isLateralOnlyY) {
+        if (!isLateralOnlyY) {  // traditional rotation occurs in Y
             gimbalComponentY = Math.asin(gimbalY);
             gimbalRotationComponentY = gimbalComponentY;
         }
-
-        return calculateAcceleration(status, gimbalComponentX, gimbalComponentY, gimbalRotationComponentX, gimbalRotationComponentY);
+        return new double[]{gimbalComponentX, gimbalComponentY, gimbalRotationComponentX, gimbalRotationComponentY};
     }
 
 
