@@ -115,8 +115,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private Quaternion calculateInitialOrientation() {
-        double dx = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
-        double dy = calculateNumberWithIntegerVariation(0, variation * 2);  // 3
+        double dx = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
+        double dy = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
         double dz = 90;
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
@@ -135,8 +135,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
     }
 
     private Coordinate calculateInitialRotationVelocity() {
-        double dx = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
-        double dy = calculateNumberWithIntegerVariation(0, variation * 2) * Math.PI / 180;
+        double dx = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
+        double dy = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
         }
