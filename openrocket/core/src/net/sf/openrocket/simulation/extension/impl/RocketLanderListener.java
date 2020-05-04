@@ -111,7 +111,19 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if((model.initVariation == fixed) || (model.initVariation == loc)) {
             velZ = maxZ;
         }
-        return new Coordinate(0, 0, velZ);
+        double velX = calculateNumberWithIntegerVariation(0, maxX);
+        double velY = calculateNumberWithIntegerVariation(0, maxY);
+        if(model.simulationType == SimulationType._2D) {
+            if (model.symmetryAxis2D.equals("X")) {
+                velY = 0;
+            } else if (model.symmetryAxis2D.equals("Y")) {
+                velX = 0;
+            }
+        }
+        if((model.initVariation != all)) {
+            velX = 0; velY = 0;
+        }
+        return new Coordinate(velX, velY, velZ);
     }
 
     private Quaternion calculateInitialOrientation() {
@@ -164,7 +176,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        Coordinate rocketVelocity = calculateVelocityCoordinate(0, 0,MIN_VELOCITY + variation);
+        Coordinate rocketVelocity = calculateVelocityCoordinate(Math.abs(MIN_VELOCITY / 2), Math.abs(MIN_VELOCITY / 2), MIN_VELOCITY + variation);
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
 
         status.setRocketOrientationQuaternion(calculateInitialOrientation());
