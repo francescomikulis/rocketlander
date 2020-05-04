@@ -35,7 +35,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
-    private Random random;
     private CoupledStates state;
     private CoupledActions action;
     TerminationBooleans terminationBooleans;
@@ -60,11 +59,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     RocketLanderListener(RocketLander rocketLander) {
         this.rocketLander = rocketLander;
-        random = new Random();
     }
 
-    private double calculateNumberWithIntegerVariation(double startNumber, double variation) {
-        return startNumber - (variation) + 2 * variation * random.nextDouble();
+    private static double calculateNumberWithIntegerVariation(double startNumber, double variation) {
+        return startNumber - (variation) + 2 * variation * new Random().nextDouble();
     }
 
     private boolean setupStateActionAndStore(SimulationStatus status) {
@@ -83,9 +81,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return true;
     }
 
-    private Coordinate calculatePositionCoordinate(double maxX, double maxY, double maxZ) {
+    private static Coordinate calculatePositionCoordinate(double maxX, double maxY, double maxZ) {
         double posX = calculateNumberWithIntegerVariation(0, maxX);
         double posY = calculateNumberWithIntegerVariation(0, maxY);
+        RLModel model = RLModel.getInstance();
         if(model.simulationType == SimulationType._1D) {
             posX = 0; posY = 0;
         }
@@ -107,8 +106,9 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return new Coordinate(posX, posY, posZ);
     }
 
-    private Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
+    private static Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
         double velZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
+        RLModel model = RLModel.getInstance();
         if((model.initVariation == fixed) || (model.initVariation == loc)) {
             velZ = maxZ;
         }
@@ -127,10 +127,11 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return new Coordinate(velX, velY, velZ);
     }
 
-    private Quaternion calculateInitialOrientation() {
+    private static Quaternion calculateInitialOrientation() {
         double dx = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
         double dy = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
         double dz = 90;
+        RLModel model = RLModel.getInstance();
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
         }
@@ -147,9 +148,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         return new Quaternion(0, dx, dy, dz).normalizeIfNecessary();
     }
 
-    private Coordinate calculateInitialRotationVelocity() {
+    private static Coordinate calculateInitialRotationVelocity() {
         double dx = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
         double dy = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
+        RLModel model = RLModel.getInstance();
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
         }
@@ -172,24 +174,23 @@ public class RocketLanderListener extends AbstractSimulationListener {
         episodeStateActions = model.initializeEpisodeStateActions();
         status.getSimulationConditions().setTimeStep(timeStep);
 
+        customInitialConditions(status);
 
+        status.setLaunchRodCleared(true);
+        // initialize the state and the action
+        setupStateActionAndStore(status);
+    }
+
+    public static void customInitialConditions(SimulationStatus status) {
         // set the rocket position at the launch altitude as defined by the extension
         status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
-
         // set the rocket velocity at the rocket velocity as defined by the extension
         Coordinate rocketVelocity = calculateVelocityCoordinate(MAX_LAT_VELOCITY, MAX_LAT_VELOCITY, MIN_VELOCITY + variation);
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
-
         status.setRocketOrientationQuaternion(calculateInitialOrientation());
         // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
-
         // set the rocket rotational velocity
         status.setRocketRotationVelocity(calculateInitialRotationVelocity());
-
-        status.setLaunchRodCleared(true);
-
-        // initialize the state and the action
-        setupStateActionAndStore(status);
     }
 
     /*

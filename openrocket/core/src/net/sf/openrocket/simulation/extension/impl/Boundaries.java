@@ -26,9 +26,9 @@ public class Boundaries {
     public Limits t = new Limits(0,6);
     public Limits x = new Limits(-20,20);
     public Limits y = new Limits(-20,20);
-    public Limits z = new Limits(0,30);
-    public Limits vx = new Limits(-1,1);
-    public Limits vy = new Limits(-1,1);
+    public Limits z = new Limits(-1,30);
+    public Limits vx = new Limits(-3,3);
+    public Limits vy = new Limits(-3,3);
     public Limits vz = new Limits(-15,-.1);
     public Limits ax = new Limits(-.3, .3);
     public Limits ay = new Limits(-.3, .3);
@@ -44,10 +44,12 @@ public class Boundaries {
     Boundaries(String goalInidactor){
         x = new Limits(-40,40);
         y = new Limits(-40,40);
-        z = new Limits(0,1);
+        z = new Limits(-1,1);
         vx = new Limits(-1,1);
         vy = new Limits(-1,1);
-        vz = new Limits(-2,2);
+        vz = new Limits(-2,-0.1);
+        ax = new Limits(-0.1396, 0.1396);
+        ay = new Limits(-0.1396, 0.1396);
         az = new Limits(0.99, 1);
         avx = new Limits(-.3, .3);
         avy = new Limits(-.3, .3);

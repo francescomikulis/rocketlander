@@ -87,6 +87,34 @@ public class SimulationStatus implements Monitorable {
 	
 	private int modID = 0;
 	private int modIDadd = 0;
+
+	// MODIFIED CODE HERE //
+
+	public SimulationStatus() {}
+
+	public SimulationStatus hackyCopy() {
+		SimulationStatus newStatus = new SimulationStatus();
+		newStatus.simulationConditions = this.simulationConditions.clone();
+		newStatus.configuration = this.configuration.clone();
+		newStatus.time = this.time;
+		newStatus.previousTimeStep = this.previousTimeStep;
+		newStatus.position = this.position.clone();
+		newStatus.velocity = this.velocity.clone();
+		newStatus.worldPosition = new WorldCoordinate(worldPosition.getLatitudeDeg(), worldPosition.getLongitudeDeg(), worldPosition.getAltitude(), worldPosition.getVelocity());
+		newStatus.orientation = new Quaternion(orientation.getW(), orientation.getX(), orientation.getY(), orientation.getZ());
+		newStatus.rotationVelocity = this.rotationVelocity.clone();
+		newStatus.effectiveLaunchRodLength = this.effectiveLaunchRodLength;
+		newStatus.simulationStartWallTime = this.simulationStartWallTime;
+
+		newStatus.motorIgnited = this.motorIgnited;
+		newStatus.liftoff = this.liftoff;
+		newStatus.launchRodCleared = this.launchRodCleared;
+		newStatus.apogeeReached = this.apogeeReached;
+
+		newStatus.populateMotors();
+		newStatus.warnings = this.warnings;
+		return newStatus;
+	}
 	
 	public SimulationStatus(FlightConfiguration configuration, SimulationConditions simulationConditions) {
 		
