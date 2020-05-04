@@ -322,38 +322,36 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
 
-        double[] gimbalComponents = calculateGimbalAndGimbalRotationComponents(gimbalX, gimbalY);
-        return calculateAcceleration(status, gimbalComponents[0], gimbalComponents[1], gimbalComponents[2], gimbalComponents[3]);
+        double[] forceComponents = calculateGimbalAndLateralThrustComponents(gimbalX, gimbalY);
+        return calculateAcceleration(status, forceComponents[0], forceComponents[1], forceComponents[2], forceComponents[3]);
     }
 
-    private double[] calculateGimbalAndGimbalRotationComponents(double gimbalX, double gimbalY) {
+    private double[] calculateGimbalAndLateralThrustComponents(double gimbalX, double gimbalY) {
         boolean isLateralOnlyX = false;
         boolean isLateralOnlyY = false;
+        double lateralThrustX = 0;
+        double lateralThrustY = 0;
         for (Action a: action) {
             if (a.definition.lateralThrust) {
                 if (a.definition.actionDefinition.containsKey("gimbalX") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
                     isLateralOnlyX = true;
-                    gimbalX = Math.min(Math.asin(gimbalX) * 3, 1.0);
+                    lateralThrustX = Math.min(Math.asin(gimbalX) * 3, 1.0);
+                    gimbalX = 0;
                 }
                 if (a.definition.actionDefinition.containsKey("gimbalY") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
                     isLateralOnlyY = true;
-                    gimbalY = Math.min(Math.asin(gimbalY) * 3, 1.0);
+                    lateralThrustY = Math.min(Math.asin(gimbalY) * 3, 1.0);
+                    gimbalY = 0;
                 }
             }
         }
-        double gimbalComponentX = gimbalX;
-        double gimbalRotationComponentX = 0;
         if (!isLateralOnlyX) {  // traditional rotation occurs in X
-            gimbalComponentX = Math.asin(gimbalX);
-            gimbalRotationComponentX = gimbalComponentX;
+            gimbalX = Math.asin(gimbalX);
         }
-        double gimbalComponentY = gimbalY;
-        double gimbalRotationComponentY = 0;
         if (!isLateralOnlyY) {  // traditional rotation occurs in Y
-            gimbalComponentY = Math.asin(gimbalY);
-            gimbalRotationComponentY = gimbalComponentY;
+            gimbalY = Math.asin(gimbalY);
         }
-        return new double[]{gimbalComponentX, gimbalComponentY, gimbalRotationComponentX, gimbalRotationComponentY};
+        return new double[]{gimbalX, gimbalY, lateralThrustX, lateralThrustY};
     }
 
 
@@ -412,7 +410,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double gimbalRotationComponentX, Double gimbalRotationComponentY) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double lateralThrustX, Double lateralThrustY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -436,18 +434,13 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalComponentZ = Math.cos(gimbalZ);
          */
         double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
-        // complete force on Z if gimbal is actually set to zero
-        if ((gimbalRotationComponentX == 0) && (gimbalRotationComponentY == 0))
-            gimbalComponentZ = 1.0;
 
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double forceX = RLVectoringThrust * gimbalComponentX;
-        double forceY = RLVectoringThrust * gimbalComponentY;
-        double forceZ = RLVectoringThrust * gimbalComponentZ;  // note double negative
-
-        // System.out.println(gimbalComponentX + " " + gimbalComponentY + " " + gimbalComponentZ);
+        double forceX = RLVectoringThrust * (gimbalComponentX + lateralThrustX);
+        double forceY = RLVectoringThrust * (gimbalComponentY + lateralThrustY);
+        double forceZ = RLVectoringThrust * gimbalComponentZ;
 
         // final directed force calculations
         double finalForceX = forceX;// - fN;  // TODO: FIX THIS URGENTLY
@@ -505,8 +498,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double rotationalForceX = RLVectoringThrust * gimbalRotationComponentX;
-        double rotationalForceY = RLVectoringThrust * gimbalRotationComponentY;
+        double rotationalForceX = RLVectoringThrust * gimbalComponentX;
+        double rotationalForceY = RLVectoringThrust * gimbalComponentY;
 
         double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
         double gimbalMomentX = momentArm * -rotationalForceY;
@@ -534,7 +527,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         // AngularAccZ is 0 because no roll.  If not, this should be: momZ / RLVectoringStructureMassData.getRotationalInertia()
 
         // disable rotation on lateral-only force
-        if ((gimbalRotationComponentX == 0) && (gimbalRotationComponentY == 0))
+        if ((gimbalComponentX == 0) && (gimbalComponentY == 0))
             angularAcceleration = new Coordinate(0, 0, 0);
 
         double rollAcceleration = angularAcceleration.z;
