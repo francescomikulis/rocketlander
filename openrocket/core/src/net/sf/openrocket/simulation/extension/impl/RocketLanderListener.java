@@ -29,7 +29,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
     private static final double MAX_POSITION = 6;
-    private static final double MAX_LAT_VELOCITY = 3;
+    private static final double MAX_LAT_VELOCITY = 6;
 
     private RLModel model = RLModel.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
