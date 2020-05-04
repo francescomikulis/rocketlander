@@ -29,6 +29,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
     private static final double MAX_POSITION = 6;
+    private static final double MAX_LAT_VELOCITY = 3;
 
     private RLModel model = RLModel.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
@@ -176,7 +177,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
 
         // set the rocket velocity at the rocket velocity as defined by the extension
-        Coordinate rocketVelocity = calculateVelocityCoordinate(Math.abs(MIN_VELOCITY / 2), Math.abs(MIN_VELOCITY / 2), MIN_VELOCITY + variation);
+        Coordinate rocketVelocity = calculateVelocityCoordinate(MAX_LAT_VELOCITY, MAX_LAT_VELOCITY, MIN_VELOCITY + variation);
         status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
 
         status.setRocketOrientationQuaternion(calculateInitialOrientation());
@@ -220,6 +221,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
         setRollToZero(status);  // prevent rocket from spinning
+        status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
         if (model.simulationType == SimulationType._1D) {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
             status.setRocketRotationVelocity(new Coordinate(0, 0, 0));
@@ -320,7 +322,20 @@ public class RocketLanderListener extends AbstractSimulationListener {
         }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
-        return calculateAcceleration(status, gimbalX, gimbalY);
+        double gimbalRotationX = gimbalX;
+        double gimbalRotationY = gimbalY;
+        for (Action a: action) {
+            if (a.definition.name.equals("slower")) {
+                if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
+                    gimbalRotationX = 0;
+                }
+                if (a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
+                    gimbalRotationY = 0;
+                }
+            }
+        }
+
+        return calculateAcceleration(status, gimbalX, gimbalY, gimbalRotationX, gimbalRotationY);
     }
 
 
@@ -379,7 +394,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY, Double gimbalRotationX, Double gimbalRotationY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -468,9 +483,18 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double Cm = RLVectoringAerodynamicForces.getCm() - RLVectoringAerodynamicForces.getCN() * RLVectoringStructureMassData.getCM().x / refLength;
         double Cyaw = RLVectoringAerodynamicForces.getCyaw() - RLVectoringAerodynamicForces.getCside() * RLVectoringStructureMassData.getCM().x / refLength;
 
+        double gimbalRotationComponentX = Math.sin(gimbalRotationX);
+        double gimbalRotationComponentY = Math.sin(gimbalRotationY);
+
+        assert RLVectoringThrust >= 0;
+
+        // thrust vectoring force
+        double rotationalForceX = RLVectoringThrust * gimbalRotationComponentX;
+        double rotationalForceY = RLVectoringThrust * gimbalRotationComponentY;
+
         double momentArm = status.getConfiguration().getLength() - RLVectoringStructureMassData.cm.x;
-        double gimbalMomentX = momentArm * -forceY;
-        double gimbalMomentY = -momentArm * -forceX;
+        double gimbalMomentX = momentArm * -rotationalForceY;
+        double gimbalMomentY = -momentArm * -rotationalForceX;
 
         // Compute moments
 //            double momX = -Cyaw * dynP * refArea * refLength + gimbalMomentX;
@@ -492,6 +516,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
                 momY / RLVectoringStructureMassData.getLongitudinalInertia(),
                 0);
         // AngularAccZ is 0 because no roll.  If not, this should be: momZ / RLVectoringStructureMassData.getRotationalInertia()
+
+        // disable rotation on lateral-only force
+        if ((gimbalRotationComponentX == 0) && (gimbalRotationComponentY == 0))
+            angularAcceleration = new Coordinate(0, 0, 0);
 
         double rollAcceleration = angularAcceleration.z;
         // TODO: LOW: This should be hypot, but does it matter?
