@@ -237,8 +237,6 @@ public class MDPDefinition implements Serializable {
                 model = new MonteCarlo(this); break;
             case "TD0":
                 model = new TD0(this); break;
-            case "SARSA":
-                model = new Sarsa(this); break;
             default:
                 System.out.println("METHOD NAME NOT DEFINED IN THE IMPLEMENTATION.  Must choose between MC, TD0, SARSA.");
                 return null;

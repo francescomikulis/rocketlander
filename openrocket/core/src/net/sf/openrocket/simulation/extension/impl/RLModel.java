@@ -38,7 +38,7 @@ public class RLModel {
     }
 
     private RLModel(){
-        constructor(getLanderDefinition(), getReacherDefinition(), getStabilizerDefinition());
+        constructor();
     }
 
     private void constructor(MDPDefinition ... definitions) {
@@ -161,6 +161,23 @@ public class RLModel {
             episodeStateActions.put(method, new ArrayList<>());
         }
         return episodeStateActions;
+    }
+
+    public void setupSimulationTypeBasedOnMDPDefinitions(SimulationStatus status) {
+        SimulationType updatedSimType = simulationType;
+        for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
+            MDPDefinition definition = entry.getValue();
+            if (definition.name.contains("_1D")) {
+                updatedSimType = SimulationType._1D;
+            }
+            else if (definition.name.contains("_2D") && (updatedSimType != SimulationType._1D)) {
+                updatedSimType = SimulationType._2D;
+            }
+            else if (definition.name.contains("_3D") && (updatedSimType != SimulationType._1D) && (updatedSimType != SimulationType._2D)) {
+                updatedSimType = SimulationType._3D;
+            }
+        }
+        simulationType = updatedSimType;
     }
 
     private HashSet<Integer> generatePossibleActionValuesInts(int value, int[] definition) {

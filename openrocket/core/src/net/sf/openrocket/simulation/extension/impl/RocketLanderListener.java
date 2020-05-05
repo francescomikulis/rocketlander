@@ -23,7 +23,6 @@ import java.util.*;
 
 import static net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.getLanderDefinition;
 
 public class RocketLanderListener extends AbstractSimulationListener {
     private static final double MIN_VELOCITY = -10;
@@ -170,7 +169,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
 
     @Override
     public void startSimulation(SimulationStatus status) {
-        // initialize episode
+        model.setupSimulationTypeBasedOnMDPDefinitions(status);
         episodeStateActions = model.initializeEpisodeStateActions();
         status.getSimulationConditions().setTimeStep(timeStep);
 
@@ -193,27 +192,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
         status.setRocketRotationVelocity(calculateInitialRotationVelocity());
     }
 
-    /*
-    @Override
-    public double preSimpleThrustCalculation(SimulationStatus status) throws SimulationException {
-        // note we would want to also fix the fuel.  This ignores the fuel level of the rocket.
-
-        // status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
-        //status.getRocketVelocity();
-        //return 0.0;
-
-        double MAX_THRUST = 150;
-
-        action = model.run_policy(status, episodeStateActions);
-        // return Double.NaN;
-        //if (status.getSimulationTime() < 0.1) {
-        //    return MAX_THRUST;
-        //} else {
-            return MAX_THRUST * action.thrust;
-        //}
-    }
-    */
-
     public void setRollToZero(SimulationStatus status) {
         Coordinate rotVel = status.getRocketRotationVelocity();
         rotVel = rotVel.setZ(0.0);
@@ -226,9 +204,6 @@ public class RocketLanderListener extends AbstractSimulationListener {
             status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
             status.setRocketRotationVelocity(new Coordinate(0, 0, 0));
         } else if(model.simulationType == SimulationType._2D) {
-            Quaternion currentQuaternion = status.getRocketOrientationQuaternion();
-            Coordinate rocketDirection = convertRocketStatusQuaternionToDirection(status);
-            Quaternion newQuaternion = null;
             Coordinate pos = status.getRocketPosition();
             Coordinate rotVel = status.getRocketRotationVelocity();
             Coordinate vel = status.getRocketVelocity();
