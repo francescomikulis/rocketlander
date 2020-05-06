@@ -42,7 +42,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
     int currentIndex = 0;
     boolean hasCompletedTerminalUpdate = false;
 
-    boolean isUsingLateralVelocityObjective = true;
+    boolean isUsingLateralVelocityObjective = false;
 
     /** Used by the Visualize3DListener extension */
     public double getMaxMotorPower() { return 200.0; }
@@ -54,6 +54,12 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
 
     RRTListener(RRTExtension rrtExtension) {
         this.rrtExtension = rrtExtension;
+        int lateralObjectiveType = (int)rrtExtension.getUsingLateralObjective();
+        if (lateralObjectiveType == 0) {
+            isUsingLateralVelocityObjective = false;
+        } else {
+            isUsingLateralVelocityObjective = true;
+        }
         random = new Random();
     }
 
@@ -68,6 +74,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
         rrt = new RRT(root);
+        rrt.setIsUsingLateralVelocityObjective(isUsingLateralVelocityObjective);
 
         disableVisualization(status);
     }

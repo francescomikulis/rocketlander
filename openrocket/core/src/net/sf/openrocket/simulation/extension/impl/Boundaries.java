@@ -41,12 +41,16 @@ public class Boundaries {
     public Limits gimbleY = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
     public Limits lateralThrustX = new Limits(-.9, .9, .3);
     public Limits lateralThrustY = new Limits(-.9, .9, .3);
-    Boundaries(String goalInidactor){
+    Boundaries(String goalInidactor, boolean isUsingLateralVelocityObjective){
         x = new Limits(-40,40);
         y = new Limits(-40,40);
         z = new Limits(-0.5,0.5);
-        vx = new Limits(-0.5,0.5);
-        vy = new Limits(-0.5,0.5);
+        vx = new Limits(-20.0, 20.0);
+        vy = new Limits(-20.0, 20.0);
+        if (isUsingLateralVelocityObjective) {
+            vx = new Limits(-0.5, 0.5);
+            vy = new Limits(-0.5, 0.5);
+        }
         vz = new Limits(-0.5,0.5);
         ax = new Limits(-0.0698, 0.0698);
         ay = new Limits(-0.0698, 0.0698);
@@ -54,5 +58,9 @@ public class Boundaries {
         avx = new Limits(-.3, .3);
         avy = new Limits(-.3, .3);
         t = new Limits(2,6);
+    }
+
+    public static boolean strictlyWithinBoundary(Limits limits, double value) {
+        return value > limits.min && value < limits.max;
     }
 }

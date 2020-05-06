@@ -13,44 +13,21 @@ public class RRTExtension extends AbstractSimulationExtension {
 	public void initialize(SimulationConditions conditions) throws SimulationException {
 		conditions.getSimulationListenerList().add(new RRTListener(this));
 	}
-	
+
 	@Override
 	public String getName() {
 		String name;
-		if (getLaunchVelocity() != 0.0) {
-			name = trans.get("SimulationExtension.rrtextension.name.altvel");
-		} else {
-			name = trans.get("SimulationExtension.rrtextension.name.alt");
-		}
-		name = L10N.replace(name, "{alt}", UnitGroup.UNITS_DISTANCE.toStringUnit(getLaunchAltitude()));
-		name = L10N.replace(name, "{vel}", UnitGroup.UNITS_VELOCITY.toStringUnit(getLaunchVelocity()));
+		name="RRT"+"({UsingLateralObjective})";
+		name = L10N.replace(name, "{UsingLateralObjective}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getUsingLateralObjective()));
 		return name;
 	}
-	
-	public double getLaunchAltitude() {
-		return config.getDouble("launchAltitude", 0.0);
-	}
-	
-	public void setLaunchAltitude(double launchAltitude) {
-		config.put("launchAltitude", launchAltitude);
-		fireChangeEvent();
-	}
-	
-	public double getLaunchVelocity() {
-		return config.getDouble("launchVelocity", 0.0);
+
+	public double getUsingLateralObjective() {
+		return config.getDouble("UsingLateralObjective", 0.0);
 	}
 
-	public void setLaunchVelocity(double launchVelocity) {
-		config.put("launchVelocity", launchVelocity);
+	public void setUsingLateralObjective(double usingLateralObjectiveDouble) {
+		config.put("UsingLateralObjective", usingLateralObjectiveDouble);
 		fireChangeEvent();
-	}
-	
-	public void setWindAverage(double windAverage) {
-		config.put(WIND_AVERAGE, windAverage);
-		fireChangeEvent();
-	}
-
-	public double getWindSpeed() {
-		return config.getDouble(WIND_AVERAGE, 0.0);
 	}
 }

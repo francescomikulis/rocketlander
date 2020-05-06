@@ -11,6 +11,8 @@ import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
+import static net.sf.openrocket.simulation.extension.impl.Boundaries.strictlyWithinBoundary;
+
 import java.util.Random;
 
 public class RRT {
@@ -20,7 +22,7 @@ public class RRT {
     public RRTNode current = null;
     private ArrayList<RRTNode> options = null;
     private Boundaries boundaries = new Boundaries();
-    private Boundaries goal = new Boundaries("goal");
+    private Boundaries goal = new Boundaries("goal", true);
     int counter = 0;
     double globalMin = Double.MAX_VALUE;
     public double globalMax;
@@ -30,6 +32,12 @@ public class RRT {
     int NUM_GOAL_TRIES = 100;
     Action a;
     public int numNodesExpanded = 0;
+    private boolean isUsingLateralVelocityObjective = true;
+
+    public void setIsUsingLateralVelocityObjective(boolean newValue) {
+        isUsingLateralVelocityObjective = newValue;
+        goal = new Boundaries("goal", isUsingLateralVelocityObjective);
+    }
 
     RRT(RRTNode rootIn){
         root = rootIn;
@@ -67,20 +75,23 @@ public class RRT {
     }
 
     boolean checkGoal(RRTNode n){
-        boolean angleX =              n.directionZ.x > goal.ax.min            &&                         n.directionZ.x < goal.ax.max;
-        boolean angleY =              n.directionZ.y > goal.ay.min            &&                         n.directionZ.y < goal.ay.max;
-        boolean b1 =                  n.directionZ.z > goal.az.min            &&                         n.directionZ.z < goal.az.max;
-        boolean b2 =  n.status.getRocketVelocity().x > goal.vx.min            &&         n.status.getRocketVelocity().x < goal.vx.max;
-        boolean b3 =  n.status.getRocketVelocity().y > goal.vy.min            &&         n.status.getRocketVelocity().y < goal.vy.max;
-        boolean b4 =  n.status.getRocketVelocity().z > goal.vz.min            &&         n.status.getRocketVelocity().z < goal.vz.max;
-        boolean b5 =  n.status.getRocketRotationVelocity().x > goal.avx.min   && n.status.getRocketRotationVelocity().x < goal.avx.max;
-        boolean b6 =  n.status.getRocketRotationVelocity().y > goal.avy.min   && n.status.getRocketRotationVelocity().y < goal.avy.max;
-        boolean b7 =  n.status.getRocketRotationVelocity().z > goal.avz.min   && n.status.getRocketRotationVelocity().z < goal.avz.max;
-        boolean b8 =  n.status.getRocketPosition().x > goal.x.min             &&         n.status.getRocketPosition().x < goal.x.max;
-        boolean b9 =  n.status.getRocketPosition().y > goal.y.min             &&         n.status.getRocketPosition().y < goal.y.max;
-        boolean b10 =  n.status.getRocketPosition().z > goal.z.min            &&         n.status.getRocketPosition().z < goal.z.max;
-        //return (b1 && b2 && b3 && b4 && b5 && b6 && b7 && b8 && b9 && b10);
-        return (angleX && angleY && b10 && b4 && b2 && b3);
+        boolean angleX = strictlyWithinBoundary(goal.ax, n.directionZ.x);
+        boolean angleY = strictlyWithinBoundary(goal.ay, n.directionZ.y);
+        boolean angleZ = strictlyWithinBoundary(goal.az, n.directionZ.z);
+        boolean velX = strictlyWithinBoundary(goal.vx, n.status.getRocketVelocity().x);
+        boolean velY = strictlyWithinBoundary(goal.vy, n.status.getRocketVelocity().y);
+        boolean velZ = strictlyWithinBoundary(goal.vz, n.status.getRocketVelocity().z);
+        boolean angleVelX = strictlyWithinBoundary(goal.avx, n.status.getRocketRotationVelocity().x);
+        boolean angleVelY =  strictlyWithinBoundary(goal.avy, n.status.getRocketRotationVelocity().y);
+        boolean angleVelZ =  strictlyWithinBoundary(goal.avz, n.status.getRocketRotationVelocity().z);
+        boolean posX =  strictlyWithinBoundary(goal.x, n.status.getRocketPosition().x);
+        boolean posY =  strictlyWithinBoundary(goal.y, n.status.getRocketPosition().y);
+        boolean posZ =  strictlyWithinBoundary(goal.z, n.status.getRocketPosition().z);
+
+        boolean angleVerticalVelocityPositionGoal = angleX && angleY && velZ && posZ;
+        if (isUsingLateralVelocityObjective)
+            return angleVerticalVelocityPositionGoal && velX && velY;
+        return angleVerticalVelocityPositionGoal;
     }
 
     void setGoalTarget(){
@@ -204,12 +215,22 @@ public class RRT {
             }
         }
         assignStatus(current.status, status);
-        a = new Action(getRandomAction(boundaries.gimbleX),
-                getRandomAction(boundaries.gimbleY),
-                getRandomAction(boundaries.thrust),
-                getRandomAction(boundaries.lateralThrustX),
-                getRandomAction(boundaries.lateralThrustY));
+        a = generateRandomDiscreteAction();
         return a;
+    }
+
+    private Action generateRandomDiscreteAction() {
+        double gimbleX = getRandomAction(boundaries.gimbleX);
+        double gimbleY = getRandomAction(boundaries.gimbleY);
+        double thrust = getRandomAction(boundaries.thrust);
+        double lateralThrustX = 0;
+        double lateralThrustY = 0;
+        if (isUsingLateralVelocityObjective && (Math.random() < 0.5)) {
+            gimbleX = 0; gimbleY = 0;
+            lateralThrustX = getRandomAction(boundaries.lateralThrustX);
+            lateralThrustY = getRandomAction(boundaries.lateralThrustY);
+        }
+        return new Action(gimbleX, gimbleY, thrust, lateralThrustX, lateralThrustY);
     }
 
     void addNode(RRTNode node){
@@ -269,7 +290,12 @@ public class RRT {
         double day = cord1.y - cord2.y;
         double daz = cord1.z - cord2.z;
         double dt = n1.status.getSimulationTime()-n2.status.getSimulationTime();
-        return  2*dz*dz + 5*dvz*dvz + 1*dvx*dvx + 1*dvy*dvy + dax*dax*1000 + day*day*1000;// + dax*dax + day*day + daz*daz+dt*dt;+ dvx*dvx + dvy*dvy + 10*dx*dx +10*dy*dy
+
+        double baseDistance = 5*dz*dz + 5*dvz*dvz + dax*dax*1000 + day*day*1000;
+        if (isUsingLateralVelocityObjective) {
+            baseDistance += 2*dvx*dvx + 2*dvy*dvy;
+        }
+        return baseDistance;
     }
 
     public static class Action{
