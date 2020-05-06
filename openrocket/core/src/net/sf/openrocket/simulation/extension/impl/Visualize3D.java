@@ -20,25 +20,23 @@ public class Visualize3D extends AbstractSimulationExtension {
 	@Override
 	public String getName() {
 		String name;
-		name="Visualize3D"+"({rate})";
-		name = L10N.replace(name, "{rate}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getTimeRate()));
+		name="Visualize3D"+"(rate={Visualize3DTimeRate}, IP={Visualize3DIP})";
+		name = L10N.replace(name, "{Visualize3DTimeRate}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getVisualize3DTimeRate()));
+		name = L10N.replace(name, "{Visualize3DIP}", getVisualize3DIP());
 		return name;
 	}
 
-	public double getTimeRate() {
-		return config.getDouble("rate", 1.0);
+	public double getVisualize3DTimeRate() {
+		return config.getDouble("Visualize3DTimeRate", 1.0);
 	}
-
-	public String getConnectionString() {
-		return config.getString("connectionString", "10.0.0.226:8080");  // "127.0.0.0:5000"
-	}
-
-	public void setTimeRate(double rate) {
-		config.put("rate", rate);
+	public void setVisualize3DTimeRate(double value) {
+		config.put("Visualize3DTimeRate", value);
 		fireChangeEvent();
 	}
-	public void setConnectionString(String connectionString) {
-		config.put("connectionString", connectionString);
+
+	public String getVisualize3DIP() { return config.getString("Visualize3DIP", "127.0.0.1:8080");}
+	public void setVisualize3DIP(String ipString) {
+		config.put("Visualize3DIP", ipString);
 		fireChangeEvent();
 	}
 }

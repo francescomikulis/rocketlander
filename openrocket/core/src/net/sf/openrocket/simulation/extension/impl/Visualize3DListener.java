@@ -22,7 +22,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	@Override
 	public void startSimulation(SimulationStatus status) {
-		client.setConnectionString(visualize3D.getConnectionString());
+		client.setConnectionString(visualize3D.getVisualize3DIP());
 		client.Connect();
 	}
 
@@ -59,7 +59,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	private void waitdt(SimulationStatus status){
 		int timeStep;
-		double val = 1000 * status.getPreviousTimeStep() / visualize3D.getTimeRate();
+		double val = 1000 * status.getPreviousTimeStep() / visualize3D.getVisualize3DTimeRate();
 		timeStep = (int) Math.floor(val);
 		long realTimeStep = (System.currentTimeMillis() - curTime);
 

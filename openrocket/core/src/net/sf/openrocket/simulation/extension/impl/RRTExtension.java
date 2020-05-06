@@ -17,16 +17,16 @@ public class RRTExtension extends AbstractSimulationExtension {
 	@Override
 	public String getName() {
 		String name;
-		name="RRT"+"({UsingLateralObjective})";
-		name = L10N.replace(name, "{UsingLateralObjective}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getUsingLateralObjective()));
+		name="RRT"+"(UsingLateralObjective: {UsingLateralObjective})";
+		name = L10N.replace(name, "{UsingLateralObjective}", String.valueOf(getUsingLateralObjective()));
 		return name;
 	}
 
-	public double getUsingLateralObjective() {
-		return config.getDouble("UsingLateralObjective", 0.0);
+	public boolean getUsingLateralObjective() {
+		return config.getBoolean("UsingLateralObjective", false);
 	}
 
-	public void setUsingLateralObjective(double usingLateralObjectiveDouble) {
+	public void setUsingLateralObjective(boolean usingLateralObjectiveDouble) {
 		config.put("UsingLateralObjective", usingLateralObjectiveDouble);
 		fireChangeEvent();
 	}

@@ -2,6 +2,7 @@ package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.gui.SpinnerEditor;
+import net.sf.openrocket.gui.adaptors.BooleanModel;
 import net.sf.openrocket.gui.adaptors.DoubleModel;
 import net.sf.openrocket.gui.components.BasicSlider;
 import net.sf.openrocket.gui.components.UnitSelector;
@@ -20,13 +21,10 @@ public class RRTExtensionConfigurator extends AbstractSwingSimulationExtensionCo
 	
 	@Override
 	protected JComponent getConfigurationComponent(RRTExtension extension, Simulation simulation, JPanel panel) {
-		panel.add(new JLabel("UsingLateralObjective (0 or 1)"));
-		DoubleModel m = new DoubleModel(extension, "UsingLateralObjective", UnitGroup.UNITS_NONE);
-		JSpinner spin = new JSpinner(m.getSpinnerModel());
-		spin.setEditor(new SpinnerEditor(spin));
-		panel.add(spin, "w 65lp!");
-		UnitSelector unit = new UnitSelector(m);
-		panel.add(unit, "w 25");
+		panel.add(new JLabel("UsingLateralObjective"));
+		BooleanModel m = new BooleanModel(extension,"UsingLateralObjective");
+		m.setValue(extension.getUsingLateralObjective());
+		panel.add(new JCheckBox(m), "w 100lp!");
 		return panel;
 	}
 	

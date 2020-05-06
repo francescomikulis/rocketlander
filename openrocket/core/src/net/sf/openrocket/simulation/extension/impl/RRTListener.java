@@ -54,12 +54,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
 
     RRTListener(RRTExtension rrtExtension) {
         this.rrtExtension = rrtExtension;
-        int lateralObjectiveType = (int)rrtExtension.getUsingLateralObjective();
-        if (lateralObjectiveType == 0) {
-            isUsingLateralVelocityObjective = false;
-        } else {
-            isUsingLateralVelocityObjective = true;
-        }
+        isUsingLateralVelocityObjective = rrtExtension.getUsingLateralObjective();
         random = new Random();
     }
 
