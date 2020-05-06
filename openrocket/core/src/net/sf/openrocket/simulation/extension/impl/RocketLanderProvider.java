@@ -7,7 +7,7 @@ import net.sf.openrocket.simulation.extension.AbstractSimulationExtensionProvide
 public class RocketLanderProvider extends AbstractSimulationExtensionProvider {
 
 	public RocketLanderProvider() {
-		super(RocketLander.class, "Launch conditions", "Rocket-lander");
+		super(RocketLander.class, "RocketLander Extension", "Rocket-lander");
 	}
 	
 }

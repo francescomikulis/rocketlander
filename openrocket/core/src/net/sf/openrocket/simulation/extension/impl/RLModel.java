@@ -51,7 +51,9 @@ public class RLModel {
     public void setDefinitions(ArrayList<MDPDefinition> definitions) {
         dataStoreState = new RLDataStoreState();
         boolean actualChange = false;
+        HashSet<String> newDefinitionNames = new HashSet<>();
         for (MDPDefinition definition: definitions) {
+            newDefinitionNames.add(definition.name);
             if (!methods.containsKey(definition.name)) {
                 actualChange = true;
                 definition.setValueFunction(null);
@@ -73,8 +75,11 @@ public class RLModel {
                 }
             }
         }
-        if (!actualChange) {
-            actualChange = methods.size() != definitions.size();
+        for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
+            if (!newDefinitionNames.contains(entry.getKey())) {
+                actualChange = true;
+                break;
+            }
         }
         if (actualChange) {
             methods = new LinkedHashMap<>();
@@ -165,6 +170,7 @@ public class RLModel {
 
     public void setupSimulationTypeBasedOnMDPDefinitions(SimulationStatus status) {
         SimulationType updatedSimType = simulationType;
+        // select the smallest available sim type if forcefully defined in MDPDefinition name
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             MDPDefinition definition = entry.getValue();
             if (definition.name.contains("_1D")) {
@@ -329,7 +335,7 @@ public class RLModel {
                 }
 
                 // hack to 'pass down' the symmetry for mid-level MDPs
-                if (action.definition.inheritSymmetryAxis) {
+                if (action.definition.passDownSymmetryAxis) {
                     MDPActionSelectionField += action.symmetry;
                 }
 
@@ -534,6 +540,11 @@ public class RLModel {
         if (!smartPrintBuffer) {
             printAndClearStringBuffer(false);
         }
+    }
+
+    public void printStatusInformationOnSingleSimTermination(SimulationStatus status) {
+        if (!smartPrintBuffer)
+            RocketLanderListener.printStatusInformation(status);
     }
 
 

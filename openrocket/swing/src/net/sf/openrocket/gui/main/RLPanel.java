@@ -90,8 +90,9 @@ public class RLPanel extends JPanel {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    String stringDefinition = MDPDefinition.toJsonString(ModelBaseImplementation.getLanderDefinition());
-                    Definition definition = new Definition("defaultLander", stringDefinition);
+                    MDPDefinition defaultLander = ModelBaseImplementation.getDefaultLanderDefinition();
+                    String stringDefinition = MDPDefinition.toJsonString(defaultLander);
+                    Definition definition = new Definition(defaultLander.name, stringDefinition);
 
                     int n = document.definitions.size();
                     document.definitions.add(definition);
@@ -147,45 +148,46 @@ public class RLPanel extends JPanel {
         this.add(disableButton, "gapright para");
 
         //// Simulation type button
-        simulationTypeButton = new JButton("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
+        simulationTypeButton = new JButton("SimulationType: ");
         //// Edit Simulation type
         simulationTypeButton.setToolTipText("Toggle Simulation Type");
         simulationTypeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 RLModel.getInstance().stepNextSimulationType();
-                simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
+                reloadRLUIText();
             }
         });
         this.add(simulationTypeButton, "gapright para");
 
         //// Simulation 2D axis button
-        simulationAxisButton = new JButton("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
+        simulationAxisButton = new JButton("Simulation2DAxis: ");
         //// Edit Simulation type
         simulationAxisButton.setToolTipText("Toggle Simulation 2D Axis");
         simulationAxisButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 RLModel.getInstance().stepNextSimulation2DAxis();
-                simulationAxisButton.setText("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
+                reloadRLUIText();
             }
         });
         this.add(simulationAxisButton, "gapright para");
 
         //// Simulation initialization button
-        simulationInitButton = new JButton("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
+        simulationInitButton = new JButton("SimInitVariation: ");
         //// Edit Simulation initialization
         simulationInitButton.setToolTipText("Toggle Simulation Initialization Variation");
         simulationInitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 RLModel.getInstance().stepNextInitialVariation();
-                simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
+                reloadRLUIText();
             }
         });
         this.add(simulationInitButton, "gapright para");
 
-        // MODIFIED CODE HERE
+        // THIS IS CRITICAL FOR UI UPDATES OF RL MODEL SINGLETON PARAMETERS
+        reloadRLUIText();
 
         //// Reset the stateActionValueFunction
         resetModelButton = new JButton(trans.get("simpanel.but.resetmodel"));
@@ -254,14 +256,12 @@ public class RLPanel extends JPanel {
 
                     int ret = JOptionPane.showConfirmDialog(RLPanel.this,
                             new Object[] {
-                                    //// Delete the selected simulations?
-                                    trans.get("simpanel.dlg.lbl.DeleteSim1"),
+                                    "Delete the MDPDefinitions?",
                                     //// <html><i>This operation cannot be undone.</i>
                                     trans.get("simpanel.dlg.lbl.DeleteSim2"),
                                     "",
                                     panel },
-                            //// Delete simulations
-                            trans.get("simpanel.dlg.lbl.DeleteSim3"),
+                            "Delete MDPDefinitions",
                             JOptionPane.OK_CANCEL_OPTION,
                             JOptionPane.WARNING_MESSAGE);
                     if (ret != JOptionPane.OK_OPTION)
@@ -272,7 +272,7 @@ public class RLPanel extends JPanel {
                     }
                 }
 
-                // Delete simulations
+                // Delete MDPDefinitions
                 for (int i = 0; i < selection.length; i++) {
                     selection[i] = definitionTable.convertRowIndexToModel(selection[i]);
                 }
@@ -437,6 +437,12 @@ public class RLPanel extends JPanel {
         this.add(scrollpane, "spanx, grow, wrap rel");
 
         updateButtonStates();
+    }
+
+    public void reloadRLUIText() {
+        simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
+        simulationAxisButton.setText("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
+        simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
     }
 
     private void updateButtonStates() {

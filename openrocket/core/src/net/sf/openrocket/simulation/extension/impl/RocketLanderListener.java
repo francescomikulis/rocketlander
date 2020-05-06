@@ -24,7 +24,7 @@ import java.util.*;
 import static net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 
-public class RocketLanderListener extends AbstractSimulationListener {
+public class RocketLanderListener extends AbstractSimulationListenerSupportsVisualize3DListener {
     private static final double MIN_VELOCITY = -10;
     private static final double MAX_ALTITUDE = 30;
     private static final double MAX_POSITION = 6;
@@ -52,6 +52,13 @@ public class RocketLanderListener extends AbstractSimulationListener {
     private boolean hasCompletedTerminalUpdate = false;
 
     /** Used by the Visualize3DListener extension */
+    public double getMaxMotorPower() { return 200.0; }
+    public double getLastThrust() { return action.getDouble("thrust"); }
+    public double getLastGimbalX() { return action.getDouble("gimbalX"); }
+    public double getLastGimbalY()  { return action.getDouble("gimbalY"); }
+    public double getLastLateralThrustX()  { return action.getDouble("lateralThrustX"); }
+    public double getLastLateralThrustY()  { return action.getDouble("lateralThrustY"); }
+
     public CoupledActions getLastAction() {
         return action;
     }
@@ -265,7 +272,7 @@ public class RocketLanderListener extends AbstractSimulationListener {
     public double postSimpleThrustCalculation(SimulationStatus status, double thrust) {
         // currently not used - thrust goes up over the first second
         // RLVectoringInitialThrust = Math.max(thrust, RLVectoringInitialThrust);
-        RLVectoringThrust = 200;
+        RLVectoringThrust = getMaxMotorPower();
         return Double.NaN;
     }
 
@@ -289,47 +296,24 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (model.simulationType == SimulationType._1D) {
             action.setDouble("gimbalX", 0.0);
             action.setDouble("gimbalY", 0.0);
+            action.setDouble("lateralThrustX", 0.0);
+            action.setDouble("lateralThrustY", 0.0);
         } else if (model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X"))
+            if (model.symmetryAxis2D.equals("X")) {
                 action.setDouble("gimbalY", 0.0);
-            else if (model.symmetryAxis2D.equals("Y"))
+                action.setDouble("lateralThrustY", 0.0);
+            } else if (model.symmetryAxis2D.equals("Y")) {
                 action.setDouble("gimbalX", 0.0);
+                action.setDouble("lateralThrustX", 0.0);
+            }
         }
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");
+        double lateralThrustX = action.getDouble("lateralThrustX");
+        double lateralThrustY = action.getDouble("lateralThrustY");
 
-        double[] forceComponents = calculateGimbalAndLateralThrustComponents(gimbalX, gimbalY);
-        return calculateAcceleration(status, forceComponents[0], forceComponents[1], forceComponents[2], forceComponents[3]);
+        return calculateAcceleration(status, gimbalX, gimbalY, lateralThrustX, lateralThrustY);
     }
-
-    private double[] calculateGimbalAndLateralThrustComponents(double gimbalX, double gimbalY) {
-        boolean isLateralOnlyX = false;
-        boolean isLateralOnlyY = false;
-        double lateralThrustX = 0;
-        double lateralThrustY = 0;
-        for (Action a: action) {
-            if (a.definition.lateralThrust) {
-                if (a.definition.actionDefinition.containsKey("gimbalX") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("X")) {
-                    isLateralOnlyX = true;
-                    lateralThrustX = Math.min(Math.asin(gimbalX) * 3, 1.0);
-                    gimbalX = 0;
-                }
-                if (a.definition.actionDefinition.containsKey("gimbalY") || a.definition.actionDefinition.containsKey("gimbal") && a.symmetry.equals("Y")) {
-                    isLateralOnlyY = true;
-                    lateralThrustY = Math.min(Math.asin(gimbalY) * 3, 1.0);
-                    gimbalY = 0;
-                }
-            }
-        }
-        if (!isLateralOnlyX) {  // traditional rotation occurs in X
-            gimbalX = Math.asin(gimbalX);
-        }
-        if (!isLateralOnlyY) {  // traditional rotation occurs in Y
-            gimbalY = Math.asin(gimbalY);
-        }
-        return new double[]{gimbalX, gimbalY, lateralThrustX, lateralThrustY};
-    }
-
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
@@ -373,8 +357,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         if (action != null) {
             terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
             if (!hasCompletedTerminalUpdate) {
-                printStatusInformation(status);
                 model.updateTerminalStateActionValueFunction(episodeStateActions, terminationBooleans);
+                model.printStatusInformationOnSingleSimTermination(status);
                 hasCompletedTerminalUpdate = true;
             }
         }
@@ -383,20 +367,33 @@ public class RocketLanderListener extends AbstractSimulationListener {
     /** Terminal output **/
 
     public static void printStatusInformation(SimulationStatus status) {
-        System.out.println("Position: z: "+ status.getRocketPosition().z);
-        System.out.println("Velocity: x: "+status.getRocketVelocity().x+
-                " y: "+status.getRocketVelocity().y+
-                " z: "+status.getRocketVelocity().z);
-        System.out.println("Angle: x: "+status.getRocketOrientationQuaternion().rotateZ().x+
-                " y: "+status.getRocketOrientationQuaternion().rotateZ().y+
-                " z: "+status.getRocketOrientationQuaternion().rotateZ().z);
+        System.out.println("Position: " +
+                "  x: " + status.getRocketPosition().x +
+                "  y: " + status.getRocketPosition().y +
+                "  z: " + status.getRocketPosition().z
+        );
+        System.out.println("Velocity: " +
+                "  x: " + status.getRocketVelocity().x +
+                "  y: " + status.getRocketVelocity().y +
+                "  z: " + status.getRocketVelocity().z
+        );
+        System.out.println("Angle: " +
+                "  x: " + status.getRocketOrientationQuaternion().rotateZ().x +
+                "  y: " + status.getRocketOrientationQuaternion().rotateZ().y +
+                "  z: " + status.getRocketOrientationQuaternion().rotateZ().z
+        );
+        System.out.println("Angle Velocity: " +
+                "  x: " + status.getRocketRotationVelocity().x +
+                "  y: " + status.getRocketRotationVelocity().y +
+                "  z: " + status.getRocketRotationVelocity().z
+        );
     }
 
 
 
 
 
-    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double lateralThrustX, Double lateralThrustY) {
+    private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY, Double lateralThrustX, Double lateralThrustY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -419,6 +416,8 @@ public class RocketLanderListener extends AbstractSimulationListener {
         double gimbalComponentY = Math.sin(gimbalZ) * Math.sin(gimbalY);
         double gimbalComponentZ = Math.cos(gimbalZ);
          */
+        double gimbalComponentX = Math.sin(gimbalX);
+        double gimbalComponentY = Math.sin(gimbalY);
         double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
 
         assert RLVectoringThrust >= 0;
@@ -548,7 +547,10 @@ public class RocketLanderListener extends AbstractSimulationListener {
         this.RLVectoringFlightConditions.setRLAngleVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "angleVelocity"));
 
         // multiplication is for visualization purposes
-        this.RLVectoringFlightConditions.setRLThrust(action.getDouble("thrust") * 100);
+        double thrustX = action.getDouble("lateralThrustX") * 100;
+        double thrustY = action.getDouble("lateralThrustY") * 100;
+        double thrustZ = action.getDouble("thrust") * 100;
+        this.RLVectoringFlightConditions.setRLThrust(new Coordinate(thrustX, thrustY, thrustZ));
 
         double gimbalX = action.getDouble("gimbalX");
         double gimbalY = action.getDouble("gimbalY");

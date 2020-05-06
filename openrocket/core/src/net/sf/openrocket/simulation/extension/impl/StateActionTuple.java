@@ -343,11 +343,13 @@ public class StateActionTuple implements Serializable {
             constructorCodeInts(values, definition);
         }
 
-        public Action(float thrust, float gimbalX, float gimbalY, MDPDefinition definition) {
+        public Action(float thrust, float gimbalX, float gimbalY, float lateralThrustX, float lateralThrustY, MDPDefinition definition) {
             HashMap<String, Float> values = new HashMap<String, Float>() {{
                 put("thrust", thrust);
                 put("gimbalX", gimbalX);
                 put("gimbalY", gimbalY);
+                put("lateralThrustX", lateralThrustX);
+                put("lateralThrustY", lateralThrustY);
             }};
             constructorCodeDoubles(values, definition);
         }
@@ -400,7 +402,7 @@ public class StateActionTuple implements Serializable {
         }
 
         public Action deepcopy(MDPDefinition definition) {
-            Action newAction = new Action(0, 0,0 , this.definition);
+            Action newAction = new Action(0, 0, 0, 0, 0, this.definition);
             applyDeepcopy(this, newAction, definition);
             return newAction;
         }
@@ -480,26 +482,14 @@ public class StateActionTuple implements Serializable {
     }
 
     public static class CoupledActions extends ArrayList<Action> {
-        private Action thrustAction = null;
-        private Action gimbalXAction = null;
-        private Action gimbalYAction = null;
-
-        public CoupledActions(Action action) {
-            thrustAction = action;
-            gimbalXAction = action;
-            gimbalYAction = action;
-        }
+        public Action thrustAction = null;
+        public Action gimbalXAction = null;
+        public Action gimbalYAction = null;
+        public Action lateralThrustXAction = null;
+        public Action lateralThrustYAction = null;
 
         public CoupledActions(Action... _actions) {
             constructorCode(_actions);
-        }
-
-        public CoupledActions(@NotNull Action thrustAction, @NotNull Action gimbalXAction, @NotNull Action gimbalYAction) {
-            ArrayList<Action> actions = new ArrayList<>();
-            actions.add(thrustAction);
-            actions.add(gimbalXAction);
-            actions.add(gimbalYAction);
-            constructorCode(actions.toArray(new Action[actions.size()]));
         }
 
         private void constructorCode(Action... _actions) {
@@ -514,6 +504,8 @@ public class StateActionTuple implements Serializable {
                 thrustAction = action;
                 gimbalXAction = action;
                 gimbalYAction = action;
+                lateralThrustXAction = action;
+                lateralThrustYAction = action;
             } else {
                 if (action.definition.actionDefinition.containsKey("thrust")) {
                     thrustAction = action;
@@ -523,6 +515,12 @@ public class StateActionTuple implements Serializable {
                 }
                 if (action.definition.actionDefinition.containsKey("gimbalY") || ((action.symmetry != null) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("gimbal"))) {
                     gimbalYAction = action;
+                }
+                if (action.definition.actionDefinition.containsKey("lateralThrustX") || ((action.symmetry != null) && action.symmetry.equals("X") && action.definition.actionDefinition.containsKey("lateralThrust"))) {
+                    lateralThrustXAction = action;
+                }
+                if (action.definition.actionDefinition.containsKey("lateralThrustY") || ((action.symmetry != null) && action.symmetry.equals("Y") && action.definition.actionDefinition.containsKey("lateralThrust"))) {
+                    lateralThrustYAction = action;
                 }
             }
             return super.add(action);
@@ -536,6 +534,10 @@ public class StateActionTuple implements Serializable {
                     return this.gimbalXAction;
                 case "gimbalY":
                     return this.gimbalYAction;
+                case "lateralThrustX":
+                    return this.lateralThrustXAction;
+                case "lateralThrustY":
+                    return this.lateralThrustYAction;
             }
             System.out.println("attempting to pull field not contained in actions: " + field);
             return this.thrustAction;

@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public class Visualize3DListener extends AbstractSimulationListener {
-	SimulationListener listener = null;
+	AbstractSimulationListenerSupportsVisualize3DListener listener = null;
 	Visualize3D visualize3D;
 	Client client = Client.getInstance();
 	long curTime;
@@ -26,7 +26,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		client.Connect();
 	}
 
-	public void setListener(SimulationListener listener) {
+	public void setListener(AbstractSimulationListenerSupportsVisualize3DListener listener) {
 		this.listener = listener;
 	}
 
@@ -62,8 +62,11 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		double val = 1000 * status.getPreviousTimeStep() / visualize3D.getTimeRate();
 		timeStep = (int) Math.floor(val);
 		long realTimeStep = (System.currentTimeMillis() - curTime);
+
+		// NOTE: intentional busy wait - required for certain uses of the visualizer (e.g. not in parallel with simulator)
 		while (realTimeStep < timeStep)
 			realTimeStep = (System.currentTimeMillis() - curTime);
+
 		curTime = System.currentTimeMillis();
 	}
 
@@ -81,7 +84,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 	}
 
 	private byte[] serialize_single_timeStep(SimulationStatus status) {
-		byte[] bytes = new byte[40];
+		byte[] bytes = new byte[4*12];  // 12 is the number of floats that will be inputted
 		int offset = 0;
 		offset = arrayAdd(bytes, status.getRocketPosition().x, offset);
 		offset = arrayAdd(bytes, status.getRocketPosition().y, offset);
@@ -90,111 +93,26 @@ public class Visualize3DListener extends AbstractSimulationListener {
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getX(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getY(), offset);
 		offset = arrayAdd(bytes, status.getRocketOrientationQuaternion().getZ(), offset);
-		// thrust may not work
+		// thrust doesn't always work
 		double actualMotorThrust = 0.0;
 		try {
 			actualMotorThrust = status.getActiveMotors().iterator().next().getThrust(status.getSimulationTime());
 		} catch (Exception e) {}
 		// thurst and gimbal angles not yet present in the simulationStatus
 		if (listener != null) {
-			offset = arrayAdd(bytes, 200 * RLL.getThrust(listener), offset);
-			offset = arrayAdd(bytes, RLL.getGimbalX(listener), offset);
-			offset = arrayAdd(bytes, RLL.getGimbalY(listener), offset);
+			offset = arrayAdd(bytes, listener.getMaxMotorPower() * listener.getLastThrust(), offset);
+			offset = arrayAdd(bytes, listener.getLastGimbalX(), offset);
+			offset = arrayAdd(bytes, listener.getLastGimbalY(), offset);
+			offset = arrayAdd(bytes, listener.getLastLateralThrustX(), offset);
+			offset = arrayAdd(bytes, listener.getLastLateralThrustY(), offset);
 		} else {
 			offset = arrayAdd(bytes, actualMotorThrust, offset);
 			offset = arrayAdd(bytes, 0.0, offset);
 			offset = arrayAdd(bytes, 0.0, offset);
+			offset = arrayAdd(bytes, 0.0, offset);
+			offset = arrayAdd(bytes, 0.0, offset);
 		}
 		return bytes;
-	}
-
-	/** Hacky code to avoid requiring dependencies
-	 * between RocketLanderListener and this 3DVisualizer
-	 **/
-
-	public static class RLL {
-		public static float getGimbalX(Object listener) {
-			return getActionDoubleValue(listener, "gimbalX");
-		}
-
-		public static float getGimbalY(Object listener) {
-			return getActionDoubleValue(listener, "gimbalY");
-		}
-
-		public static float getThrust(Object listener) {
-			return getActionDoubleValue(listener, "thrust");
-		}
-
-		public static float getActionDoubleValue(Object listener, String field){
-			if (listener == null)
-				return 0.0f;
-
-			Object action = getAction(listener);
-			Object result = callMethod(action, action.getClass(), "getDouble", field);
-			if (result == null) return 0.0f;
-			return ((Double)result).floatValue();
-		}
-
-		public static Object getAction(Object rocketLanderListener) {
-			return callMethod(rocketLanderListener, "getLastAction");
-		}
-
-		/*
-		public static Object getField(Object object, String field){
-			if (object == null) return null;
-			Object result = null;
-			try {
-				Class<?> c = object.getClass();
-				Field f = c.getDeclaredField(field);
-				f.setAccessible(true);
-				result = (Object) f.get(object);
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
-				e.printStackTrace();
-			}
-			return result;
-		}
-		*/
-
-		public static Object callMethod(Object object, String methodName) {
-			if (object == null) return null;
-
-			Method method;
-			try {
-				method = object.getClass().getMethod(methodName);
-			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
-				return null;
-			}
-
-			try {
-				method.setAccessible(true);
-				return method.invoke(object);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-		}
-
-		public static Object callMethod(Object object, Class theClass, String methodName, Object... args) {
-			if (object == null) return null;
-
-			Method method;
-			try {
-				method = theClass.getMethod(methodName, String.class);
-			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
-				return null;
-			}
-
-			try {
-				method.setAccessible(true);
-				return method.invoke(object, args);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-		}
 	}
 }
 

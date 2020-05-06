@@ -155,8 +155,14 @@ public class PlotConfiguration implements Cloneable {
 		config = new PlotConfiguration(trans.get("PlotConfiguration.RocketLander"));
 		config.addPlotDataType(FlightDataType.TYPE_ALTITUDE, 0);
 		config.addPlotDataType(FlightDataType.TYPE_VELOCITY_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_Y);
 		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_Y);
 		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST_LATERAL_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST_LATERAL_Y);
 		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST);
 		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_X);
 		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_Y);

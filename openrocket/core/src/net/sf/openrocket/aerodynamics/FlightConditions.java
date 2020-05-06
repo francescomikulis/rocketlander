@@ -73,7 +73,7 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 	private Coordinate RLPosition = Coordinate.NUL;
 	private Coordinate RLAngle = Coordinate.NUL;
 	private Coordinate RLAngleVelocity = Coordinate.NUL;
-	private double RLThrust = 0;
+	private Coordinate RLThrust = Coordinate.NUL;
 	private Coordinate RLGimbal = Coordinate.NUL;
 	
 	private Coordinate pitchCenter = Coordinate.NUL;
@@ -414,10 +414,10 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 		fireChangeEvent();
 	}
 
-	public double getRLThrust() {
+	public Coordinate getRLThrust() {
 		return RLThrust;
 	}
-	public void setRLThrust(double RLThrust) {
+	public void setRLThrust(Coordinate RLThrust) {
 		if (this.RLThrust == (RLThrust))
 			return;
 		this.RLThrust = RLThrust;

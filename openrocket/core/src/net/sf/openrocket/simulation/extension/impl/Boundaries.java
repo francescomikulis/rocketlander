@@ -39,8 +39,8 @@ public class Boundaries {
     public Limits thrust = new Limits(0, 1, 0.25);
     public Limits gimbleX = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
     public Limits gimbleY = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
-    public Limits lateralThrustX = new Limits(-.25, .25, .25);
-    public Limits lateralThrustY = new Limits(-.25, .25, .25);
+    public Limits lateralThrustX = new Limits(-.9, .9, .3);
+    public Limits lateralThrustY = new Limits(-.9, .9, .3);
     Boundaries(String goalInidactor){
         x = new Limits(-40,40);
         y = new Limits(-40,40);
