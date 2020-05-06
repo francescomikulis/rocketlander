@@ -1667,8 +1667,9 @@ public class BasicFrame extends JFrame {
 		String tab = tabSource.getTitleAt(tabSource.getSelectedIndex());
 		if (tab.equals(trans.get("BasicFrame.tab.Flightsim"))) {
 			simulationPanel.activating();
-			simulationPanel.reloadRLMethods();
 		}
+		simulationPanel.reloadRLMethods();
+		rlPanel.reloadRLUIText();
 	}
 }
 

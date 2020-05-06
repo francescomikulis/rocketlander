@@ -425,7 +425,7 @@ public class ExpressionEvaluator {
         formula = "And(Gt(Abs(positionX), 4.0), Le(Abs(angleX), Asin(Div(PI,8))))";
 
         StateActionClass object = new StateActionTuple.State(null);
-        object.definition = getLanderDefinition();
+        object.definition = new MDPDefinition();
         object.setDouble("velocityZ", 25.0);
         object.setDouble("positionX", 25.0);
         object.setDouble("positionY", 10.0);
@@ -433,7 +433,7 @@ public class ExpressionEvaluator {
         ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
         // test - assigning a symmetry formula creates formula
-        object.definition = getStabilizerDefinition();
+        object.definition = new MDPDefinition();
         object.setSymmetry("X");
         assert object.definition.symmetryFormulas.containsKey("X");
         assert object.definition.symmetryFormulas.get("X").containsKey("position");
@@ -443,7 +443,7 @@ public class ExpressionEvaluator {
         String stringFormula = ExpressionEvaluator.getInstance().generateFormula(formula).toString();
         assert stringFormula.equals(formula.replace(" ", ""));
 
-        RLObjectFileStore.getInstance().storeDefinition(getLanderDefinition(), "sampleMap");
+        RLObjectFileStore.getInstance().storeDefinition(new MDPDefinition(), "sampleMap");
         System.out.println(RLObjectFileStore.getInstance().readDefinition("sampleMap"));
 
         // System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));

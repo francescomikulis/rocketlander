@@ -26,9 +26,8 @@ public class MDPDefinition implements Serializable {
     public double stepDiscount = 0.9;
     public double alpha = 0.1;
     public double exploration = 0.05;
-    public boolean lateralThrust = false;
     public String[] symmetryAxes = null;
-    public boolean inheritSymmetryAxis = false;
+    public boolean passDownSymmetryAxis = false;
     public transient HashSet<String> symmetryAxesHashSet = null;
     public LinkedHashMap<String, float[]> stateDefinition = null;
     public transient String[] stateDefinitionFields = null;
@@ -214,7 +213,7 @@ public class MDPDefinition implements Serializable {
         symmetryAxesHashSet = new HashSet<>(Arrays.asList(symmetryAxes));
 
         symmetryFormulas = new LinkedHashMap<>();
-        for (String axis: new String[]{"X", "Y", "Z"}) {
+        for (String axis: new String[]{"X", "Y"}) {
             symmetryFormulas.put(axis, new LinkedHashMap<>());
             for (String symmetryAxis: symmetryAxes) {
                 symmetryFormulas.get(axis).put(symmetryAxis, symmetryAxis + axis);
@@ -237,8 +236,6 @@ public class MDPDefinition implements Serializable {
                 model = new MonteCarlo(this); break;
             case "TD0":
                 model = new TD0(this); break;
-            case "SARSA":
-                model = new Sarsa(this); break;
             default:
                 System.out.println("METHOD NAME NOT DEFINED IN THE IMPLEMENTATION.  Must choose between MC, TD0, SARSA.");
                 return null;
@@ -432,7 +429,7 @@ public class MDPDefinition implements Serializable {
 
     private boolean _closeEnoughToBeConsideredZero(float value, float precision) {
         float remainder = Math.abs(value - (int)value);
-        float threshold = 0.01f * precision;  // within a hundredth of the precision
+        float threshold = 0.1f * precision;  // within a tenth of the precision
         return remainder < threshold;
     }
 

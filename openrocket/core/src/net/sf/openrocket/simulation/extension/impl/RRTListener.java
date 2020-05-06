@@ -23,13 +23,9 @@ import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.c
 import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.printStatusInformation;
 import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
 
-public class RRTListener extends AbstractSimulationListener {
-    private static final double MIN_VELOCITY = -10;
-    private static final double MAX_ALTITUDE = 30;
-    private static final double MAX_POSITION = 8;
+public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DListener {
     private RRTExtension rrtExtension;
     private Random random;
-    private static double variation = 2;
     private static double timeStep = 0.1;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
@@ -40,27 +36,25 @@ public class RRTListener extends AbstractSimulationListener {
     // RRT
     private RRT rrt = null;
     private RRT.Action action = null;
-    private CoupledActions visualizeAction;
     // nodes = SimulationStatus status
     ArrayList<SimulationStatus> ss;
     ArrayList<RRT.Action> aa;
     int currentIndex = 0;
     boolean hasCompletedTerminalUpdate = false;
 
+    boolean isUsingLateralVelocityObjective = true;
+
     /** Used by the Visualize3DListener extension */
-    public CoupledActions getLastAction() {
-        RRT.Action action = aa.get(currentIndex);
-        visualizeAction = new CoupledActions(new StateActionTuple.Action((float)action.thrust, (float)action.gimbleX, (float)action.gimbleY, null));
-        return visualizeAction;
-    }
+    public double getMaxMotorPower() { return 200.0; }
+    public double getLastThrust() { return aa.get(currentIndex).thrust; }
+    public double getLastGimbalX() { return aa.get(currentIndex).gimbleX; }
+    public double getLastGimbalY()  { return aa.get(currentIndex).gimbleY; }
+    public double getLastLateralThrustX()  { return aa.get(currentIndex).lateralThrustX; }
+    public double getLastLateralThrustY()  { return aa.get(currentIndex).lateralThrustY; }
 
     RRTListener(RRTExtension rrtExtension) {
         this.rrtExtension = rrtExtension;
         random = new Random();
-    }
-
-    private double calculateNumberWithIntegerVariation(double startNumber, double variation) {
-        return startNumber - (variation) + 2 * variation * random.nextDouble();
     }
 
     @Override
@@ -125,7 +119,7 @@ public class RRTListener extends AbstractSimulationListener {
 
     @Override
     public double postSimpleThrustCalculation(SimulationStatus status, double thrust) {
-        RLVectoringThrust = 200;
+        RLVectoringThrust = getMaxMotorPower();
         return Double.NaN;
     }
 
@@ -369,7 +363,7 @@ public class RRTListener extends AbstractSimulationListener {
 
 
     /** new method that allows for lateral thrust **/
-    private AccelerationData NEWcalculateAcceleration(SimulationStatus status, Double gimbalComponentX, Double gimbalComponentY, Double lateralThrustX, Double lateralThrustY) {
+    private AccelerationData NEWcalculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY, Double lateralThrustX, Double lateralThrustY) {
         // pre-define the variables for the Acceleration Data
         Coordinate linearAcceleration;
         Coordinate angularAcceleration;
@@ -392,6 +386,8 @@ public class RRTListener extends AbstractSimulationListener {
         double gimbalComponentY = Math.sin(gimbalZ) * Math.sin(gimbalY);
         double gimbalComponentZ = Math.cos(gimbalZ);
          */
+        double gimbalComponentX = Math.sin(gimbalX);
+        double gimbalComponentY = Math.sin(gimbalY);
         double gimbalComponentZ = Math.sqrt(1.0 - gimbalComponentX * gimbalComponentX - gimbalComponentY * gimbalComponentY);
 
         assert RLVectoringThrust >= 0;

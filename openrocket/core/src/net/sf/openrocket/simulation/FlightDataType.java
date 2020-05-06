@@ -169,6 +169,8 @@ public class FlightDataType implements Comparable<FlightDataType> {
 
 	//// RL Thrust
 	public static final FlightDataType TYPE_RL_THRUST = newType(trans.get("FlightDataType.TYPE_RL_THRUST"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
+	public static final FlightDataType TYPE_RL_THRUST_LATERAL_X = newType(trans.get("FlightDataType.TYPE_RL_THRUST_LATERAL_X"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
+	public static final FlightDataType TYPE_RL_THRUST_LATERAL_Y = newType(trans.get("FlightDataType.TYPE_RL_THRUST_LATERAL_Y"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
 
 	//// RL Position
 	public static final FlightDataType TYPE_RL_POSITION_X = newType(trans.get("FlightDataType.TYPE_RL_POSITION_X"), "Px", UnitGroup.UNITS_DISTANCE, 102);
@@ -268,6 +270,8 @@ public class FlightDataType implements Comparable<FlightDataType> {
 		TYPE_REFERENCE_LENGTH,
 		TYPE_REFERENCE_AREA,
 		TYPE_RL_THRUST,
+		TYPE_RL_THRUST_LATERAL_X,
+		TYPE_RL_THRUST_LATERAL_Y,
 		TYPE_RL_ANGLE_X,
 		TYPE_RL_ANGLE_Y,
 		TYPE_RL_ANGLE_Z,
