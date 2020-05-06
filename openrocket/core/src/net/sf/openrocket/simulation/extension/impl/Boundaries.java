@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.simulation.SimulationStatus;
