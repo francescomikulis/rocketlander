@@ -408,13 +408,14 @@ public class RocketLanderListener extends AbstractSimulationListener {
     /** Terminal output **/
 
     public static void printStatusInformation(SimulationStatus status) {
-        System.out.println("Position: z: "+ status.getRocketPosition().z);
-        System.out.println("Velocity: x: "+status.getRocketVelocity().x+
-                " y: "+status.getRocketVelocity().y+
-                " z: "+status.getRocketVelocity().z);
-        System.out.println("Angle: x: "+status.getRocketOrientationQuaternion().rotateZ().x+
-                " y: "+status.getRocketOrientationQuaternion().rotateZ().y+
-                " z: "+status.getRocketOrientationQuaternion().rotateZ().z);
+        return;
+        //System.out.println("Position: z: "+ status.getRocketPosition().z);
+        //System.out.println("Velocity: x: "+status.getRocketVelocity().x+
+          //      " y: "+status.getRocketVelocity().y+
+            //    " z: "+status.getRocketVelocity().z);
+        //System.out.println("Angle: x: "+status.getRocketOrientationQuaternion().rotateZ().x+
+          //      " y: "+status.getRocketOrientationQuaternion().rotateZ().y+
+           //     " z: "+status.getRocketOrientationQuaternion().rotateZ().z);
     }
 
 
