@@ -1,4 +1,4 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.visualize3d;
 
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtensionProvider;

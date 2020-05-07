@@ -1,10 +1,10 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.visualize3d;
 
-// A Java program for a Client
+// A Java program for a Visualize3DClient
 import java.net.*;
 import java.io.*;
 
-public class Client {
+public class Visualize3DClient {
     // initialize socket and output streams
     private Socket socket            = null;
     private DataOutputStream out     = null;
@@ -12,17 +12,17 @@ public class Client {
     private int port;
     private String address;
 
-    private static volatile Client instance;
+    private static volatile Visualize3DClient instance;
 
-    private Client(){
+    private Visualize3DClient(){
         setConnectionString(this.connectionString);
     }
 
-    public static Client getInstance() {
+    public static Visualize3DClient getInstance() {
         if (instance == null) { // first time lock
-            synchronized (Client.class) {
+            synchronized (Visualize3DClient.class) {
                 if (instance == null) {  // second time lock
-                    instance = new Client();
+                    instance = new Visualize3DClient();
                 }
             }
         }

@@ -1,12 +1,9 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rrt;
 
 import net.sf.openrocket.l10n.L10N;
 import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtension;
-import net.sf.openrocket.unit.UnitGroup;
-
-import static net.sf.openrocket.startup.Preferences.WIND_AVERAGE;
 
 public class RRTExtension extends AbstractSimulationExtension {
 	@Override

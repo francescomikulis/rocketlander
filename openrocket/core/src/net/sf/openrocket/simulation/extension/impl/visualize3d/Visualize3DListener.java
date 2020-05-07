@@ -1,18 +1,15 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.visualize3d;
 
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
-import net.sf.openrocket.simulation.listeners.SimulationListener;
 
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.List;
 
 public class Visualize3DListener extends AbstractSimulationListener {
 	AbstractSimulationListenerSupportsVisualize3DListener listener = null;
 	Visualize3D visualize3D;
-	Client client = Client.getInstance();
+	Visualize3DClient client = Visualize3DClient.getInstance();
 	long curTime;
 	private boolean visualizeDuringPostStep = true;
 

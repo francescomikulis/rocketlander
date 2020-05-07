@@ -1,12 +1,12 @@
-package net.sf.openrocket.simulation.extension.impl.methods;
+package net.sf.openrocket.simulation.extension.impl.rocketlander.methods;
 
 import java.util.*;
 import java.util.function.Function;
 
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.State;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.State;
 
-public interface ModelInterface {
+public interface MethodInterface {
     void updateStepCommon(
             ArrayList<StateActionTuple> SA,
             Function<State, Float> reward

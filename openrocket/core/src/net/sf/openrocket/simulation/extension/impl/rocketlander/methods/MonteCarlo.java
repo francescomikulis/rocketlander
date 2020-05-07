@@ -1,19 +1,15 @@
-package net.sf.openrocket.simulation.extension.impl.methods;
+package net.sf.openrocket.simulation.extension.impl.rocketlander.methods;
 
-import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
-import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.ValueFunction;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLValueFunction;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.function.Function;
-import java.util.function.BiFunction;
 
-public class MonteCarlo extends ModelBaseImplementation {
+public class MonteCarlo extends BaseMethodImplementation {
     public MonteCarlo (MDPDefinition definition) {
         this.definition = definition;
     }
@@ -36,9 +32,9 @@ public class MonteCarlo extends ModelBaseImplementation {
 
         // thread-safe lock
         HashSet<Integer> lockedIndeces = new HashSet<>();
-        int[] indeces = valueFunctionTable.getIndecesAndLockAll(SA, lockedIndeces);
+        int[] indeces = valueFunctionManager.getIndecesAndLockAll(SA, lockedIndeces);
 
-        final ValueFunction valueFunction = lastStateActionTuple.state.definition.valueFunction;
+        final RLValueFunction valueFunction = lastStateActionTuple.state.definition.valueFunction;
         float[] values = new float[SA.size()];
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = SA.get(timeStep);
@@ -48,7 +44,7 @@ public class MonteCarlo extends ModelBaseImplementation {
         }
 
         // thread-safe unlock
-        valueFunctionTable.setValueAtIndecesAndUnlockAll(
+        valueFunctionManager.setValueAtIndecesAndUnlockAll(
                 lastStateActionTuple.state.definition,
                 lockedIndeces,
                 indeces,

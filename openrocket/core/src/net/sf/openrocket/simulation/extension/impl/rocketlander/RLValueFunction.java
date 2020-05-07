@@ -1,9 +1,9 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ValueFunction {
+public class RLValueFunction {
     private static final long MAX_TABLE_SIZE = 10 * 1000 * 1000;  // 10 milion
     public static final ReentrantLock mainLock = new ReentrantLock();
     public transient ReentrantLock[] locks = null;
@@ -16,7 +16,7 @@ public class ValueFunction {
         return (size >= 0) && (size <= MAX_TABLE_SIZE);
     }
 
-    public ValueFunction(float[] valueFunctionTable) {
+    public RLValueFunction(float[] valueFunctionTable) {
         isTable = true;
         this.valueFunctionTable = valueFunctionTable;
         if (valueFunctionTable == null) {
@@ -38,7 +38,7 @@ public class ValueFunction {
         }
     }
 
-    public ValueFunction(HashMap<Integer, Float> valueFunctionMap) {
+    public RLValueFunction(HashMap<Integer, Float> valueFunctionMap) {
         isTable = false;
         this.valueFunctionMap = valueFunctionMap;
     }

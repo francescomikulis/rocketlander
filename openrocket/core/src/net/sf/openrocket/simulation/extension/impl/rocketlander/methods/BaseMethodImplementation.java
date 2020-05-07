@@ -1,16 +1,16 @@
-package net.sf.openrocket.simulation.extension.impl.methods;
+package net.sf.openrocket.simulation.extension.impl.rocketlander.methods;
 
-import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
-import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.ValueFunctionManager;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
 
 import java.util.*;
 import java.util.function.Function;
 
-public abstract class ModelBaseImplementation implements ModelInterface {
-    OptimizedMap valueFunctionTable = null;
+public abstract class BaseMethodImplementation implements MethodInterface {
+    ValueFunctionManager valueFunctionManager = null;
     public MDPDefinition definition;
     float stepDiscount = 0.9f;
     float terminalDiscount = 0.999f;
@@ -19,15 +19,15 @@ public abstract class ModelBaseImplementation implements ModelInterface {
 
     public float valueFunction(State state, Action action) { return valueFunction(new StateActionTuple(state, action)); }
     public float valueFunction(StateActionTuple stateActionTuple) {
-        return valueFunctionTable.get(stateActionTuple);
+        return valueFunctionManager.get(stateActionTuple);
     }
 
-    public OptimizedMap getValueFunctionTable() {
-        return this.valueFunctionTable;
+    public ValueFunctionManager getValueFunctionManager() {
+        return this.valueFunctionManager;
     }
 
-    public void setValueFunctionTable(OptimizedMap valueFunctionTable) {
-        this.valueFunctionTable = valueFunctionTable;
+    public void setValueFunctionManager(ValueFunctionManager valueFunctionManager) {
+        this.valueFunctionManager = valueFunctionManager;
     }
 
     public void setStepDiscount(float stepDiscount) { this.stepDiscount = stepDiscount; }

@@ -1,13 +1,13 @@
-package net.sf.openrocket.simulation.extension.impl.methods;
+package net.sf.openrocket.simulation.extension.impl.rocketlander.methods;
 
-import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple;
 
 import java.util.ArrayList;
 import java.util.function.Function;
 
 
-public class TD0 extends ModelBaseImplementation implements ModelInterface {
+public class TD0 extends BaseMethodImplementation implements MethodInterface {
     public TD0 (MDPDefinition definition) {
         this.definition = definition;
     }
@@ -24,10 +24,10 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
         float rewardValue = reward.apply(current.state);
 
         // thread safety
-        int index = valueFunctionTable.getIndexAndLock(old);
+        int index = valueFunctionManager.getIndexAndLock(old);
         float oldValue = old.state.definition.valueFunction.get(index);
         float newValue = oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue);
-        valueFunctionTable.setValueAtIndexAndUnlock(old, index, newValue);
+        valueFunctionManager.setValueAtIndexAndUnlock(old, index, newValue);
     }
 
     public float terminalReward(StateActionTuple.State lastState) { return 0.0f; }

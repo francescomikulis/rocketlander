@@ -1,15 +1,10 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.visualize3d;
 
 import net.sf.openrocket.l10n.L10N;
 import net.sf.openrocket.simulation.SimulationConditions;
-import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtension;
-import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
 import net.sf.openrocket.unit.UnitGroup;
-import net.sf.openrocket.util.Coordinate;
-import net.sf.openrocket.util.Quaternion;
-import net.sf.openrocket.simulation.SimulationOptions.*;
 
 public class Visualize3D extends AbstractSimulationExtension {
 	@Override

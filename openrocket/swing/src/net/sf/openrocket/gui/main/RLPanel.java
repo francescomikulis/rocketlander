@@ -18,9 +18,9 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 import net.sf.openrocket.document.Definition;
 import net.sf.openrocket.gui.simulation.MDPDefinitionEditDialog;
-import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
-import net.sf.openrocket.simulation.extension.impl.RLModel;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.BaseMethodImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +90,7 @@ public class RLPanel extends JPanel {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    MDPDefinition defaultLander = ModelBaseImplementation.getDefaultLanderDefinition();
+                    MDPDefinition defaultLander = BaseMethodImplementation.getDefaultLanderDefinition();
                     String stringDefinition = MDPDefinition.toJsonString(defaultLander);
                     Definition definition = new Definition(defaultLander.name, stringDefinition);
 
@@ -154,7 +154,7 @@ public class RLPanel extends JPanel {
         simulationTypeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                RLModel.getInstance().stepNextSimulationType();
+                RLModelSingleton.getInstance().stepNextSimulationType();
                 reloadRLUIText();
             }
         });
@@ -167,7 +167,7 @@ public class RLPanel extends JPanel {
         simulationAxisButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                RLModel.getInstance().stepNextSimulation2DAxis();
+                RLModelSingleton.getInstance().stepNextSimulation2DAxis();
                 reloadRLUIText();
             }
         });
@@ -180,7 +180,7 @@ public class RLPanel extends JPanel {
         simulationInitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                RLModel.getInstance().stepNextInitialVariation();
+                RLModelSingleton.getInstance().stepNextInitialVariation();
                 reloadRLUIText();
             }
         });
@@ -227,7 +227,7 @@ public class RLPanel extends JPanel {
                 MDPDefinition[] mdpDefinitions = new MDPDefinition[definitions.length];
                 for (int i = 0; i < definitions.length; i++)
                     mdpDefinitions[i] = MDPDefinition.buildFromJsonString(definitions[i].getData());
-                RLModel.getInstance().resetValueFunctionTable(mdpDefinitions);
+                RLModelSingleton.getInstance().resetValueFunctionManager(mdpDefinitions);
             }
         });
         this.add(resetModelButton, "gapright para");
@@ -440,9 +440,9 @@ public class RLPanel extends JPanel {
     }
 
     public void reloadRLUIText() {
-        simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModel.getInstance().simulationType));
-        simulationAxisButton.setText("Simulation2DAxis: " + RLModel.getInstance().symmetryAxis2D);
-        simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModel.getInstance().initVariation));
+        simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModelSingleton.getInstance().simulationType));
+        simulationAxisButton.setText("Simulation2DAxis: " + RLModelSingleton.getInstance().symmetryAxis2D);
+        simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModelSingleton.getInstance().initVariation));
     }
 
     private void updateButtonStates() {

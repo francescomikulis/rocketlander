@@ -1,11 +1,7 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rrt;
 
-import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.util.ArrayList;
-import net.sf.openrocket.util.Coordinate;
-
-public class Boundaries {
-    public Boundaries() {
+public class RRTBoundaries {
+    public RRTBoundaries() {
 
     }
 
@@ -41,7 +37,7 @@ public class Boundaries {
     public Limits gimbleY = new Limits(-3*Math.PI/180, 3*Math.PI/180, Math.PI/180);
     public Limits lateralThrustX = new Limits(-.9, .9, .3);
     public Limits lateralThrustY = new Limits(-.9, .9, .3);
-    Boundaries(String goalInidactor, boolean isUsingLateralVelocityObjective){
+    RRTBoundaries(String goalInidactor, boolean isUsingLateralVelocityObjective){
         x = new Limits(-40,40);
         y = new Limits(-40,40);
         z = new Limits(-0.5,0.5);

@@ -1,4 +1,4 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import net.sf.openrocket.aerodynamics.AerodynamicForces;
 import net.sf.openrocket.aerodynamics.FlightConditions;
@@ -6,23 +6,20 @@ import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
-import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.AbstractSimulationListenerSupportsVisualize3DListener;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3DListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
 import net.sf.openrocket.util.Coordinate;
 
-import net.sf.openrocket.simulation.extension.impl.RLModel.*;
-import net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
 
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
-import static net.sf.openrocket.simulation.extension.impl.RLModel.SimulationInitVariation.*;
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton.SimulationInitVariation.*;
 
 public class RocketLanderListener extends AbstractSimulationListenerSupportsVisualize3DListener {
     private static final double MIN_VELOCITY = -10;
@@ -30,7 +27,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     private static final double MAX_POSITION = 6;
     private static final double MAX_LAT_VELOCITY = 6;
 
-    private RLModel model = RLModel.getInstance();
+    private RLModelSingleton model = RLModelSingleton.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
     //HashMap<String, ArrayList<Double>> episodeData;
     private RocketLander rocketLander;
@@ -90,7 +87,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     private static Coordinate calculatePositionCoordinate(double maxX, double maxY, double maxZ) {
         double posX = calculateNumberWithIntegerVariation(0, maxX);
         double posY = calculateNumberWithIntegerVariation(0, maxY);
-        RLModel model = RLModel.getInstance();
+        RLModelSingleton model = RLModelSingleton.getInstance();
         if(model.simulationType == SimulationType._1D) {
             posX = 0; posY = 0;
         }
@@ -114,7 +111,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
     private static Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
         double velZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
-        RLModel model = RLModel.getInstance();
+        RLModelSingleton model = RLModelSingleton.getInstance();
         if((model.initVariation == fixed) || (model.initVariation == loc)) {
             velZ = maxZ;
         }
@@ -137,7 +134,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         double dx = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
         double dy = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
         double dz = 90;
-        RLModel model = RLModel.getInstance();
+        RLModelSingleton model = RLModelSingleton.getInstance();
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
         }
@@ -157,7 +154,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     private static Coordinate calculateInitialRotationVelocity() {
         double dx = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
         double dy = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
-        RLModel model = RLModel.getInstance();
+        RLModelSingleton model = RLModelSingleton.getInstance();
         if(model.simulationType == SimulationType._1D) {
             dx = 0; dy = 0;
         }

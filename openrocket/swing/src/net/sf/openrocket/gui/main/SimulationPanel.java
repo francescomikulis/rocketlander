@@ -4,8 +4,6 @@ package net.sf.openrocket.gui.main;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.FlavorEvent;
-import java.awt.datatransfer.FlavorListener;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -14,22 +12,17 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.text.DefaultEditorKit;
 
 import net.sf.openrocket.document.Definition;
-import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
-import net.sf.openrocket.simulation.extension.impl.RLModel;
-import net.sf.openrocket.simulation.extension.impl.RLObjectFileStore;
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLObjectFileStore;
 import net.sf.openrocket.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +57,6 @@ import net.sf.openrocket.startup.Application;
 import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.AlphanumComparator;
-
-import static net.sf.openrocket.gui.util.SwingPreferences.getMaxThreadCount;
 
 @SuppressWarnings("serial")
 public class SimulationPanel extends JPanel {
@@ -105,7 +96,7 @@ public class SimulationPanel extends JPanel {
 			if (!definition.getIgnore())
 				definitions.add(MDPDefinition.buildFromJsonString(definition.getData()));
 		}
-		RLModel.getInstance().setDefinitions(definitions);
+		RLModelSingleton.getInstance().setDefinitions(definitions);
 	}
 
 	public SimulationPanel(OpenRocketDocument doc) {
@@ -214,11 +205,11 @@ public class SimulationPanel extends JPanel {
 						sims[i * multiplier + mult] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
-				RLModel.getInstance().setSmartPrintBuffer(true);
+				RLModelSingleton.getInstance().setSmartPrintBuffer(true);
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
-				RLModel.getInstance().setSmartPrintBuffer(false);
+				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
 
 				// new SimulationRunDialog(document, sims);  // without UI
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
@@ -269,7 +260,7 @@ public class SimulationPanel extends JPanel {
 					baseSims[i] = baseSimulation;
 				}
 
-				RLModel.getInstance().setSmartPrintBuffer(true);
+				RLModelSingleton.getInstance().setSmartPrintBuffer(true);
 
 				long startTime = System.currentTimeMillis();
 				long startSaveTime = startTime;
@@ -289,7 +280,7 @@ public class SimulationPanel extends JPanel {
 							SimulationPanel.this), document, copiedSims).setVisible(true);
 					// new SimulationRunDialog(document, copiedSims);  // without UI
 					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
-					RLModel.getInstance().printAndClearStringBuffer();
+					RLModelSingleton.getInstance().printAndClearStringBuffer();
 
 					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
 						RLObjectFileStore.storeActionValueFunctions();
@@ -300,7 +291,7 @@ public class SimulationPanel extends JPanel {
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, baseSims).setVisible(true);
-				RLModel.getInstance().setSmartPrintBuffer(false);
+				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}

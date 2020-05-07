@@ -1,14 +1,10 @@
 package net.sf.openrocket.simulation.extension.impl;
 
 import net.sf.openrocket.document.Simulation;
-import net.sf.openrocket.gui.SpinnerEditor;
 import net.sf.openrocket.gui.adaptors.BooleanModel;
-import net.sf.openrocket.gui.adaptors.DoubleModel;
-import net.sf.openrocket.gui.components.BasicSlider;
-import net.sf.openrocket.gui.components.UnitSelector;
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSwingSimulationExtensionConfigurator;
-import net.sf.openrocket.unit.UnitGroup;
+import net.sf.openrocket.simulation.extension.impl.rrt.RRTExtension;
 
 import javax.swing.*;
 

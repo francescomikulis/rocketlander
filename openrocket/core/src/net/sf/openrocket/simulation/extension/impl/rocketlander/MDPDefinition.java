@@ -1,8 +1,8 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.methods.*;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
 
 import java.io.Serializable;
 import java.util.*;
@@ -16,7 +16,7 @@ public class MDPDefinition implements Serializable {
     public String name;
     public String methodName;
     public int priority = 1;
-    public transient ModelBaseImplementation[] models = null;
+    public transient BaseMethodImplementation[] models = null;
     public String reward;
     transient Formula _reward;
     public String terminalReward;
@@ -41,7 +41,7 @@ public class MDPDefinition implements Serializable {
     public LinkedHashMap<String, float[]> noActionState = null;
     public LinkedHashMap<String, float[]> successConditions = null;
 
-    public transient ValueFunction valueFunction = null;
+    public transient RLValueFunction valueFunction = null;
 
     public transient int indexProduct = 0;
     public transient int temporaryIndexProductForAction = 0;
@@ -83,7 +83,7 @@ public class MDPDefinition implements Serializable {
         return gson.toJson(definition);
     }
 
-    public void setValueFunction(ValueFunction valueFunction) {
+    public void setValueFunction(RLValueFunction valueFunction) {
         this.valueFunction = valueFunction;
     }
 
@@ -153,7 +153,7 @@ public class MDPDefinition implements Serializable {
 
     public void setReward(String rewardString) {
         this.reward = rewardString;
-        this._reward = ExpressionEvaluator.getInstance().generateFormula(this.reward);
+        this._reward = CustomExpressionEvaluator.getInstance().generateFormula(this.reward);
     }
 
     public void setTerminalReward(String terminalRewardString) {
@@ -162,7 +162,7 @@ public class MDPDefinition implements Serializable {
             this._terminalReward = null;
             return;
         }
-        this._terminalReward = ExpressionEvaluator.getInstance().generateFormula(this.terminalReward);
+        this._terminalReward = CustomExpressionEvaluator.getInstance().generateFormula(this.terminalReward);
     }
 
     public void setFormulas(LinkedHashMap<String, String> formulas) {
@@ -173,7 +173,7 @@ public class MDPDefinition implements Serializable {
         }
         this._formulas = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry: this.formulas.entrySet()) {
-            this._formulas.put(entry.getKey(), ExpressionEvaluator.getInstance().generateFormula(entry.getValue()));
+            this._formulas.put(entry.getKey(), CustomExpressionEvaluator.getInstance().generateFormula(entry.getValue()));
         }
     }
 
@@ -189,7 +189,7 @@ public class MDPDefinition implements Serializable {
             ArrayList<Object[]> conditionResults = new ArrayList<>();
             for (int i=0; i<options.size(); i+=2) {
                 Object[] conditionResult = new Object[2];
-                conditionResult[0] = ExpressionEvaluator.getInstance().generateFormula(options.get(i));  // formula
+                conditionResult[0] = CustomExpressionEvaluator.getInstance().generateFormula(options.get(i));  // formula
                 conditionResult[1] = options.get(i + 1); // result
                 conditionResults.add(conditionResult);
             }
@@ -212,14 +212,14 @@ public class MDPDefinition implements Serializable {
 
     public void setupRLMethod() {
         String methods[] = methodName.replaceAll(" ", "").split(",");
-        models = new ModelBaseImplementation[methods.length];
+        models = new BaseMethodImplementation[methods.length];
         for (int i = 0; i < models.length; i++) {
             models[i] = setupRLMethod(methods[i]);
         }
     }
 
-    public ModelBaseImplementation setupRLMethod(String methodName) {
-        ModelBaseImplementation model;
+    public BaseMethodImplementation setupRLMethod(String methodName) {
+        BaseMethodImplementation model;
         switch (methodName.toUpperCase()) {
             case "MC":
                 model = new MonteCarlo(this); break;

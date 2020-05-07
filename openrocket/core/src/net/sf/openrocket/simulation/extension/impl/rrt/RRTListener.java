@@ -1,27 +1,21 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rrt;
 
 import net.sf.openrocket.aerodynamics.AerodynamicForces;
 import net.sf.openrocket.aerodynamics.FlightConditions;
 import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.*;
 import net.sf.openrocket.simulation.exception.SimulationException;
-import net.sf.openrocket.simulation.extension.impl.RLModel.SimulationType;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.CoupledActions;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.CoupledStates;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.State;
-import net.sf.openrocket.simulation.listeners.AbstractSimulationListener;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.AbstractSimulationListenerSupportsVisualize3DListener;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3DListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
 import net.sf.openrocket.util.Coordinate;
-import net.sf.openrocket.util.GeodeticComputationStrategy;
 import net.sf.openrocket.util.MathUtil;
-import net.sf.openrocket.util.Quaternion;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.customInitialConditions;
-import static net.sf.openrocket.simulation.extension.impl.RocketLanderListener.printStatusInformation;
-import static net.sf.openrocket.simulation.extension.impl.StateActionTuple.convertRocketStatusQuaternionToDirection;
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLanderListener.customInitialConditions;
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLanderListener.printStatusInformation;
 
 public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DListener {
     private RRTExtension rrtExtension;

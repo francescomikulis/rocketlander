@@ -1,19 +1,12 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rrt;
 
-import net.sf.openrocket.document.Simulation;
-import net.sf.openrocket.rocketcomponent.FlightConfiguration;
 import net.sf.openrocket.simulation.FlightDataBranch;
 import net.sf.openrocket.simulation.FlightDataType;
-import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
-import net.sf.openrocket.util.MathUtil;
-import net.sf.openrocket.util.Quaternion;
 
-import static net.sf.openrocket.simulation.extension.impl.Boundaries.strictlyWithinBoundary;
-
-import java.util.Random;
+import static net.sf.openrocket.simulation.extension.impl.rrt.RRTBoundaries.strictlyWithinBoundary;
 
 public class RRT {
     private RRTNode root = null;
@@ -21,8 +14,8 @@ public class RRT {
     private RRTNode target = null;
     public RRTNode current = null;
     private ArrayList<RRTNode> options = null;
-    private Boundaries boundaries = new Boundaries();
-    private Boundaries goal = new Boundaries("goal", true);
+    private RRTBoundaries boundaries = new RRTBoundaries();
+    private RRTBoundaries goal = new RRTBoundaries("goal", true);
     int counter = 0;
     double globalMin = Double.MAX_VALUE;
     public double globalMax;
@@ -36,7 +29,7 @@ public class RRT {
 
     public void setIsUsingLateralVelocityObjective(boolean newValue) {
         isUsingLateralVelocityObjective = newValue;
-        goal = new Boundaries("goal", isUsingLateralVelocityObjective);
+        goal = new RRTBoundaries("goal", isUsingLateralVelocityObjective);
     }
 
     RRT(RRTNode rootIn){
@@ -150,17 +143,17 @@ public class RRT {
         target.status.setSimulationTime(getRandom(boundaries.t));
     }
 
-    double getRandom(Boundaries.Limits limits){
+    double getRandom(RRTBoundaries.Limits limits){
         return limits.min + Math.random() * (limits.max - limits.min);
     }
 
-    double getRandomAction(Boundaries.Limits limits){
+    double getRandomAction(RRTBoundaries.Limits limits){
         int range = (int) Math.round((limits.max - limits.min) / limits.increment + 0.5);
         int incrementMultipler = (int) Math.round(Math.random() * range);
         return limits.min + incrementMultipler * (limits.increment);
     }
 
-    double getMean(Boundaries.Limits limits){
+    double getMean(RRTBoundaries.Limits limits){
         return 0.5* (limits.max + limits.min);
     }
 

@@ -1,14 +1,12 @@
-package net.sf.openrocket.simulation.extension.impl.methods;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
-import net.sf.openrocket.simulation.extension.impl.*;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.StateActionClass;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.StateActionClass;
 
 import java.util.*;
 
 import static java.lang.Math.abs;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
 
-public class ExpressionEvaluator {
+public class CustomExpressionEvaluator {
     // public interfacing class
     public static final class Formula extends Term {
         Function function;
@@ -64,16 +62,16 @@ public class ExpressionEvaluator {
         return formula.evaluateBestGuess(primary, fallback);
     }
 
-    private static volatile ExpressionEvaluator instance;
+    private static volatile CustomExpressionEvaluator instance;
     private HashMap<String, Formula> memoizedFormulas = new HashMap<>();
 
-    private ExpressionEvaluator(){}
+    private CustomExpressionEvaluator(){}
 
-    public static ExpressionEvaluator getInstance() {
+    public static CustomExpressionEvaluator getInstance() {
         if (instance == null) { // first time lock
-            synchronized (ExpressionEvaluator.class) {
+            synchronized (CustomExpressionEvaluator.class) {
                 if (instance == null) {  // second time lock
-                    instance = new ExpressionEvaluator();
+                    instance = new CustomExpressionEvaluator();
                 }
             }
         }
@@ -416,8 +414,8 @@ public class ExpressionEvaluator {
 
 
     public static void main(String[] args) {
-        RLModel model = RLModel.getInstance();
-        new OptimizedMap(model.getMethods());
+        RLModelSingleton model = RLModelSingleton.getInstance();
+        new ValueFunctionManager(model.getMethods());
 
         String formula = "Add(Abs(positionX),Abs(positionY))";
 
@@ -430,7 +428,7 @@ public class ExpressionEvaluator {
         object.setDouble("positionX", 25.0);
         object.setDouble("positionY", 10.0);
         object.setDouble("angleX", 100);
-        ExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
+        CustomExpressionEvaluator.getInstance().generateFormula(formula).evaluate(object);
 
         // test - assigning a symmetry formula creates formula
         object.definition = new MDPDefinition();
@@ -440,7 +438,7 @@ public class ExpressionEvaluator {
 
         // test - input string equals output string
         formula = "And(Gt(-Abs(positionX), 4.0), Le(-Abs(angleX), Asin(Div(PI,8))))";
-        String stringFormula = ExpressionEvaluator.getInstance().generateFormula(formula).toString();
+        String stringFormula = CustomExpressionEvaluator.getInstance().generateFormula(formula).toString();
         assert stringFormula.equals(formula.replace(" ", ""));
 
         RLObjectFileStore.getInstance().storeDefinition(new MDPDefinition(), "sampleMap");
@@ -449,7 +447,7 @@ public class ExpressionEvaluator {
         // System.out.println(((Formula)object.definition.get("formulas").get("MDPDecision")).evaluate(object));
 
         String f = "Add(Abs(0), -Mult(Abs(velocityZ),10))";
-        System.out.println(ExpressionEvaluator.getInstance().generateFormula(f).evaluate(object));
+        System.out.println(CustomExpressionEvaluator.getInstance().generateFormula(f).evaluate(object));
 
         // precision verification test - ensure correct rounding
         double[] values = new double[]{0.4, 0.5, 0.6};

@@ -1,10 +1,10 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rrt;
 
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 
-import static net.sf.openrocket.simulation.extension.impl.RRT.copy;
+import static net.sf.openrocket.simulation.extension.impl.rrt.RRT.copy;
 
 public class RRTNode {
     public SimulationStatus status = null;

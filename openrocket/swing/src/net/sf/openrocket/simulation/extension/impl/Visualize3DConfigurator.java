@@ -5,13 +5,13 @@ import net.sf.openrocket.gui.SpinnerEditor;
 import net.sf.openrocket.gui.adaptors.DoubleModel;
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSwingSimulationExtensionConfigurator;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3D;
 import net.sf.openrocket.unit.UnitGroup;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
@@ -50,7 +50,7 @@ public class Visualize3DConfigurator extends AbstractSwingSimulationExtensionCon
 				}
 			}
 		});
-		RTextScrollPane scroll = new RTextScrollPane(text);
+		JScrollPane scroll = new JScrollPane(text);
 		panel.add(scroll, "spanx, grow, wrap para");
 		return panel;
 	}

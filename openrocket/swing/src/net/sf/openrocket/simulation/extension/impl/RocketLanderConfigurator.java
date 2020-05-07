@@ -7,6 +7,7 @@ import net.sf.openrocket.gui.components.BasicSlider;
 import net.sf.openrocket.gui.components.UnitSelector;
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSwingSimulationExtensionConfigurator;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLander;
 import net.sf.openrocket.unit.UnitGroup;
 
 import javax.swing.*;

@@ -1,11 +1,7 @@
-package net.sf.openrocket.simulation.extension.impl;
-
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /*
@@ -39,12 +35,12 @@ public class RLObjectFileStore {
                 try {
                     float[] valueFunctionTable = (float[]) readObjects(fileName);
                     if (valueFunctionTable.length == definition.indexProduct)
-                        definition.setValueFunction(new ValueFunction(valueFunctionTable));
+                        definition.setValueFunction(new RLValueFunction(valueFunctionTable));
                     else
                         return false;  // sizes are different so must re-allocate
                 } catch (Exception e) {
                     HashMap<Integer, Float> valueFunctionMap = (HashMap<Integer, Float>) readObjects(fileName);
-                    definition.setValueFunction(new ValueFunction(valueFunctionMap));
+                    definition.setValueFunction(new RLValueFunction(valueFunctionMap));
                     exists = true;
                 }
             } catch (Exception e) {
@@ -65,7 +61,7 @@ public class RLObjectFileStore {
     }
 
     public static void storeActionValueFunctions(){
-        for (Map.Entry<String, MDPDefinition> entry: RLModel.getInstance().getMethods().entrySet()) {
+        for (Map.Entry<String, MDPDefinition> entry: RLModelSingleton.getInstance().getMethods().entrySet()) {
             if (entry.getValue().valueFunction.isTable) {
                 float[] actionValueFunctionTable = entry.getValue().valueFunction.getValueFunctionTable();
                 storeObject(actionValueFunctionTable, actionValueFunctionFileName + entry.getKey() + ".txt");

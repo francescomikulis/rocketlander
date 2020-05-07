@@ -1,21 +1,18 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
-import net.sf.openrocket.optimization.general.Function;
 import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.simulation.extension.impl.methods.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.*;
 
 import java.util.*;
 
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
-
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
 
 
-public class RLModel {
-    private static volatile RLModel instance;
+public class RLModelSingleton {
+    private static volatile RLModelSingleton instance;
     private Random randomGenerator = new Random();
-    OptimizedMap valueFunctionTable;
+    ValueFunctionManager valueFunctionManager;
 
     private LinkedHashMap<String, MDPDefinition> methods = new LinkedHashMap<>();
 
@@ -24,7 +21,7 @@ public class RLModel {
     public SimulationType simulationType = SimulationType._3D;
     public SimulationInitVariation initVariation = SimulationInitVariation.all;
 
-    public RLDataStoreState dataStoreState;
+    public RLDataStoreSmartPlotValues dataStoreState;
 
     private StringBuilder stringBuilder = new StringBuilder();
     private boolean smartPrintBuffer = false;
@@ -37,7 +34,7 @@ public class RLModel {
         fixed, posVel, loc, posVelLoc, posVelAngle, all
     }
 
-    private RLModel(){
+    private RLModelSingleton(){
         constructor();
     }
 
@@ -49,7 +46,7 @@ public class RLModel {
     }
 
     public void setDefinitions(ArrayList<MDPDefinition> definitions) {
-        dataStoreState = new RLDataStoreState();
+        dataStoreState = new RLDataStoreSmartPlotValues();
         boolean actualChange = false;
         HashSet<String> newDefinitionNames = new HashSet<>();
         for (MDPDefinition definition: definitions) {
@@ -59,7 +56,7 @@ public class RLModel {
                 definition.setValueFunction(null);
                 continue;
             }
-            for (ModelBaseImplementation method: methods.get(definition.name).models) {
+            for (BaseMethodImplementation method: methods.get(definition.name).models) {
                 double originalExploration = method.definition.exploration;
                 method.definition.exploration = definition.exploration;
                 String newDefinitionString = MDPDefinition.toJsonString(method.definition).replaceAll(" ", "");
@@ -88,8 +85,8 @@ public class RLModel {
     }
 
     private void constructor(String symmetryAxis2D, String symmetryAxis3D, SimulationType simulationType, MDPDefinition ... definitions) {
-        dataStoreState = new RLDataStoreState();
-        valueFunctionTable = null;
+        dataStoreState = new RLDataStoreSmartPlotValues();
+        valueFunctionManager = null;
         this.symmetryAxis2D = symmetryAxis2D;
         this.symmetryAxis3D = symmetryAxis3D;
         this.simulationType = simulationType;
@@ -109,8 +106,8 @@ public class RLModel {
         for (MDPDefinition definition: sortMDPDefinitionsByPriority(mergedDefinitions)) {
             methods.put(definition.name, definition);
         }
-        // setValueFunctionTable
-        this.valueFunctionTable = new OptimizedMap(methods);
+        // setValueFunctionManager
+        this.valueFunctionManager = new ValueFunctionManager(methods);
     }
 
     private MDPDefinition[] sortMDPDefinitionsByPriority(MDPDefinition[] definitions) {
@@ -133,23 +130,23 @@ public class RLModel {
         return sortedMDPDefinitions;
     }
 
-    public void resetValueFunctionTable(MDPDefinition[] definitions) {
-        valueFunctionTable.resetValueFunctionTable(definitions);
+    public void resetValueFunctionManager(MDPDefinition[] definitions) {
+        valueFunctionManager.resetValueFunctionManager(definitions);
         for (MDPDefinition definition: definitions) {
             methods.remove(definition.name);
         }
         constructor(definitions);
     }
 
-    public OptimizedMap getValueFunctionTable() {
-        return valueFunctionTable;
+    public ValueFunctionManager getValueFunctionManager() {
+        return valueFunctionManager;
     }
 
-    public static RLModel getInstance() {
+    public static RLModelSingleton getInstance() {
         if (instance == null) { // first time lock
-            synchronized (RLModel.class) {
+            synchronized (RLModelSingleton.class) {
                 if (instance == null) {  // second time lock
-                    instance = new RLModel();
+                    instance = new RLModelSingleton();
                 }
             }
         }
@@ -378,7 +375,7 @@ public class RLModel {
         while (methodCounter != coupledStates.size()) {
             State state = coupledStates.get(methodCounter);
             String methodName = state.definition.name;
-            ModelBaseImplementation method = methods.get(methodName).models[0];
+            BaseMethodImplementation method = methods.get(methodName).models[0];
 
             String storageName = methodName;
             if (state.symmetry != null) storageName += state.symmetry;
@@ -449,7 +446,7 @@ public class RLModel {
         return run_policy(status, SA);
     }
 
-    private Action policy(State state, HashSet<Action> possibleActions, ModelBaseImplementation method) {
+    private Action policy(State state, HashSet<Action> possibleActions, BaseMethodImplementation method) {
         HashSet<Action> bestActions = new HashSet<>();
 
         float explorationPercentage = method.getExploration();
@@ -492,7 +489,7 @@ public class RLModel {
     public void updateStepStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, LinkedHashMap<String, Integer> lastUpdateSizes) {
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             String methodName = entry.getKey();
-            for (ModelBaseImplementation method: entry.getValue().models) {
+            for (BaseMethodImplementation method: entry.getValue().models) {
                 Formula reward = method.definition._reward;
 
                 if (method.definition.symmetryAxes == null) {
@@ -513,7 +510,7 @@ public class RLModel {
     public void updateTerminalStateActionValueFunction(LinkedHashMap<String, ArrayList<StateActionTuple>> SA, TerminationBooleans terminationBooleans) {
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             String methodName = entry.getKey();
-            for (ModelBaseImplementation method: entry.getValue().models) {
+            for (BaseMethodImplementation method: entry.getValue().models) {
                 if (method.definition._terminalReward == null) continue;  // terminalReward not specified, skip method!
                 Formula terminalReward = method.definition._terminalReward;
                 Formula reward = method.definition._reward;
@@ -579,13 +576,13 @@ public class RLModel {
     /* Interface actions for the RLPanel in the UI */
 
     public void stepNextSimulationType() {
-        RLModel.SimulationType newSimulationType = null;
-        if (simulationType == RLModel.SimulationType._1D) {
-            newSimulationType = RLModel.SimulationType._2D;
-        } else if (simulationType == RLModel.SimulationType._2D) {
-            newSimulationType = RLModel.SimulationType._3D;
-        } else if (simulationType == RLModel.SimulationType._3D) {
-            newSimulationType = RLModel.SimulationType._1D;
+        RLModelSingleton.SimulationType newSimulationType = null;
+        if (simulationType == RLModelSingleton.SimulationType._1D) {
+            newSimulationType = RLModelSingleton.SimulationType._2D;
+        } else if (simulationType == RLModelSingleton.SimulationType._2D) {
+            newSimulationType = RLModelSingleton.SimulationType._3D;
+        } else if (simulationType == RLModelSingleton.SimulationType._3D) {
+            newSimulationType = RLModelSingleton.SimulationType._1D;
         }
         simulationType = newSimulationType;
     }
@@ -600,18 +597,18 @@ public class RLModel {
 
     public void stepNextInitialVariation() {
         SimulationInitVariation newInitVariation = null;
-        if (initVariation == RLModel.SimulationInitVariation.fixed) {
-            newInitVariation = RLModel.SimulationInitVariation.posVel;
-        } else if (initVariation == RLModel.SimulationInitVariation.posVel) {
+        if (initVariation == RLModelSingleton.SimulationInitVariation.fixed) {
+            newInitVariation = RLModelSingleton.SimulationInitVariation.posVel;
+        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVel) {
             newInitVariation = SimulationInitVariation.loc;
-        } else if (initVariation == RLModel.SimulationInitVariation.loc) {
+        } else if (initVariation == RLModelSingleton.SimulationInitVariation.loc) {
                 newInitVariation = SimulationInitVariation.posVelLoc;
-        } else if (initVariation == RLModel.SimulationInitVariation.posVelLoc) {
+        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVelLoc) {
             newInitVariation = SimulationInitVariation.posVelAngle;
-        } else if (initVariation == RLModel.SimulationInitVariation.posVelAngle) {
-            newInitVariation = RLModel.SimulationInitVariation.all;
-        } else if (initVariation == RLModel.SimulationInitVariation.all) {
-            newInitVariation = RLModel.SimulationInitVariation.fixed;
+        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVelAngle) {
+            newInitVariation = RLModelSingleton.SimulationInitVariation.all;
+        } else if (initVariation == RLModelSingleton.SimulationInitVariation.all) {
+            newInitVariation = RLModelSingleton.SimulationInitVariation.fixed;
         }
         initVariation = newInitVariation;
     }

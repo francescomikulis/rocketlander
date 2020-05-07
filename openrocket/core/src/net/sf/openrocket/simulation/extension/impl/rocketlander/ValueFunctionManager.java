@@ -1,31 +1,15 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
-import net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.BaseMethodImplementation;
 
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
-    valueFunctionTable
-        StateActionTuples --> float
 
-    --- State ---
-    0: altitude
-    1: velocity
-    2: thrust
-    3: angleX
-    4: angleZ
-    5: gimbalX
-    6: gimbalY
-
-    --- Action ---
-    7: thrust
-    8: gimbalX
-    9: gimbalY
  */
 
-public class OptimizedMap {
-    public OptimizedMap(LinkedHashMap<String, MDPDefinition> methods) {
+public class ValueFunctionManager {
+    public ValueFunctionManager(LinkedHashMap<String, MDPDefinition> methods) {
         constructorCode(methods);
     }
 
@@ -33,7 +17,7 @@ public class OptimizedMap {
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             MDPDefinition definition = entry.getValue();
 
-            ValueFunction valueFunction = null;
+            RLValueFunction valueFunction = null;
             if (definition.valueFunction != null)
                 valueFunction = definition.valueFunction;
             else {
@@ -45,35 +29,32 @@ public class OptimizedMap {
             }
 
             if (valueFunction == null) {
-                if (ValueFunction.isReasonableTableSize(definition.indexProduct))
-                    valueFunction = new ValueFunction(allocateNewValueFunctionTable(definition.indexProduct));
-                else {
-                    valueFunction = new ValueFunction(new HashMap<>());
+                int size = definition.indexProduct;
+                if (RLValueFunction.isReasonableTableSize(size)) {
+                    System.out.println("Allocating stateSpace: " + size);
+                    valueFunction = new RLValueFunction(new float[size]);
+                } else {
+                    valueFunction = new RLValueFunction(new HashMap<>());
                 }
             }
 
 
             definition.setValueFunction(valueFunction);
-            for (ModelBaseImplementation model: definition.models)
-                model.setValueFunctionTable(this);
+            for (BaseMethodImplementation model: definition.models)
+                model.setValueFunctionManager(this);
             definition.tryToReadFromFile = true;
         }
     }
 
-    public void resetValueFunctionTable(MDPDefinition[] definitions) {
+    public void resetValueFunctionManager(MDPDefinition[] definitions) {
         for (MDPDefinition definition : definitions) {
             definition.setValueFunction(null);
             definition.tryToReadFromFile = false;
         }
     }
 
-    public static float[] allocateNewValueFunctionTable(int size) {
-        System.out.println("Allocating stateSpace: " + size);
-        return new float[size];
-    }
-
     public float get(StateActionTuple stateActionTuple) {
-        ValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
+        RLValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
         valueFunction.lock(index);
         float result = valueFunction.get(index);
@@ -82,7 +63,7 @@ public class OptimizedMap {
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        ValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
+        RLValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
         valueFunction.lock(index);
         valueFunction.put(index, newValue);
@@ -109,7 +90,7 @@ public class OptimizedMap {
             indeces[i] = MDPDefinition.computeIndex(stateActionTuple);
         }
         // lock at last possible moment
-        ValueFunction valueFunction = SA.get(0).state.definition.valueFunction;
+        RLValueFunction valueFunction = SA.get(0).state.definition.valueFunction;
         valueFunction.lockMainLock();
         for (int i = 0; i < SA.size(); i++) {
             int index = indeces[i];
@@ -123,7 +104,7 @@ public class OptimizedMap {
     }
 
     public void setValueAtIndecesAndUnlockAll(MDPDefinition definition, HashSet<Integer> unlockIndeces, int[] indeces, float[] values) {
-        ValueFunction valueFunction = definition.valueFunction;
+        RLValueFunction valueFunction = definition.valueFunction;
         for (int i = 0; i < indeces.length; i++) {
             valueFunction.put(indeces[i], values[i]);
         }

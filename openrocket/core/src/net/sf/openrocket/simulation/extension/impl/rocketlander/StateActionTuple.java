@@ -1,20 +1,16 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import java.util.*;
 import java.io.Serializable;
 
-import com.sun.istack.internal.NotNull;
 import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.Formula;
-import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
-import static net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.*;
-import static net.sf.openrocket.simulation.extension.impl.methods.ModelBaseImplementation.*;
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.*;
 
 
 public class StateActionTuple implements Serializable {

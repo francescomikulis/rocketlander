@@ -1,12 +1,12 @@
-package net.sf.openrocket.simulation.extension.impl;
+package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import net.sf.openrocket.util.Coordinate;
-import net.sf.openrocket.simulation.extension.impl.StateActionTuple.CoupledStates;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.CoupledStates;
 
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RLDataStoreState extends HashMap<String, HashMap<String, Object[]>> {
+public class RLDataStoreSmartPlotValues extends HashMap<String, HashMap<String, Object[]>> {
     public transient ReentrantLock lock = new ReentrantLock();
 
     /**
