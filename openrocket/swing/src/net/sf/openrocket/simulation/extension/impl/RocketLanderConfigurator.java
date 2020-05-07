@@ -9,11 +9,18 @@ import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSwingSimulationExtensionConfigurator;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLander;
 import net.sf.openrocket.unit.UnitGroup;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 
 @Plugin
 public class RocketLanderConfigurator extends AbstractSwingSimulationExtensionConfigurator<RocketLander> {
+	private RSyntaxTextArea text;
 
 	public RocketLanderConfigurator() {
 		super(RocketLander.class);
@@ -21,34 +28,38 @@ public class RocketLanderConfigurator extends AbstractSwingSimulationExtensionCo
 	
 	@Override
 	protected JComponent getConfigurationComponent(RocketLander extension, Simulation simulation, JPanel panel) {
-		panel.add(new JLabel("Launch altitude:"));
-		
-		DoubleModel m = new DoubleModel(extension, "LaunchAltitude", UnitGroup.UNITS_DISTANCE, 0);
-		
-		JSpinner spin = new JSpinner(m.getSpinnerModel());
-		spin.setEditor(new SpinnerEditor(spin));
-		panel.add(spin, "w 65lp!");
-		
-		UnitSelector unit = new UnitSelector(m);
-		panel.add(unit, "w 25");
-		
-		BasicSlider slider = new BasicSlider(m.getSliderModel(0, 1000));
-		panel.add(slider, "w 75lp, wrap");
-		
-		
-		panel.add(new JLabel("Launch velocity:"));
-		
-		m = new DoubleModel(extension, "LaunchVelocity", UnitGroup.UNITS_VELOCITY, 0);
-		
-		spin = new JSpinner(m.getSpinnerModel());
-		spin.setEditor(new SpinnerEditor(spin));
-		panel.add(spin, "w 65lp!");
-		
-		unit = new UnitSelector(m);
-		panel.add(unit, "w 25");
-		
-		slider = new BasicSlider(m.getSliderModel(0, 150));
-		panel.add(slider, "w 75lp, wrap");
+		JLabel label = new JLabel("Initial conditions, format = '[min, max]'.  Angles < 1 converted from degrees to rad");
+		panel.add(label, "w 75lp, wrap");
+
+		text = new RSyntaxTextArea(extension.getRLInitialConditions(), 12, 40);
+		text.setEditable(true);
+		text.setCaretPosition(0);
+		text.setCodeFoldingEnabled(true);
+		text.setLineWrap(true);
+		text.setWrapStyleWord(true);
+		text.addFocusListener(new FocusListener() {
+			@Override
+			public void focusGained(FocusEvent event) { }
+			@Override
+			public void focusLost(FocusEvent event) { }
+		});
+		JScrollPane scroll = new JScrollPane(text);
+		panel.add(scroll, "spanx, grow, wrap para");
+
+		//// Save button
+		JButton save = new JButton("Save");
+		save.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					extension.setRLInitialConditions(text.getText());
+					text.setText(extension.getRLInitialConditions());
+				} catch (Exception exc) {
+					JOptionPane.showMessageDialog(panel, new Object[] {"GSON PARSING ERROR\n", exc.getMessage()});
+				}
+			}
+		});
+		panel.add(save, "tag ok");
 		
 		return panel;
 	}

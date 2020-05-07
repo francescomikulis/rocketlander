@@ -5,6 +5,7 @@ import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.*;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.*;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.*;
 
 import com.google.gson.Gson;
@@ -81,6 +82,14 @@ public class MDPDefinition implements Serializable {
 
     public static String toJsonString(MDPDefinition definition) {
         return gson.toJson(definition);
+    }
+
+    public static Object genericObjectBuildFromJsonString(String jsonString, Type _type) {
+        return gson.fromJson(jsonString, _type);
+    }
+
+    public static String genericObjectToJsonString(Object object, Type _type) {
+        return gson.toJson(object, _type);
     }
 
     public void setValueFunction(RLValueFunction valueFunction) {
@@ -508,5 +517,66 @@ public class MDPDefinition implements Serializable {
 
         this.indeces = indeces;
         this.indexProduct = indexProduct;
+    }
+
+
+
+
+    public static String cleanJsonStringByRemovingArraySpaces(String jsonString) {
+        return jsonString.replaceAll("\\[\\s*(\\d|-)", "[$1")
+                .replaceAll("(\\d,)\\s*(\\d|-)", "$1 $2")
+                .replaceAll("(\\d|-)\\s*]", "$1]");
+    }
+
+
+    /** Default MDPDefinition ***/
+
+    public static MDPDefinition getDefaultLanderDefinition() {
+        MDPDefinition landerDefinition = new MDPDefinition();
+        landerDefinition.name = "defaultLander";
+        landerDefinition.methodName = "MC";
+        landerDefinition.priority = 1;
+        landerDefinition.reward = "-Div(Abs(thrust),100.0)";
+        landerDefinition.terminalReward = "-Abs(velocityZ)";
+        landerDefinition.stateDefinition = new LinkedHashMap<String, float[]>() {{
+            put("angle", new float[]{-35, 35, 5});
+            put("log2PositionZ", new float[]{0, 5.6f, 0.3f});
+            put("log2VelocityZ", new float[]{-5, 2.3f, 0.3f});
+        }};
+        landerDefinition.actionDefinition = new LinkedHashMap<String, float[]>() {{
+            put("thrust", new float[]{0, 1, 0.25f});
+        }};
+        landerDefinition.MDPSelectionExpressions = new LinkedHashMap<String, ArrayList<String>>() {{
+            put("gimbalMDPX", new ArrayList<>(Arrays.asList(
+                    "And(Gt(Abs(positionX),3.0), FALSE)", "reacher",
+                    "And(Le(Abs(positionX),3.0), Le(Abs(angleX),Asin(Div(PI,16))))", "stabilizer"
+            )));
+            put("gimbalMDPY", new ArrayList<>(Arrays.asList(
+                    "And(Gt(Abs(positionY),3.0), FALSE)", "reacher",
+                    "And(Le(Abs(positionY),3.0), Le(Abs(angleY),Asin(Div(PI,16))))", "stabilizer"
+            )));
+        }};
+        landerDefinition.childrenMDPOptions = new LinkedHashMap<String, String[]>() {{
+            put("gimbalMDPX", new String[]{"stabilizer","reacher"});
+            put("gimbalMDPY", new String[]{"stabilizer","reacher"});
+        }};
+
+        landerDefinition.expressions = new LinkedHashMap<String, String>() {{
+            put("position", "Add(Abs(positionX),Abs(positionY))");
+            put("angle", "Add(Abs(angleX),Abs(angleY))");
+            put("log2PositionZ", "Log2(Add(positionZ,1))");
+            put("log8PositionZ", "Log8(Add(positionZ,1))");
+            put("log2VelocityZ", "Mult(Signum(velocityZ),Log2(Add(Abs(velocityZ),1)))");
+            put("log8VelocityZ", "Mult(Signum(velocityZ),Log8(Add(Abs(velocityZ),1)))");
+        }};
+        landerDefinition.successConditions = new LinkedHashMap<String, float[]>() {{
+            put("velocityZ", new float[]{-2, 2});
+        }};
+        landerDefinition.postConstructor();
+
+        String str = MDPDefinition.toJsonString(landerDefinition);
+        MDPDefinition def = MDPDefinition.buildFromJsonString(str);
+
+        return landerDefinition;
     }
 }

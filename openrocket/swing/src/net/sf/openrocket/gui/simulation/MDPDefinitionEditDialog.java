@@ -19,6 +19,8 @@ import java.awt.event.ActionListener;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition.cleanJsonStringByRemovingArraySpaces;
+
 
 public class MDPDefinitionEditDialog extends JDialog {
 	private static final long serialVersionUID = -4468157685542912716L;
@@ -148,12 +150,6 @@ public class MDPDefinitionEditDialog extends JDialog {
 			});
 			this.add(save, "tag ok");
 
-		}
-
-		private String cleanJsonStringByRemovingArraySpaces(String jsonString) {
-			return jsonString.replaceAll("\\[\\s*(\\d|-)", "[$1")
-					.replaceAll("(\\d,)\\s*(\\d|-)", "$1 $2")
-					.replaceAll("(\\d|-)\\s*]", "$1]");
 		}
 
 		private int tryAndGetRealErrorLineNumber(Exception exc) {

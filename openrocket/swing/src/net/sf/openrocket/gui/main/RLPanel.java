@@ -90,7 +90,7 @@ public class RLPanel extends JPanel {
             button.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    MDPDefinition defaultLander = BaseMethodImplementation.getDefaultLanderDefinition();
+                    MDPDefinition defaultLander = MDPDefinition.getDefaultLanderDefinition();
                     String stringDefinition = MDPDefinition.toJsonString(defaultLander);
                     Definition definition = new Definition(defaultLander.name, stringDefinition);
 
