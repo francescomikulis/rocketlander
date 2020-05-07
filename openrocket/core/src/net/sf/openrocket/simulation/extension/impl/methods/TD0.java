@@ -25,7 +25,7 @@ public class TD0 extends ModelBaseImplementation implements ModelInterface {
 
         // thread safety
         int index = valueFunctionTable.getIndexAndLock(old);
-        float oldValue = old.state.definition.valueFunction[index];
+        float oldValue = old.state.definition.valueFunction.get(index);
         float newValue = oldValue +  alpha * (rewardValue + stepDiscount * currentValue - oldValue);
         valueFunctionTable.setValueAtIndexAndUnlock(old, index, newValue);
     }

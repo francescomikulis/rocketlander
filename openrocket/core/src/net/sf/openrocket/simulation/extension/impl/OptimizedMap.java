@@ -33,25 +33,29 @@ public class OptimizedMap {
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             MDPDefinition definition = entry.getValue();
 
-            float[] valueFunctionTable = null;
+            ValueFunction valueFunction = null;
             if (definition.valueFunction != null)
-                valueFunctionTable = definition.valueFunction;
+                valueFunction = definition.valueFunction;
             else {
                 if (definition.tryToReadFromFile) {
                     boolean readSuccess = RLObjectFileStore.getInstance().tryToReadActionValueFunctionFromDefinition(definition);
                     if (readSuccess)
-                        valueFunctionTable = definition.valueFunction;
+                        valueFunction = definition.valueFunction;
                 }
             }
 
-            if (valueFunctionTable == null)
-                valueFunctionTable = allocateNewValueFunctionTable(definition.indexProduct);
+            if (valueFunction == null) {
+                if (ValueFunction.isReasonableTableSize(definition.indexProduct))
+                    valueFunction = new ValueFunction(allocateNewValueFunctionTable(definition.indexProduct));
+                else {
+                    valueFunction = new ValueFunction(new HashMap<>());
+                }
+            }
 
 
-            definition.setValueFunction(valueFunctionTable);
+            definition.setValueFunction(valueFunction);
             for (ModelBaseImplementation model: definition.models)
                 model.setValueFunctionTable(this);
-            checkTableValues(definition);
             definition.tryToReadFromFile = true;
         }
     }
@@ -68,45 +72,33 @@ public class OptimizedMap {
         return new float[size];
     }
 
-    public void checkTableValues(MDPDefinition definition) {
-        float[] table = definition.valueFunction;
-        int product = definition.indexProduct;
-        for (int i = 0; i < product; i++) {
-            if (Float.isNaN(table[i])) {
-                System.out.println("NAN IN TABLE!");
-            }
-        }
-    }
-
     public float get(StateActionTuple stateActionTuple) {
-        float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
+        ValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
-        final ReentrantLock lock = stateActionTuple.state.definition.locks[index];
-        lock.lock();
-        float result = valueFunctionTable[index];
-        lock.unlock();
+        valueFunction.lock(index);
+        float result = valueFunction.get(index);
+        valueFunction.unlock(index);
         return result;
     }
 
     public float put(StateActionTuple stateActionTuple, float newValue) {
-        float[] valueFunctionTable = stateActionTuple.state.definition.valueFunction;
+        ValueFunction valueFunction = stateActionTuple.state.definition.valueFunction;
         int index = MDPDefinition.computeIndex(stateActionTuple);
-        final ReentrantLock lock = stateActionTuple.state.definition.locks[index];
-        lock.lock();
-        valueFunctionTable[index] = newValue;
-        lock.unlock();
+        valueFunction.lock(index);
+        valueFunction.put(index, newValue);
+        valueFunction.unlock(index);
         return newValue;
     }
 
     public int getIndexAndLock(StateActionTuple stateActionTuple) {
         int index = MDPDefinition.computeIndex(stateActionTuple);
-        stateActionTuple.state.definition.locks[index].lock();
+        stateActionTuple.state.definition.valueFunction.lock(index);
         return index;
     }
 
     public void setValueAtIndexAndUnlock(StateActionTuple stateActionTuple, int index, float value) {
-        stateActionTuple.state.definition.valueFunction[index] = value;
-        stateActionTuple.state.definition.locks[index].unlock();
+        stateActionTuple.state.definition.valueFunction.put(index, value);
+        stateActionTuple.state.definition.valueFunction.unlock(index);
     }
 
     public int[] getIndecesAndLockAll(ArrayList<StateActionTuple> SA, HashSet<Integer> lockedIndeces) {
@@ -117,30 +109,29 @@ public class OptimizedMap {
             indeces[i] = MDPDefinition.computeIndex(stateActionTuple);
         }
         // lock at last possible moment
-        SA.get(0).state.definition.mainLock.lock();
-        final ReentrantLock[] locks = SA.get(0).state.definition.locks;
+        ValueFunction valueFunction = SA.get(0).state.definition.valueFunction;
+        valueFunction.lockMainLock();
         for (int i = 0; i < SA.size(); i++) {
             int index = indeces[i];
             if (!lockedIndeces.contains(index)) {  // don't double lock
-                locks[index].lock();
+                valueFunction.lock(index);
                 lockedIndeces.add(index);
             }
         }
-        SA.get(0).state.definition.mainLock.unlock();
+        valueFunction.unlockMainLock();
         return indeces;
     }
 
     public void setValueAtIndecesAndUnlockAll(MDPDefinition definition, HashSet<Integer> unlockIndeces, int[] indeces, float[] values) {
-        final ReentrantLock[] locks = definition.locks;
-        final float[] valueFunction = definition.valueFunction;
+        ValueFunction valueFunction = definition.valueFunction;
         for (int i = 0; i < indeces.length; i++) {
-            valueFunction[indeces[i]] = values[i];
+            valueFunction.put(indeces[i], values[i]);
         }
         // unlock on completion - MUST BE AFTER ALL UPDATES
         for (int i = 0; i < indeces.length; i++) {
             int index = indeces[i];
             if (unlockIndeces.contains(index)) {
-                locks[index].unlock();
+                valueFunction.unlock(index);
                 unlockIndeces.remove(index);
             }
         }

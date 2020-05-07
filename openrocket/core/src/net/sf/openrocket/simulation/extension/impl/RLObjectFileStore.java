@@ -35,11 +35,21 @@ public class RLObjectFileStore {
             exists = false;
         }
         if (exists) {
-            float[] valueFunction = (float[]) readObjects(fileName);
-            if (valueFunction.length == definition.indexProduct)
-                definition.setValueFunction(valueFunction);
-            else
-                exists = false;  // sizes are different so must re-allocate
+            try {
+                try {
+                    float[] valueFunctionTable = (float[]) readObjects(fileName);
+                    if (valueFunctionTable.length == definition.indexProduct)
+                        definition.setValueFunction(new ValueFunction(valueFunctionTable));
+                    else
+                        return false;  // sizes are different so must re-allocate
+                } catch (Exception e) {
+                    HashMap<Integer, Float> valueFunctionMap = (HashMap<Integer, Float>) readObjects(fileName);
+                    definition.setValueFunction(new ValueFunction(valueFunctionMap));
+                    exists = true;
+                }
+            } catch (Exception e) {
+                exists = false;
+            }
         }
         return exists;
     }
@@ -56,8 +66,13 @@ public class RLObjectFileStore {
 
     public static void storeActionValueFunctions(){
         for (Map.Entry<String, MDPDefinition> entry: RLModel.getInstance().getMethods().entrySet()) {
-            float[] actionValueFunction = entry.getValue().valueFunction;
-            storeObject(actionValueFunction, actionValueFunctionFileName + entry.getKey() + ".txt");
+            if (entry.getValue().valueFunction.isTable) {
+                float[] actionValueFunctionTable = entry.getValue().valueFunction.getValueFunctionTable();
+                storeObject(actionValueFunctionTable, actionValueFunctionFileName + entry.getKey() + ".txt");
+            } else {
+                HashMap<Integer, Float> actionValueFunctionMap = entry.getValue().valueFunction.getValueFunctionMap();
+                storeObject(actionValueFunctionMap, actionValueFunctionFileName + entry.getKey() + ".txt");
+            }
         }
     }
 

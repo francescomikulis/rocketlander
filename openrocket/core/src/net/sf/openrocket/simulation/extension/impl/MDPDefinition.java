@@ -6,7 +6,6 @@ import net.sf.openrocket.simulation.extension.impl.methods.ExpressionEvaluator.F
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,9 +41,7 @@ public class MDPDefinition implements Serializable {
     public LinkedHashMap<String, float[]> noActionState = null;
     public LinkedHashMap<String, float[]> successConditions = null;
 
-    public transient float[] valueFunction = null;
-    public transient ReentrantLock mainLock = new ReentrantLock();
-    public transient ReentrantLock[] locks = null;
+    public transient ValueFunction valueFunction = null;
 
     public transient int indexProduct = 0;
     public transient int temporaryIndexProductForAction = 0;
@@ -86,16 +83,8 @@ public class MDPDefinition implements Serializable {
         return gson.toJson(definition);
     }
 
-    public void setValueFunction(float[] valueFunction) {
+    public void setValueFunction(ValueFunction valueFunction) {
         this.valueFunction = valueFunction;
-        if (valueFunction == null) {
-            locks = null;
-            return;
-        }
-        locks = new ReentrantLock[valueFunction.length];
-        for (int i = 0; i < valueFunction.length; i++) {
-            locks[i] = new ReentrantLock();
-        }
     }
 
 

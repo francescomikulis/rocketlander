@@ -4,6 +4,7 @@ import net.sf.openrocket.simulation.extension.impl.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.OptimizedMap;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.StateActionTuple.*;
+import net.sf.openrocket.simulation.extension.impl.ValueFunction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,11 +38,11 @@ public class MonteCarlo extends ModelBaseImplementation {
         HashSet<Integer> lockedIndeces = new HashSet<>();
         int[] indeces = valueFunctionTable.getIndecesAndLockAll(SA, lockedIndeces);
 
-        final float[] valueFunction = lastStateActionTuple.state.definition.valueFunction;
+        final ValueFunction valueFunction = lastStateActionTuple.state.definition.valueFunction;
         float[] values = new float[SA.size()];
         for (int timeStep = lastTimeStep; timeStep >= 0; timeStep--) {
             StateActionTuple stateActionTuple = SA.get(timeStep);
-            float originalValue = valueFunction[indeces[timeStep]];
+            float originalValue = valueFunction.get(indeces[timeStep]);
             values[timeStep] = originalValue + alpha * (G - originalValue);
             G = (terminalDiscount * G) + reward.apply(stateActionTuple.state);
         }
