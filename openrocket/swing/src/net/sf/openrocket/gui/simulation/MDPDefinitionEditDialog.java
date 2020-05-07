@@ -16,6 +16,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class MDPDefinitionEditDialog extends JDialog {
@@ -101,7 +103,7 @@ public class MDPDefinitionEditDialog extends JDialog {
 		MDPDefinitionPanel(final Definition definition) {
 			super(new MigLayout("fill"));
 
-			text = new RSyntaxTextArea(definition.getData(), 40, 80);
+			text = new RSyntaxTextArea(cleanJsonStringByRemovingArraySpaces(definition.getData()), 40, 80);
 			text.setEditable(true);
 			text.setCaretPosition(0);
 			text.setCodeFoldingEnabled(true);
@@ -129,6 +131,7 @@ public class MDPDefinitionEditDialog extends JDialog {
 
 						definition.setName(newName);
 						definition.setData(storeDefinitionString);
+						text.setText(cleanJsonStringByRemovingArraySpaces(definition.getData()));
 					} catch (Exception exc) {
 
 						int realLineNumber = tryAndGetRealErrorLineNumber(exc);
@@ -145,6 +148,12 @@ public class MDPDefinitionEditDialog extends JDialog {
 			});
 			this.add(save, "tag ok");
 
+		}
+
+		private String cleanJsonStringByRemovingArraySpaces(String jsonString) {
+			return jsonString.replaceAll("\\[\\s*(\\d|-)", "[$1")
+					.replaceAll("(\\d,)\\s*(\\d|-)", "$1 $2")
+					.replaceAll("(\\d|-)\\s*]", "$1]");
 		}
 
 		private int tryAndGetRealErrorLineNumber(Exception exc) {

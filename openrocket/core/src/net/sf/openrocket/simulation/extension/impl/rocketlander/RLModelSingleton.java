@@ -6,7 +6,7 @@ import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.*;
 import java.util.*;
 
 import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.Expression;
 
 
 public class RLModelSingleton {
@@ -195,29 +195,29 @@ public class RLModelSingleton {
         MDPDefinition definition = state.definition;
         HashSet<Integer> possibleActionValues = new HashSet<>();
 
-        if ((definition._MDPSelectionFormulas != null) && definition._MDPSelectionFormulas.containsKey(MDPActionSelectionField)) {
-            ArrayList<Object[]> advancedIfElseFormula = (definition._MDPSelectionFormulas.get(MDPActionSelectionField));
+        if ((definition._MDPSelectionExpressions != null) && definition._MDPSelectionExpressions.containsKey(MDPActionSelectionField)) {
+            ArrayList<Object[]> advancedIfElseExpression = (definition._MDPSelectionExpressions.get(MDPActionSelectionField));
 
             String selectedMDPName = null;
-            for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
-                Formula formula = (Formula) advancedIfElseFormula.get(i)[0];
-                String tempMDPName = (String) advancedIfElseFormula.get(i)[1];
-                if (methods.containsKey(tempMDPName) && (formula.evaluate(state) != 0)) {  // 0 is false, 1 is true
+            for (int i = 0; i < advancedIfElseExpression.size(); i += 2) {
+                Expression expression = (Expression) advancedIfElseExpression.get(i)[0];
+                String tempMDPName = (String) advancedIfElseExpression.get(i)[1];
+                if (methods.containsKey(tempMDPName) && (expression.evaluate(state) != 0)) {  // 0 is false, 1 is true
                     selectedMDPName = tempMDPName;
                     break;
                 }
             }
             if (selectedMDPName == null) {
-                if (advancedIfElseFormula.size() == 0) {
+                if (advancedIfElseExpression.size() == 0) {
                     System.out.println("Unable to generate MDP selection!");
                 } else {
                     // System.out.println("Defaulting MDP SELECTION - BAD.");
                     // default to last one!
-                    selectedMDPName = (String)advancedIfElseFormula.get(advancedIfElseFormula.size() - 1)[1];
+                    selectedMDPName = (String)advancedIfElseExpression.get(advancedIfElseExpression.size() - 1)[1];
                     // if the last one isn't defined, restart the switch from the top until one is defined
                     if (!methods.containsKey(selectedMDPName)) {
-                        for (int i = 0; i < advancedIfElseFormula.size(); i += 2) {
-                            selectedMDPName = (String) advancedIfElseFormula.get(i)[1];
+                        for (int i = 0; i < advancedIfElseExpression.size(); i += 2) {
+                            selectedMDPName = (String) advancedIfElseExpression.get(i)[1];
                             if (methods.containsKey(selectedMDPName)) {
                                 break;
                             }
@@ -274,7 +274,7 @@ public class RLModelSingleton {
                 ArrayList<Integer> childMDPOptions = new ArrayList<>(generatePossibleActionValuesMDPInts(state, realField));
                 possibleActionInts.add(childMDPOptions);
                 if (childMDPOptions.size() != 1) {
-                    // System.out.println("Formula evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
+                    // System.out.println("Expression evaluation for child MDP selection did not evaluate correctly.  This should not be possible!");
                 }
             } else {
                 possibleActionInts.add(new ArrayList<>(generatePossibleActionValuesInts(state.get(realField), state.definition.actionDefinitionIntegers[index])));
@@ -412,9 +412,9 @@ public class RLModelSingleton {
 
         coupledStates.freeze();
 
-        // need to update the formulas after getting the new data
+        // need to update the expressions after getting the new data
         for (State s: coupledStates)
-            s.runMDPDefinitionFormulas();
+            s.runMDPDefinitionExpressions();
 
         CoupledActions coupledActions = new CoupledActions(actions.toArray(new Action[actions.size()]));
 
@@ -490,7 +490,7 @@ public class RLModelSingleton {
         for (Map.Entry<String, MDPDefinition> entry: methods.entrySet()) {
             String methodName = entry.getKey();
             for (BaseMethodImplementation method: entry.getValue().models) {
-                Formula reward = method.definition._reward;
+                Expression reward = method.definition._reward;
 
                 if (method.definition.symmetryAxes == null) {
                     method.updateStepCustomFunction(SA.get(methodName), reward);
@@ -512,8 +512,8 @@ public class RLModelSingleton {
             String methodName = entry.getKey();
             for (BaseMethodImplementation method: entry.getValue().models) {
                 if (method.definition._terminalReward == null) continue;  // terminalReward not specified, skip method!
-                Formula terminalReward = method.definition._terminalReward;
-                Formula reward = method.definition._reward;
+                Expression terminalReward = method.definition._terminalReward;
+                Expression reward = method.definition._reward;
 
                 if ((method.definition.symmetryAxes == null) || (method.definition.symmetryAxes.length == 0)) {
                     method.updateTerminalCustomFunction(SA.get(methodName), terminalReward, reward);

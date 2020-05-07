@@ -2,7 +2,7 @@ package net.sf.openrocket.simulation.extension.impl.rocketlander;
 
 import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.methods.*;
-import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.*;
 
 import java.io.Serializable;
 import java.util.*;
@@ -18,9 +18,9 @@ public class MDPDefinition implements Serializable {
     public int priority = 1;
     public transient BaseMethodImplementation[] models = null;
     public String reward;
-    transient Formula _reward;
+    transient Expression _reward;
     public String terminalReward;
-    transient Formula _terminalReward;
+    transient Expression _terminalReward;
     public double discount = 0.999;
     public double stepDiscount = 0.9;
     public double alpha = 0.1;
@@ -32,12 +32,12 @@ public class MDPDefinition implements Serializable {
     public transient String[] stateDefinitionFields = null;
     public LinkedHashMap<String, float[]> actionDefinition = null;
     public transient String[] actionDefinitionFields = null;
-    public LinkedHashMap<String, ArrayList<String>> MDPSelectionFormulas = null;
-    transient LinkedHashMap<String, ArrayList<Object[]>> _MDPSelectionFormulas = null;
+    public LinkedHashMap<String, ArrayList<String>> MDPSelectionExpressions = null;
+    transient LinkedHashMap<String, ArrayList<Object[]>> _MDPSelectionExpressions = null;
     public LinkedHashMap<String, String[]> childrenMDPOptions = null;
-    public LinkedHashMap<String, String> formulas = null;
-    transient LinkedHashMap<String, Formula> _formulas = null;
-    public transient LinkedHashMap<String, LinkedHashMap<String, String>> symmetryFormulas = null;
+    public LinkedHashMap<String, String> expressions = null;
+    transient LinkedHashMap<String, Expression> _expressions = null;
+    public transient LinkedHashMap<String, LinkedHashMap<String, String>> symmetryExpressions = null;
     public LinkedHashMap<String, float[]> noActionState = null;
     public LinkedHashMap<String, float[]> successConditions = null;
 
@@ -63,9 +63,9 @@ public class MDPDefinition implements Serializable {
     public void postConstructor() {
         setReward(reward);
         setTerminalReward(terminalReward);
-        setMDPSelectionFormulas(MDPSelectionFormulas);
-        setFormulas(formulas);
-        generateSymmetryFormulas();
+        setMDPSelectionExpressions(MDPSelectionExpressions);
+        setExpressions(expressions);
+        generateSymmetryExpressions();
 
         setupRLMethod();
         generateIterationFields();
@@ -149,11 +149,11 @@ public class MDPDefinition implements Serializable {
     }
 
 
-    /** Other constructor set and getter formulas **/
+    /** Other constructor set and getter expressions **/
 
     public void setReward(String rewardString) {
         this.reward = rewardString;
-        this._reward = CustomExpressionEvaluator.getInstance().generateFormula(this.reward);
+        this._reward = CustomExpressionEvaluator.getInstance().generateExpression(this.reward);
     }
 
     public void setTerminalReward(String terminalRewardString) {
@@ -162,50 +162,50 @@ public class MDPDefinition implements Serializable {
             this._terminalReward = null;
             return;
         }
-        this._terminalReward = CustomExpressionEvaluator.getInstance().generateFormula(this.terminalReward);
+        this._terminalReward = CustomExpressionEvaluator.getInstance().generateExpression(this.terminalReward);
     }
 
-    public void setFormulas(LinkedHashMap<String, String> formulas) {
-        this.formulas = formulas;
-        if (this.formulas == null) {
-            this._formulas = null;
+    public void setExpressions(LinkedHashMap<String, String> expressions) {
+        this.expressions = expressions;
+        if (this.expressions == null) {
+            this._expressions = null;
             return;
         }
-        this._formulas = new LinkedHashMap<>();
-        for (Map.Entry<String, String> entry: this.formulas.entrySet()) {
-            this._formulas.put(entry.getKey(), CustomExpressionEvaluator.getInstance().generateFormula(entry.getValue()));
+        this._expressions = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry: this.expressions.entrySet()) {
+            this._expressions.put(entry.getKey(), CustomExpressionEvaluator.getInstance().generateExpression(entry.getValue()));
         }
     }
 
-    public void setMDPSelectionFormulas(LinkedHashMap<String, ArrayList<String>> MDPSelectionFormulas) {
-        this.MDPSelectionFormulas = MDPSelectionFormulas;
-        if (this.MDPSelectionFormulas == null) {
-            this._MDPSelectionFormulas = null;
+    public void setMDPSelectionExpressions(LinkedHashMap<String, ArrayList<String>> MDPSelectionExpressions) {
+        this.MDPSelectionExpressions = MDPSelectionExpressions;
+        if (this.MDPSelectionExpressions == null) {
+            this._MDPSelectionExpressions = null;
             return;
         }
-        this._MDPSelectionFormulas = new LinkedHashMap<>();
-        for (Map.Entry<String, ArrayList<String>> entry: this.MDPSelectionFormulas.entrySet()) {
+        this._MDPSelectionExpressions = new LinkedHashMap<>();
+        for (Map.Entry<String, ArrayList<String>> entry: this.MDPSelectionExpressions.entrySet()) {
             ArrayList<String> options = entry.getValue();
             ArrayList<Object[]> conditionResults = new ArrayList<>();
             for (int i=0; i<options.size(); i+=2) {
                 Object[] conditionResult = new Object[2];
-                conditionResult[0] = CustomExpressionEvaluator.getInstance().generateFormula(options.get(i));  // formula
+                conditionResult[0] = CustomExpressionEvaluator.getInstance().generateExpression(options.get(i));  // expression
                 conditionResult[1] = options.get(i + 1); // result
                 conditionResults.add(conditionResult);
             }
-            this._MDPSelectionFormulas.put(entry.getKey(), conditionResults);
+            this._MDPSelectionExpressions.put(entry.getKey(), conditionResults);
         }
     }
 
-    public void generateSymmetryFormulas() {
+    public void generateSymmetryExpressions() {
         if ((symmetryAxes == null) || (symmetryAxes.length == 0)) return;
         symmetryAxesHashSet = new HashSet<>(Arrays.asList(symmetryAxes));
 
-        symmetryFormulas = new LinkedHashMap<>();
+        symmetryExpressions = new LinkedHashMap<>();
         for (String axis: new String[]{"X", "Y"}) {
-            symmetryFormulas.put(axis, new LinkedHashMap<>());
+            symmetryExpressions.put(axis, new LinkedHashMap<>());
             for (String symmetryAxis: symmetryAxes) {
-                symmetryFormulas.get(axis).put(symmetryAxis, symmetryAxis + axis);
+                symmetryExpressions.get(axis).put(symmetryAxis, symmetryAxis + axis);
             }
         }
     }

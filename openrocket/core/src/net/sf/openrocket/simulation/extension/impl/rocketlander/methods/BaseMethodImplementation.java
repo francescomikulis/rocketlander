@@ -4,7 +4,7 @@ import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.ValueFunctionManager;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
-import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.Expression;
 
 import java.util.*;
 import java.util.function.Function;
@@ -72,14 +72,14 @@ public abstract class BaseMethodImplementation implements MethodInterface {
 
     /** Dynamic Implementation **/
 
-    public void updateStepCustomFunction(ArrayList<StateActionTuple> SA, Formula reward) {
+    public void updateStepCustomFunction(ArrayList<StateActionTuple> SA, Expression reward) {
         //System.out.println("Step Combined method");
         updateStepCommon(
                 SA,
                 reward::evaluateFloat
         );
     }
-    public void updateTerminalCustomFunction(ArrayList<StateActionTuple> SA, Formula terminalReward, Formula reward) {
+    public void updateTerminalCustomFunction(ArrayList<StateActionTuple> SA, Expression terminalReward, Expression reward) {
         updateTerminalCommon(
                 SA,
                 terminalReward::evaluateFloat,
@@ -104,7 +104,7 @@ public abstract class BaseMethodImplementation implements MethodInterface {
         landerDefinition.actionDefinition = new LinkedHashMap<String, float[]>() {{
             put("thrust", new float[]{0, 1, 0.25f});
         }};
-        landerDefinition.MDPSelectionFormulas = new LinkedHashMap<String, ArrayList<String>>() {{
+        landerDefinition.MDPSelectionExpressions = new LinkedHashMap<String, ArrayList<String>>() {{
             put("gimbalMDPX", new ArrayList<>(Arrays.asList(
                     "And(Gt(Abs(positionX),3.0), FALSE)", "reacher",
                     "And(Le(Abs(positionX),3.0), Le(Abs(angleX),Asin(Div(PI,16))))", "stabilizer"
@@ -119,7 +119,7 @@ public abstract class BaseMethodImplementation implements MethodInterface {
             put("gimbalMDPY", new String[]{"stabilizer","reacher"});
         }};
 
-        landerDefinition.formulas = new LinkedHashMap<String, String>() {{
+        landerDefinition.expressions = new LinkedHashMap<String, String>() {{
             put("position", "Add(Abs(positionX),Abs(positionY))");
             put("angle", "Add(Abs(angleX),Abs(angleY))");
             put("log2PositionZ", "Log2(Add(positionZ,1))");

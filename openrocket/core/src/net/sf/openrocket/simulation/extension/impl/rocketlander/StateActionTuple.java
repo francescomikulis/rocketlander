@@ -4,13 +4,13 @@ import java.util.*;
 import java.io.Serializable;
 
 import net.sf.openrocket.simulation.SimulationStatus;
-import net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.Formula;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.Expression;
 import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.MathUtil;
 import net.sf.openrocket.util.Quaternion;
 
-import static net.sf.openrocket.simulation.extension.impl.rocketlander.CustomExpressionEvaluator.*;
+import static net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.CustomExpressionEvaluator.*;
 
 
 public class StateActionTuple implements Serializable {
@@ -28,7 +28,7 @@ public class StateActionTuple implements Serializable {
     }
 
     private void tupleRunAllDefinitionSpecial(MDPDefinition definition) {
-        // formula logic
+        // expression logic
 
         if (definition.symmetryAxes != null) {
             String stateSym = state.symmetry;
@@ -44,7 +44,7 @@ public class StateActionTuple implements Serializable {
         }
 
         if (state.symmetry != null) {
-            for (Map.Entry<String, String> entry: definition.symmetryFormulas.get(state.symmetry).entrySet()) {
+            for (Map.Entry<String, String> entry: definition.symmetryExpressions.get(state.symmetry).entrySet()) {
                 String assignToField = entry.getKey();
                 String fromField = entry.getValue();
                 this.state.setDouble(assignToField, evaluateBestGuessAssignment(fromField, state, action));
@@ -52,12 +52,12 @@ public class StateActionTuple implements Serializable {
             }
         }
 
-        if (definition._formulas != null) {
-            for (Map.Entry<String, Formula> entry: definition._formulas.entrySet()) {
+        if (definition._expressions != null) {
+            for (Map.Entry<String, Expression> entry: definition._expressions.entrySet()) {
                 String assignToField = entry.getKey();
-                Formula formula = entry.getValue();
-                this.state.setDouble(assignToField, evaluateFormulaBestGuess(formula, state, action));
-                this.action.setDouble(assignToField, evaluateFormulaBestGuess(formula, action, state));
+                Expression expression = entry.getValue();
+                this.state.setDouble(assignToField, evaluateExpressionBestGuess(expression, state, action));
+                this.action.setDouble(assignToField, evaluateExpressionBestGuess(expression, action, state));
             }
         }
     }
@@ -104,20 +104,20 @@ public class StateActionTuple implements Serializable {
         public MDPDefinition definition;
         public String symmetry = null;
 
-        protected void runMDPDefinitionFormulas() {
-            runMDPDefinitionFormulas(false);
+        protected void runMDPDefinitionExpressions() {
+            runMDPDefinitionExpressions(false);
         }
-        protected void runMDPDefinitionFormulas(boolean skipFormulas) {
+        protected void runMDPDefinitionExpressions(boolean skipExpressions) {
             if (symmetry != null) {
-                for (Map.Entry<String, String> entry: definition.symmetryFormulas.get(symmetry).entrySet()) {
+                for (Map.Entry<String, String> entry: definition.symmetryExpressions.get(symmetry).entrySet()) {
                     setDouble(entry.getKey(), getDouble(entry.getValue()));
                 }
             }
 
-            if (skipFormulas) return;
-            if ((definition != null) && (definition._formulas != null)) {
-                for (Map.Entry<String, Formula> entry: definition._formulas.entrySet()) {
-                    setDouble(entry.getKey(), evaluateFormula(entry.getValue(), this));
+            if (skipExpressions) return;
+            if ((definition != null) && (definition._expressions != null)) {
+                for (Map.Entry<String, Expression> entry: definition._expressions.entrySet()) {
+                    setDouble(entry.getKey(), evaluateExpression(entry.getValue(), this));
                 }
             }
         }
@@ -126,10 +126,10 @@ public class StateActionTuple implements Serializable {
             setSymmetry(axis, false);
         }
 
-        public void setSymmetry(String axis, boolean skipFormulas) {
+        public void setSymmetry(String axis, boolean skipExpressions) {
             symmetry = axis;
             if (symmetry == null) return;
-            runMDPDefinitionFormulas(skipFormulas);
+            runMDPDefinitionExpressions(skipExpressions);
         }
 
         public static int group_by_precision(double value, double precision) {
@@ -230,7 +230,7 @@ public class StateActionTuple implements Serializable {
                 toObject.valueMap.put(entry.getKey() + "", entry.getValue() + 0);
             }
             if (fromObject.definition == toObject.definition) {
-                toObject.runMDPDefinitionFormulas();
+                toObject.runMDPDefinitionExpressions();
             } else {
                 System.out.println("NEVER DO THIS!!!");
             }
@@ -291,7 +291,7 @@ public class StateActionTuple implements Serializable {
 
             setDouble("time", status.getSimulationTime());
 
-            runMDPDefinitionFormulas();
+            runMDPDefinitionExpressions();
         }
 
 
@@ -354,7 +354,7 @@ public class StateActionTuple implements Serializable {
             this.definition = definition;
             for (Map.Entry<String, Integer> entry: values.entrySet())
                 set(entry.getKey(), entry.getValue());
-            runMDPDefinitionFormulas();
+            runMDPDefinitionExpressions();
         }
 
         private void constructorCodeDoubles(HashMap<String, Float> values, MDPDefinition definition) {
@@ -363,7 +363,7 @@ public class StateActionTuple implements Serializable {
             this.definition = definition;
             for (Map.Entry<String, Float> entry: values.entrySet())
                 setDouble(entry.getKey(), entry.getValue());
-            runMDPDefinitionFormulas();
+            runMDPDefinitionExpressions();
         }
 
         @Override
