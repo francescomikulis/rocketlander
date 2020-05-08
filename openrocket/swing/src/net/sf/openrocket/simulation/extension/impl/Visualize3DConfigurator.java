@@ -5,26 +5,25 @@ import net.sf.openrocket.gui.SpinnerEditor;
 import net.sf.openrocket.gui.adaptors.DoubleModel;
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSwingSimulationExtensionConfigurator;
-import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3D;
+import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3DExtension;
 import net.sf.openrocket.unit.UnitGroup;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
 @Plugin
-public class Visualize3DConfigurator extends AbstractSwingSimulationExtensionConfigurator<Visualize3D> {
+public class Visualize3DConfigurator extends AbstractSwingSimulationExtensionConfigurator<Visualize3DExtension> {
 	private RSyntaxTextArea text;
 
 	public Visualize3DConfigurator() {
-		super(Visualize3D.class);
+		super(Visualize3DExtension.class);
 	}
 	
 	@Override
-	protected JComponent getConfigurationComponent(Visualize3D extension, Simulation simulation, JPanel panel) {
+	protected JComponent getConfigurationComponent(Visualize3DExtension extension, Simulation simulation, JPanel panel) {
 		panel.add(new JLabel("Real time rate:"));
 		DoubleModel m = new DoubleModel(extension, "Visualize3DTimeRate", UnitGroup.UNITS_NONE);
 		JSpinner spin = new JSpinner(m.getSpinnerModel());

@@ -3,9 +3,11 @@ package net.sf.openrocket.simulation.extension.impl.rrt;
 import net.sf.openrocket.l10n.L10N;
 import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.exception.SimulationException;
-import net.sf.openrocket.simulation.extension.AbstractSimulationExtension;
+import net.sf.openrocket.simulation.extension.impl.initialconditions.AbstractGenericInitialConditionsExtension;
 
-public class RRTExtension extends AbstractSimulationExtension {
+public class RRTExtension extends AbstractGenericInitialConditionsExtension {
+	public String UNIQUE_PREFIX() { return "RRT"; }
+
 	@Override
 	public void initialize(SimulationConditions conditions) throws SimulationException {
 		conditions.getSimulationListenerList().add(new RRTListener(this));

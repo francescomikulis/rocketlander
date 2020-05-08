@@ -19,18 +19,11 @@ import net.sf.openrocket.util.Quaternion;
 
 import java.util.*;
 
-import static net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton.SimulationInitVariation.*;
-
 public class RocketLanderListener extends AbstractSimulationListenerSupportsVisualize3DListener {
-    private static final double MIN_VELOCITY = -10;
-    private static final double MAX_ALTITUDE = 30;
-    private static final double MAX_POSITION = 6;
-    private static final double MAX_LAT_VELOCITY = 6;
 
     private RLModelSingleton model = RLModelSingleton.getInstance();
     private LinkedHashMap<String, ArrayList<StateActionTuple>> episodeStateActions = new LinkedHashMap<>();
-    //HashMap<String, ArrayList<Double>> episodeData;
-    private RocketLander rocketLander;
+    private RocketLanderExtension rocketLanderExtension;
     private CoupledStates state;
     private CoupledActions action;
     TerminationBooleans terminationBooleans;
@@ -60,8 +53,8 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         return action;
     }
 
-    RocketLanderListener(RocketLander rocketLander) {
-        this.rocketLander = rocketLander;
+    RocketLanderListener(RocketLanderExtension rocketLanderExtension) {
+        this.rocketLanderExtension = rocketLanderExtension;
     }
 
     private static double calculateNumberWithIntegerVariation(double startNumber, double variation) {
@@ -69,8 +62,6 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     }
 
     private boolean setupStateActionAndStore(SimulationStatus status) {
-        CoupledStates oldState = state;
-
         Object[] stateActionReturnObject = model.generateStateAndActionAndStoreHistory(status, episodeStateActions);
         CoupledStates newState = (CoupledStates) stateActionReturnObject[0];
         CoupledActions newAction = (CoupledActions) stateActionReturnObject[1];
@@ -84,166 +75,23 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         return true;
     }
 
-    private static Coordinate calculatePositionCoordinate(double maxX, double maxY, double maxZ) {
-        double posX = calculateNumberWithIntegerVariation(0, maxX);
-        double posY = calculateNumberWithIntegerVariation(0, maxY);
-        RLModelSingleton model = RLModelSingleton.getInstance();
-        if(model.simulationType == SimulationType._1D) {
-            posX = 0; posY = 0;
-        }
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                posY = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                posX = 0;
-            }
-        }
-        // dx and dy position only in advanced
-        if((model.initVariation == fixed) || (model.initVariation == posVel) || (model.initVariation == posVelAngle)) {
-            posX = 0; posY = 0;
-        }
-        double posZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
-        if((model.initVariation == fixed) || (model.initVariation == loc)) {
-            posZ = maxZ;
-        }
-        return new Coordinate(posX, posY, posZ);
-    }
-
-    private static Coordinate calculateVelocityCoordinate(double maxX, double maxY, double maxZ) {
-        double velZ = calculateNumberWithIntegerVariation(maxZ - variation, variation);
-        RLModelSingleton model = RLModelSingleton.getInstance();
-        if((model.initVariation == fixed) || (model.initVariation == loc)) {
-            velZ = maxZ;
-        }
-        double velX = calculateNumberWithIntegerVariation(0, maxX);
-        double velY = calculateNumberWithIntegerVariation(0, maxY);
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                velY = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                velX = 0;
-            }
-        }
-        if((model.initVariation != all)) {
-            velX = 0; velY = 0;
-        }
-        return new Coordinate(velX, velY, velZ);
-    }
-
-    private static Quaternion calculateInitialOrientation() {
-        double dx = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
-        double dy = calculateNumberWithIntegerVariation(0, variation * 8);  // 3
-        double dz = 90;
-        RLModelSingleton model = RLModelSingleton.getInstance();
-        if(model.simulationType == SimulationType._1D) {
-            dx = 0; dy = 0;
-        }
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                dy = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                dx = 0;
-            }
-        }
-        if((model.initVariation == fixed) || (model.initVariation == posVel) || (model.initVariation == loc) || (model.initVariation == posVelLoc)) {
-            dx = 0; dy = 0;
-        }
-        return new Quaternion(0, dx, dy, dz).normalizeIfNecessary();
-    }
-
-    private static Coordinate calculateInitialRotationVelocity() {
-        double dx = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
-        double dy = calculateNumberWithIntegerVariation(0, variation * 13) * Math.PI / 180;
-        RLModelSingleton model = RLModelSingleton.getInstance();
-        if(model.simulationType == SimulationType._1D) {
-            dx = 0; dy = 0;
-        }
-        if(model.simulationType == SimulationType._2D) {
-            if (model.symmetryAxis2D.equals("X")) {
-                dx = 0;
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                dy = 0;
-            }
-        }
-        if((model.initVariation != all)) {
-            dx = 0; dy = 0;
-        }
-        return new Coordinate(dx, dy, 0);
-    }
-
     @Override
     public void startSimulation(SimulationStatus status) {
         model.setupSimulationTypeBasedOnMDPDefinitions(status);
         episodeStateActions = model.initializeEpisodeStateActions();
         status.getSimulationConditions().setTimeStep(timeStep);
 
-        customInitialConditions(status);
+        rocketLanderExtension.getInitialConditionsObject().applyInitialConditionsToStatus(status);
 
         status.setLaunchRodCleared(true);
         // initialize the state and the action
         setupStateActionAndStore(status);
     }
 
-    public static void customInitialConditions(SimulationStatus status) {
-        // set the rocket position at the launch altitude as defined by the extension
-        status.setRocketPosition(calculatePositionCoordinate(MAX_POSITION, MAX_POSITION, MAX_ALTITUDE));
-        // set the rocket velocity at the rocket velocity as defined by the extension
-        Coordinate rocketVelocity = calculateVelocityCoordinate(MAX_LAT_VELOCITY, MAX_LAT_VELOCITY, MIN_VELOCITY + variation);
-        status.setRocketVelocity(status.getRocketOrientationQuaternion().rotate(rocketVelocity));
-        status.setRocketOrientationQuaternion(calculateInitialOrientation());
-        // status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1));
-        // set the rocket rotational velocity
-        status.setRocketRotationVelocity(calculateInitialRotationVelocity());
-    }
-
-    public void setRollToZero(SimulationStatus status) {
-        Coordinate rotVel = status.getRocketRotationVelocity();
-        rotVel = rotVel.setZ(0.0);
-        status.setRocketRotationVelocity(rotVel);
-    }
-
-    public void stabilizeRocketBasedOnSimType(SimulationStatus status) {
-        setRollToZero(status);  // prevent rocket from spinning
-        if (model.simulationType == SimulationType._1D) {
-            status.setRocketOrientationQuaternion(new Quaternion(0, 0, 0, 1)); // set rocket to vertical
-            status.setRocketRotationVelocity(new Coordinate(0, 0, 0));
-        } else if(model.simulationType == SimulationType._2D) {
-            Coordinate pos = status.getRocketPosition();
-            Coordinate rotVel = status.getRocketRotationVelocity();
-            Coordinate vel = status.getRocketVelocity();
-            if (model.symmetryAxis2D.equals("X")) {
-                pos = pos.setY(0.0);
-                vel = vel.setY(0.0);
-                rotVel = rotVel.setX(0.0);
-            } else if (model.symmetryAxis2D.equals("Y")) {
-                pos = pos.setX(0.0);
-                vel = vel.setX(0.0);
-                rotVel = rotVel.setY(0.0);
-            } else {
-                System.out.println("INVALID SYMMETRY AXIS!!!");
-            }
-            status.setRocketPosition(pos);
-            status.setRocketVelocity(vel);
-            status.setRocketRotationVelocity(rotVel);
-
-            // force the stabilizer to be trained here!
-            // status.setRocketPosition(new Coordinate(0, 0, status.getRocketPosition().z));
-        } else if(model.simulationType == SimulationType._3D) {
-            // already set the roll to zero
-        }
-    }
-
     @Override
     public boolean preStep(SimulationStatus status) {
-        stabilizeRocketBasedOnSimType(status);
-
-        // RocketLanderListener integration for gimbal
-        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-        for (SimulationListener listener: listeners) {
-            if (listener.getClass().toString().contains("Visualize3DListener")) {
-                ((Visualize3DListener)listener).setListener(this);
-            }
-        }
+        rocketLanderExtension.getInitialConditionsObject().stabilizeRocketBasedOnSimType(status);
+        activateVisualize3DListener(status);
         return true;
     }
 
@@ -312,7 +160,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        stabilizeRocketBasedOnSimType(status);
+        rocketLanderExtension.getInitialConditionsObject().stabilizeRocketBasedOnSimType(status);
         setupStateActionAndStore(status);
         storeUpdatedFlightConditions();
 
@@ -358,34 +206,6 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
             }
         }
     }
-
-    /** Terminal output **/
-
-    public static void printStatusInformation(SimulationStatus status) {
-        System.out.println("Position: " +
-                "  x: " + status.getRocketPosition().x +
-                "  y: " + status.getRocketPosition().y +
-                "  z: " + status.getRocketPosition().z
-        );
-        System.out.println("Velocity: " +
-                "  x: " + status.getRocketVelocity().x +
-                "  y: " + status.getRocketVelocity().y +
-                "  z: " + status.getRocketVelocity().z
-        );
-        System.out.println("Angle: " +
-                "  x: " + status.getRocketOrientationQuaternion().rotateZ().x +
-                "  y: " + status.getRocketOrientationQuaternion().rotateZ().y +
-                "  z: " + status.getRocketOrientationQuaternion().rotateZ().z
-        );
-        System.out.println("Angle Velocity: " +
-                "  x: " + status.getRocketRotationVelocity().x +
-                "  y: " + status.getRocketRotationVelocity().y +
-                "  z: " + status.getRocketRotationVelocity().z
-        );
-    }
-
-
-
 
 
     private AccelerationData calculateAcceleration(SimulationStatus status, Double gimbalX, Double gimbalY, Double lateralThrustX, Double lateralThrustY) {

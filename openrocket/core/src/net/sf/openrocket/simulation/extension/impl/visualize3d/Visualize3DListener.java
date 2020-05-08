@@ -8,18 +8,18 @@ import java.nio.ByteBuffer;
 
 public class Visualize3DListener extends AbstractSimulationListener {
 	AbstractSimulationListenerSupportsVisualize3DListener listener = null;
-	Visualize3D visualize3D;
+	Visualize3DExtension visualize3DExtension;
 	Visualize3DClient client = Visualize3DClient.getInstance();
 	long curTime;
 	private boolean visualizeDuringPostStep = true;
 
-	Visualize3DListener(Visualize3D visualize3D) {
-		this.visualize3D = visualize3D;
+	Visualize3DListener(Visualize3DExtension visualize3DExtension) {
+		this.visualize3DExtension = visualize3DExtension;
 	}
 
 	@Override
 	public void startSimulation(SimulationStatus status) {
-		client.setConnectionString(visualize3D.getVisualize3DIP());
+		client.setConnectionString(visualize3DExtension.getVisualize3DIP());
 		client.Connect();
 	}
 
@@ -56,7 +56,7 @@ public class Visualize3DListener extends AbstractSimulationListener {
 
 	private void waitdt(SimulationStatus status){
 		int timeStep;
-		double val = 1000 * status.getPreviousTimeStep() / visualize3D.getVisualize3DTimeRate();
+		double val = 1000 * status.getPreviousTimeStep() / visualize3DExtension.getVisualize3DTimeRate();
 		timeStep = (int) Math.floor(val);
 		long realTimeStep = (System.currentTimeMillis() - curTime);
 

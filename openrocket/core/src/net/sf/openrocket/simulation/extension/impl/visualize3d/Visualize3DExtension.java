@@ -6,7 +6,7 @@ import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtension;
 import net.sf.openrocket.unit.UnitGroup;
 
-public class Visualize3D extends AbstractSimulationExtension {
+public class Visualize3DExtension extends AbstractSimulationExtension {
 	@Override
 	public void initialize(SimulationConditions conditions) throws SimulationException {
 		conditions.getSimulationListenerList().add(new Visualize3DListener(this));
@@ -15,7 +15,7 @@ public class Visualize3D extends AbstractSimulationExtension {
 	@Override
 	public String getName() {
 		String name;
-		name="Visualize3D"+"(rate={Visualize3DTimeRate}, IP={Visualize3DIP})";
+		name="Visualize3DExtension"+"(rate={Visualize3DTimeRate}, IP={Visualize3DIP})";
 		name = L10N.replace(name, "{Visualize3DTimeRate}", UnitGroup.UNITS_TIME_STEP.toStringUnit(getVisualize3DTimeRate()));
 		name = L10N.replace(name, "{Visualize3DIP}", getVisualize3DIP());
 		return name;

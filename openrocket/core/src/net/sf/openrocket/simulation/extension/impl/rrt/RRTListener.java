@@ -8,14 +8,14 @@ import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.impl.visualize3d.AbstractSimulationListenerSupportsVisualize3DListener;
 import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3DListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
+import net.sf.openrocket.simulation.listeners.example.Visualize3D;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.MathUtil;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLanderListener.customInitialConditions;
-import static net.sf.openrocket.simulation.extension.impl.rocketlander.RocketLanderListener.printStatusInformation;
+import static net.sf.openrocket.simulation.extension.impl.initialconditions.InitialConditions.printStatusInformation;
 
 public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DListener {
     private RRTExtension rrtExtension;
@@ -58,7 +58,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
         // initialize episode
         status.getSimulationConditions().setTimeStep(timeStep);
 
-        customInitialConditions(status);
+        rrtExtension.getInitialConditionsObject().applyInitialConditionsToStatus(status);
 
         status.setLaunchRodCleared(true);
         RRTNode root = new RRTNode(status, null);
@@ -68,31 +68,12 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
         disableVisualization(status);
     }
 
-    private void disableVisualization(SimulationStatus status) {
-        Visualize3DListener visualize3DListener = null;
-        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-        for (SimulationListener listener: listeners) {
-            if (listener.getClass().toString().contains("Visualize3DListener")) {
-                visualize3DListener = (Visualize3DListener) listener;
-            }
-        }
-        if (visualize3DListener == null)  return;
-        visualize3DListener.setVisualizeDuringPostStep(false);
-    }
-
-
-    public void setRollToZero(SimulationStatus status) {
-        Coordinate rotVel = status.getRocketRotationVelocity();
-        rotVel = rotVel.setZ(0.0);
-        status.setRocketRotationVelocity(rotVel);
-    }
-
     @Override
     public boolean preStep(SimulationStatus status) {
+        rrtExtension.getInitialConditionsObject().stabilizeRocketBasedOnSimType(status);
         disableVisualization(status);
         if (status.getRocketPosition().z != 0)
             action = rrt.setStatus(status);
-        setRollToZero(status);
         return true;
     }
 
@@ -138,7 +119,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
 
     @Override
     public void postStep(SimulationStatus status) throws SimulationException {
-        setRollToZero(status);
+        rrtExtension.getInitialConditionsObject().stabilizeRocketBasedOnSimType(status);
         if (action == null) {
             System.out.println("YAY!!");
             status.setRocketPosition(new Coordinate(0, 0, 0));
@@ -173,21 +154,11 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
             n = n.parent;
             ss.add(n.status);
         }
-        Visualize3DListener visualize3DListener = null;
-        List<SimulationListener> listeners = status.getSimulationConditions().getSimulationListenerList();
-        for (SimulationListener listener : listeners) {
-            if (listener.getClass().toString().contains("Visualize3DListener")) {
-                visualize3DListener = (Visualize3DListener) listener;
-            }
-        }
-        if (visualize3DListener == null) return;
 
-        visualize3DListener.setListener(this);
-        visualize3DListener.setVisualizeDuringPostStep(true);
+        Visualize3DListener visualize3DListener = activateVisualize3DListener(status);
         for (currentIndex = ss.size() - 1; currentIndex >= 0; currentIndex--) {
             visualize3DListener.postStep(ss.get(currentIndex));
         }
-        visualize3DListener.closeClient();
     }
 
 

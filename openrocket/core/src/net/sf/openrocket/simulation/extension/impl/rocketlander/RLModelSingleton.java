@@ -8,6 +8,8 @@ import java.util.*;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.StateActionTuple.*;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.customexpressions.Expression;
 
+import static net.sf.openrocket.simulation.extension.impl.initialconditions.InitialConditions.printStatusInformation;
+
 
 public class RLModelSingleton {
     private static volatile RLModelSingleton instance;
@@ -541,7 +543,7 @@ public class RLModelSingleton {
 
     public void printStatusInformationOnSingleSimTermination(SimulationStatus status) {
         if (!smartPrintBuffer)
-            RocketLanderListener.printStatusInformation(status);
+            printStatusInformation(status);
     }
 
 
