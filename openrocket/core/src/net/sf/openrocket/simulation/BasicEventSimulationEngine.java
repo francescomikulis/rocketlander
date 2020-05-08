@@ -154,16 +154,19 @@ public class BasicEventSimulationEngine implements SimulationEngine {
 					MODIFIED CODE HERE
 					*/
 
-					// Verify air-start | current rocket position not 'very close' to origin
-					boolean usingAirstart = (currentStatus.getRocketPosition().z > 1.0);
+					// Verify if the position is starting above the ground
+					boolean startingAboveGround = (currentStatus.getRocketPosition().z > 1.0);
 
 					// Avoid sinking into ground before liftoff
-					if ((relativePosition.z < 0) && (!usingAirstart)) {
+					if ((relativePosition.z < 0) && (!startingAboveGround)) {
 						currentStatus.setRocketPosition(origin);
 						currentStatus.setRocketVelocity(originVelocity);
 					}
+					// Detect lift-off
+					if ((relativePosition.z > 0.02) || startingAboveGround) {
+						addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
+					}
 
-					addEvent(new FlightEvent(FlightEvent.Type.LIFTOFF, currentStatus.getSimulationTime()));
 				} else {
 					
 					// Check ground hit after liftoff
