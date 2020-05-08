@@ -577,42 +577,10 @@ public class RLModelSingleton {
 
     /* Interface actions for the RLPanel in the UI */
 
-    public void stepNextSimulationType() {
-        RLModelSingleton.SimulationType newSimulationType = null;
-        if (simulationType == RLModelSingleton.SimulationType._1D) {
-            newSimulationType = RLModelSingleton.SimulationType._2D;
-        } else if (simulationType == RLModelSingleton.SimulationType._2D) {
-            newSimulationType = RLModelSingleton.SimulationType._3D;
-        } else if (simulationType == RLModelSingleton.SimulationType._3D) {
-            newSimulationType = RLModelSingleton.SimulationType._1D;
-        }
-        simulationType = newSimulationType;
-    }
-
-    public void stepNextSimulation2DAxis() {
-        if (symmetryAxis2D.equals("X")) {
-            symmetryAxis2D = "Y";
-        } else {
-            symmetryAxis2D = "X";
-        }
-    }
-
-    public void stepNextInitialVariation() {
-        SimulationInitVariation newInitVariation = null;
-        if (initVariation == RLModelSingleton.SimulationInitVariation.fixed) {
-            newInitVariation = RLModelSingleton.SimulationInitVariation.posVel;
-        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVel) {
-            newInitVariation = SimulationInitVariation.loc;
-        } else if (initVariation == RLModelSingleton.SimulationInitVariation.loc) {
-                newInitVariation = SimulationInitVariation.posVelLoc;
-        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVelLoc) {
-            newInitVariation = SimulationInitVariation.posVelAngle;
-        } else if (initVariation == RLModelSingleton.SimulationInitVariation.posVelAngle) {
-            newInitVariation = RLModelSingleton.SimulationInitVariation.all;
-        } else if (initVariation == RLModelSingleton.SimulationInitVariation.all) {
-            newInitVariation = RLModelSingleton.SimulationInitVariation.fixed;
-        }
-        initVariation = newInitVariation;
+    public void setSimulationTypeFromIntegerDimensions(int numDimensions) {
+        if (numDimensions == 1) simulationType = SimulationType._1D;
+        else if (numDimensions == 2) simulationType = SimulationType._2D;
+        else simulationType = SimulationType._3D;
     }
 }
 

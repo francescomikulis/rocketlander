@@ -6,6 +6,7 @@ import net.sf.openrocket.masscalc.RigidBody;
 import net.sf.openrocket.simulation.AccelerationData;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.exception.SimulationException;
+import net.sf.openrocket.simulation.extension.impl.initialconditions.InitialConditions;
 import net.sf.openrocket.simulation.extension.impl.visualize3d.AbstractSimulationListenerSupportsVisualize3DListener;
 import net.sf.openrocket.simulation.extension.impl.visualize3d.Visualize3DListener;
 import net.sf.openrocket.simulation.listeners.SimulationListener;
@@ -57,10 +58,6 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         this.rocketLanderExtension = rocketLanderExtension;
     }
 
-    private static double calculateNumberWithIntegerVariation(double startNumber, double variation) {
-        return startNumber - (variation) + 2 * variation * new Random().nextDouble();
-    }
-
     private boolean setupStateActionAndStore(SimulationStatus status) {
         Object[] stateActionReturnObject = model.generateStateAndActionAndStoreHistory(status, episodeStateActions);
         CoupledStates newState = (CoupledStates) stateActionReturnObject[0];
@@ -81,7 +78,10 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         episodeStateActions = model.initializeEpisodeStateActions();
         status.getSimulationConditions().setTimeStep(timeStep);
 
-        rocketLanderExtension.getInitialConditionsObject().applyInitialConditionsToStatus(status);
+        InitialConditions initialConditions = rocketLanderExtension.getInitialConditionsObject();
+        RLModelSingleton.getInstance().symmetryAxis2D = initialConditions.symmetryAxis2D;
+        RLModelSingleton.getInstance().setSimulationTypeFromIntegerDimensions(initialConditions.numDimensions);
+        initialConditions.applyInitialConditionsToStatus(status);
 
         status.setLaunchRodCleared(true);
         // initialize the state and the action
@@ -94,8 +94,6 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         activateVisualize3DListener(status);
         return true;
     }
-
-
 
     @Override
     public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) {
@@ -188,15 +186,6 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
         // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
-
-        /*
-        System.out.print("Thrusts: ");
-        for (int i = 0; i < episodeStateActionsPrimary.size(); i ++) {
-            StateActionTuple stateActionTuple = episodeStateActionsPrimary.get(i);
-            System.out.print("(" + i + ")" +  stateActionTuple.action + " ");
-        }
-        System.out.println("");
-         */
         if (action != null) {
             terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));
             if (!hasCompletedTerminalUpdate) {

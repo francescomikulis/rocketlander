@@ -6,9 +6,11 @@ import static net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefini
 
 public abstract class AbstractGenericInitialConditionsExtension extends AbstractSimulationExtension {
 	public abstract String UNIQUE_PREFIX();
+	private static final InitialConditions defaultInitialConditions = getDefaultInitialConditions();
+	private static final String defaultInitialConditionsString = InitialConditions.toJsonString(defaultInitialConditions);
 
 	public void resetInitialConditionsToDefault() {
-		setInitialConditions(InitialConditions.toJsonString(getDefaultInitialConditions()));
+		setInitialConditions(defaultInitialConditionsString);
 	}
 
 	public void setInitialConditions(String initialConditionsString) {
@@ -16,17 +18,17 @@ public abstract class AbstractGenericInitialConditionsExtension extends Abstract
 		String convertedStringConditions = InitialConditions.toJsonString(initialConditions);
 		convertedStringConditions = cleanJsonStringByRemovingArraySpaces(convertedStringConditions);
 		config.put(UNIQUE_PREFIX() + "InitialConditions", convertedStringConditions);
+		config.put(UNIQUE_PREFIX() + "InitialConditionsObject", initialConditions);
 		fireChangeEvent();
 	}
 
 	public String getInitialConditions() {
-		String result = config.getString(UNIQUE_PREFIX() + "InitialConditions", InitialConditions.toJsonString(getDefaultInitialConditions()));
+		String result = config.getString(UNIQUE_PREFIX() + "InitialConditions", defaultInitialConditionsString);
 		return cleanJsonStringByRemovingArraySpaces(result);
 	}
 
 	public InitialConditions getInitialConditionsObject() {
-		String result = config.getString(UNIQUE_PREFIX() + "InitialConditions", InitialConditions.toJsonString(getDefaultInitialConditions()));
-		return InitialConditions.buildFromJsonString(result);
+		return (InitialConditions) config.get(UNIQUE_PREFIX() + "InitialConditionsObject", defaultInitialConditions);
 	}
 
 	/** Default InitialConditions ***/
@@ -40,7 +42,7 @@ public abstract class AbstractGenericInitialConditionsExtension extends Abstract
 		initialConditions.positionZ = new double[]{28, 32};
 		initialConditions.velocityX = new double[]{-6, 6};
 		initialConditions.velocityY = new double[]{-6, 6};
-		initialConditions.velocityZ = new double[]{-12, -8};
+		initialConditions.velocityZ = new double[]{-10, -8};
 		initialConditions.angleX = new double[]{-16, 16};
 		initialConditions.angleY = new double[]{-16, 16};
 		initialConditions.angleVelocityX = new double[]{-26, 26};

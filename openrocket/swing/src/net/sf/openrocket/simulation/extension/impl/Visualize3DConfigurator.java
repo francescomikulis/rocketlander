@@ -31,13 +31,12 @@ public class Visualize3DConfigurator extends AbstractSwingSimulationExtensionCon
 		panel.add(spin, "w 100lp, wrap");
 
 		panel.add(new JLabel("IP Address (XXX.XXX.XXX.XXX:PORT)"), "w 100, wrap");
-		text = new RSyntaxTextArea("", 1, 40);
-		text.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+		text = new RSyntaxTextArea(extension.getVisualize3DIP(), 1, 40);
+		text.setEditable(true);
+		text.setCaretPosition(0);
 		text.setCodeFoldingEnabled(true);
 		text.setLineWrap(true);
 		text.setWrapStyleWord(true);
-		text.setEditable(true);
-		text.setText(extension.getVisualize3DIP());
 		text.addFocusListener(new FocusListener() {
 			@Override
 			public void focusGained(FocusEvent event) { }

@@ -3,6 +3,7 @@ package net.sf.openrocket.simulation.extension.impl.initialconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.sf.openrocket.simulation.SimulationStatus;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton;
 import net.sf.openrocket.util.Coordinate;
 import net.sf.openrocket.util.Quaternion;
 

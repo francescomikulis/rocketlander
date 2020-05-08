@@ -67,11 +67,11 @@ public class RLPanel extends JPanel {
 
     private final JButton editButton;
     private final JButton disableButton;
-    private final JButton simulationTypeButton;
-    private final JButton simulationAxisButton;
-    private final JButton simulationInitButton;
     private final JButton resetModelButton;
     private final JButton deleteButton;
+
+    private final JLabel simulationTypeLabel;
+    private final JLabel simulationAxisLabel;
 
     public RLPanel(OpenRocketDocument doc) {
         super(new MigLayout("fill", "[grow][][][][][][grow]"));
@@ -147,47 +147,18 @@ public class RLPanel extends JPanel {
         });
         this.add(disableButton, "gapright para");
 
+
         //// Simulation type button
-        simulationTypeButton = new JButton("SimulationType: ");
-        //// Edit Simulation type
-        simulationTypeButton.setToolTipText("Toggle Simulation Type");
-        simulationTypeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                RLModelSingleton.getInstance().stepNextSimulationType();
-                reloadRLUIText();
-            }
-        });
-        this.add(simulationTypeButton, "gapright para");
+        simulationTypeLabel = new JLabel("Dimensions: ");
+        this.add(simulationTypeLabel, "gapright para");
 
-        //// Simulation 2D axis button
-        simulationAxisButton = new JButton("Simulation2DAxis: ");
-        //// Edit Simulation type
-        simulationAxisButton.setToolTipText("Toggle Simulation 2D Axis");
-        simulationAxisButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                RLModelSingleton.getInstance().stepNextSimulation2DAxis();
-                reloadRLUIText();
-            }
-        });
-        this.add(simulationAxisButton, "gapright para");
-
-        //// Simulation initialization button
-        simulationInitButton = new JButton("SimInitVariation: ");
-        //// Edit Simulation initialization
-        simulationInitButton.setToolTipText("Toggle Simulation Initialization Variation");
-        simulationInitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                RLModelSingleton.getInstance().stepNextInitialVariation();
-                reloadRLUIText();
-            }
-        });
-        this.add(simulationInitButton, "gapright para");
+        //// Simulation 2D Axis Symmetry
+        simulationAxisLabel = new JLabel("2DAxis: ");
+        this.add(simulationAxisLabel, "gapright para");
 
         // THIS IS CRITICAL FOR UI UPDATES OF RL MODEL SINGLETON PARAMETERS
         reloadRLUIText();
+
 
         //// Reset the stateActionValueFunction
         resetModelButton = new JButton(trans.get("simpanel.but.resetmodel"));
@@ -440,9 +411,8 @@ public class RLPanel extends JPanel {
     }
 
     public void reloadRLUIText() {
-        simulationTypeButton.setText("SimulationType: " + String.valueOf(RLModelSingleton.getInstance().simulationType));
-        simulationAxisButton.setText("Simulation2DAxis: " + RLModelSingleton.getInstance().symmetryAxis2D);
-        simulationInitButton.setText("SimInitVariation: " + String.valueOf(RLModelSingleton.getInstance().initVariation));
+        simulationTypeLabel.setText("Dimensions: " + String.valueOf(RLModelSingleton.getInstance().simulationType));
+        simulationAxisLabel.setText("2DAxis: " + String.valueOf(RLModelSingleton.getInstance().symmetryAxis2D));
     }
 
     private void updateButtonStates() {
