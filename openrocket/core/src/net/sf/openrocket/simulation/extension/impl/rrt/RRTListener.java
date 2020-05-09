@@ -37,6 +37,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
     boolean hasCompletedTerminalUpdate = false;
 
     boolean isUsingLateralVelocityObjective = false;
+    private long startTimeMilliseconds = 0;
 
     /** Used by the Visualize3DListener extension */
     public double getMaxMotorPower() { return 200.0; }
@@ -66,6 +67,8 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
         rrt.setIsUsingLateralVelocityObjective(isUsingLateralVelocityObjective);
 
         disableVisualization(status);
+
+        startTimeMilliseconds = System.currentTimeMillis();
     }
 
     @Override
@@ -139,8 +142,9 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
 
         printStatusInformation(rrt.current.status);
         System.out.println("Number of nodes expanded: " + rrt.numNodesExpanded);
+        System.out.println("Required seconds: " + ((System.currentTimeMillis() - startTimeMilliseconds) / 1000.0) + "s");
 
-        hasCompletedTerminalUpdate = true;
+                hasCompletedTerminalUpdate = true;
         RRTNode n;
         if (action == null) {
             n = rrt.current;

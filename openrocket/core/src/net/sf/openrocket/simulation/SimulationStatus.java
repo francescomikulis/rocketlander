@@ -94,8 +94,8 @@ public class SimulationStatus implements Monitorable {
 
 	public SimulationStatus hackyCopy() {
 		SimulationStatus newStatus = new SimulationStatus();
-		newStatus.simulationConditions = this.simulationConditions.clone();
-		newStatus.configuration = this.configuration.clone();
+		newStatus.simulationConditions = this.simulationConditions;
+		newStatus.configuration = this.configuration;
 		newStatus.time = this.time;
 		newStatus.previousTimeStep = this.previousTimeStep;
 		newStatus.position = this.position.clone();
