@@ -546,6 +546,10 @@ public class RLModelSingleton {
             printStatusInformation(status);
     }
 
+    public boolean isInFocusedTrainingMode() {
+        return this.smartPrintBuffer;
+    }
+
 
     /* Interface actions for the SimulationPanel in the UI */
 

@@ -20,6 +20,8 @@ import net.sf.openrocket.util.Quaternion;
 
 import java.util.*;
 
+import static net.sf.openrocket.simulation.extension.impl.initialconditions.InitialConditions.clearExtraStatusFlightData;
+
 public class RocketLanderListener extends AbstractSimulationListenerSupportsVisualize3DListener {
 
     private RLModelSingleton model = RLModelSingleton.getInstance();
@@ -161,6 +163,8 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         rocketLanderExtension.getInitialConditionsObject().stabilizeRocketBasedOnSimType(status);
         setupStateActionAndStore(status);
         storeUpdatedFlightConditions();
+        if (model.isInFocusedTrainingMode())
+            clearExtraStatusFlightData(status);
 
         model.updateStepStateActionValueFunction(episodeStateActions, lastStepUpdateSizes);
         for (String method: episodeStateActions.keySet()) {
@@ -335,6 +339,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
     private void applyCustomFlightConditions(FlightConditions toConditions) {
         if (this.RLVectoringFlightConditions == null) return;
+        if (model.isInFocusedTrainingMode()) return;
         toConditions.setRLPosition(this.RLVectoringFlightConditions.getRLPosition());
         toConditions.setRLVelocity(this.RLVectoringFlightConditions.getRLVelocity());
         toConditions.setRLAngle(this.RLVectoringFlightConditions.getRLAngle());
@@ -345,6 +350,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
     private void storeUpdatedFlightConditions() {
         if (state == null) return;
+        if (model.isInFocusedTrainingMode()) return;
         this.RLVectoringFlightConditions.setRLPosition(model.dataStoreState.getSmartGuessCoordinate(state, "position"));
         this.RLVectoringFlightConditions.setRLVelocity(model.dataStoreState.getSmartGuessCoordinate(state, "velocity"));
         this.RLVectoringFlightConditions.setRLAngle(model.dataStoreState.getSmartGuessCoordinate(state, "angle"));

@@ -7,6 +7,7 @@ import net.sf.openrocket.util.ArrayList;
 import net.sf.openrocket.util.Coordinate;
 
 import static net.sf.openrocket.simulation.extension.impl.rrt.RRTBoundaries.strictlyWithinBoundary;
+import static net.sf.openrocket.simulation.extension.impl.initialconditions.InitialConditions.clearExtraStatusFlightData;
 
 public class RRT {
     private RRTNode root = null;
@@ -60,10 +61,10 @@ public class RRT {
         //SimulationConditions sc = new SimulationConditions();
         // SimulationStatus s = new SimulationStatus(status.getConfiguration().clone(), status.getSimulationConditions().clone());
         SimulationStatus s = status.hackyCopy();
+        clearExtraStatusFlightData(s);
         assignStatus(status,s);
        // FlightConfiguration simulationConfig = simulationConditions.getRocket().getFlightConfiguration( this.fcid).clone();
         //final String branchName = simulationConfig.getRocket().getTopmostStage().getName();
-        s.setFlightData(new FlightDataBranch("Sustainer", FlightDataType.TYPE_TIME));
         return s;
     }
 

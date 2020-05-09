@@ -2,6 +2,8 @@ package net.sf.openrocket.simulation.extension.impl.initialconditions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.sf.openrocket.simulation.FlightDataBranch;
+import net.sf.openrocket.simulation.FlightDataType;
 import net.sf.openrocket.simulation.SimulationStatus;
 import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton;
 import net.sf.openrocket.util.Coordinate;
@@ -186,5 +188,10 @@ public class InitialConditions implements Serializable {
                 "  y: " + status.getRocketRotationVelocity().y +
                 "  z: " + status.getRocketRotationVelocity().z
         );
+    }
+
+    /** Distable SimulationStatus data for plotting - useful when running thousands of simulations! **/
+    public static void clearExtraStatusFlightData(SimulationStatus status) {
+        status.setFlightData(new FlightDataBranch("GARBAGE", FlightDataType.TYPE_TIME));
     }
 }
