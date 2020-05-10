@@ -4,7 +4,7 @@
     <option name="MAIN_CLASS_NAME" value="net.sf.openrocket.startup.SwingStartup" />
     <module name="OpenRocket Swing" />
     <option name="PROGRAM_PARAMETERS" value="hybrid_test.ork" />
-    <option name="VM_PARAMETERS" value="-Xmx2048m" />
+    <option name="VM_PARAMETERS" value="-Xmx4096m" />
     <option name="WORKING_DIRECTORY" value="." />
     <extension name="coverage">
       <pattern>

@@ -33,6 +33,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
     private LinkedHashMap<String, Integer> lastStepUpdateSizes = new LinkedHashMap<>();
     private static double variation = 2;
     private static double timeStep = 0.02;  // RK4SimulationStepper.MIN_TIME_STEP --> 0.001
+    private static double MAX_LATERAL_THRUST_POWER = 200;
 
     // thrust vectoring
     private FlightConditions RLVectoringFlightConditions = null;
@@ -232,8 +233,8 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
         assert RLVectoringThrust >= 0;
 
         // thrust vectoring force
-        double forceX = RLVectoringThrust * (gimbalComponentX + lateralThrustX);
-        double forceY = RLVectoringThrust * (gimbalComponentY + lateralThrustY);
+        double forceX = RLVectoringThrust * gimbalComponentX + MAX_LATERAL_THRUST_POWER * lateralThrustX;
+        double forceY = RLVectoringThrust * gimbalComponentY + MAX_LATERAL_THRUST_POWER * lateralThrustY;
         double forceZ = RLVectoringThrust * gimbalComponentZ;
 
         // final directed force calculations
