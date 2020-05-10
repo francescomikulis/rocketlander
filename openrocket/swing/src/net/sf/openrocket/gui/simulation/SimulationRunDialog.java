@@ -197,10 +197,11 @@ public class SimulationRunDialog extends JDialog {
 
 		// Add cancel button
 		JButton cancel = new JButton(trans.get("dlg.but.cancel"));
+		final SimulationRunDialog me = this;
 		cancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				cancelSimulations();
+				dispatchEvent(new WindowEvent(me, WindowEvent.WINDOW_CLOSING));
 			}
 		});
 		panel.add(cancel, "spanx, tag cancel");

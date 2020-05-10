@@ -173,7 +173,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
         // terminationBooleans.simulationFailed()
         if (status.getSimulationTime() > 7.0) {
-            throw new SimulationException("Simulation Was NOT UNDER CONTROL.");
+            throw new SimulationException("Simulation went over time.");
         }
 
         // conditional end simulation on zero positionZ
@@ -189,6 +189,7 @@ public class RocketLanderListener extends AbstractSimulationListenerSupportsVisu
 
     @Override
     public void endSimulation(SimulationStatus status, SimulationException exception) {
+        if ((exception != null ) && exception.getMessage().equals("The simulation was interrupted.")) return;  // user cancelled the UI prompt
         // this method is called at least twice if a SimulationException occurs - this is why the boolean was created
         if (action != null) {
             terminationBooleans = MDPDefinition.getTerminationValidity(model.generateCoupledStatesBasedOnLastActions(status, action));

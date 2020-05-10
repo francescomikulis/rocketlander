@@ -7,11 +7,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -276,11 +272,21 @@ public class SimulationPanel extends JPanel {
 					}
 					long t = System.currentTimeMillis();
 					//System.out.println("Scheduled " + copiedSims.length + "(" + outSizeMultiplier + " out of " + repeatCounter + ")");
-					new SimulationRunDialog(SwingUtilities.getWindowAncestor(
-							SimulationPanel.this), document, copiedSims).setVisible(true);
+					SimulationRunDialog dialog = new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+							SimulationPanel.this), document, copiedSims);
+					final boolean[] userCancelledSimulations = {false};
+					dialog.addWindowListener(new WindowAdapter() {
+						@Override
+						public void windowClosing(WindowEvent e) {
+							userCancelledSimulations[0] = true;
+						}
+					});
+					dialog.setVisible(true);
 					// new SimulationRunDialog(document, copiedSims);  // without UI
 					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 					RLModelSingleton.getInstance().printAndClearStringBuffer();
+
+					if (userCancelledSimulations[0]) break;
 
 					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
 						RLObjectFileStore.storeActionValueFunctions();
@@ -288,10 +294,10 @@ public class SimulationPanel extends JPanel {
 					}
 				}
 
+				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, baseSims).setVisible(true);
-				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
 			}
