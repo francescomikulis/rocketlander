@@ -4,6 +4,7 @@
     <libelement value="jar://$MODULE_DIR$/lib-extra/RXTXcomm.jar!/" />
     <libelement value="file://$MODULE_DIR$/resources" />
     <libelement value="jar://$MODULE_DIR$/lib/opencsv-2.3.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/lib/gson-2.8.6.jar!/" />
     <libelement value="jar://$MODULE_DIR$/lib/guice-3.0.jar!/" />
     <libelement value="jar://$MODULE_DIR$/lib/guice-multibindings-3.0.jar!/" />
     <libelement value="jar://$MODULE_DIR$/lib/javax.inject.jar!/" />
@@ -178,12 +179,12 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/gson-2.8.6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
+      <library name="gson-2.8.6.jar">
+         <CLASSES>
+           <root url="jar://$MODULE_DIR$/lib/gson-2.8.6.jar!/" />
+         </CLASSES>
+         <JAVADOC />
+         <SOURCES />
       </library>
     </orderEntry>
   </component>
