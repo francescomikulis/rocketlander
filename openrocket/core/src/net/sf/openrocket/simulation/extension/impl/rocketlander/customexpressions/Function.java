@@ -81,6 +81,7 @@ class Function extends Term {
 
         else if (method.equals("And")) return ((inputs.get(0) != 0) && (inputs.get(1) != 0)) ? 1 : 0;
         else if (method.equals("Or")) return ((inputs.get(0) != 0) || (inputs.get(1) != 0)) ? 1 : 0;
+        else if (method.equals("Not")) return (inputs.get(0) != 0) ? 0 : 1;
 
         else if (method.equals("Lt")) return (inputs.get(0) < inputs.get(1)) ? 1 : 0;
         else if (method.equals("Le")) return (inputs.get(0) <= inputs.get(1)) ? 1 : 0;
