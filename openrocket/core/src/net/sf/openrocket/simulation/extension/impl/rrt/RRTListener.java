@@ -160,6 +160,7 @@ public class RRTListener extends AbstractSimulationListenerSupportsVisualize3DLi
         }
 
         Visualize3DListener visualize3DListener = activateVisualize3DListener(status);
+        if (visualize3DListener == null) return;
         for (currentIndex = ss.size() - 1; currentIndex >= 0; currentIndex--) {
             visualize3DListener.postStep(ss.get(currentIndex));
         }
