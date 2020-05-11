@@ -24,6 +24,7 @@ public class RRT {
     RRTNode minNode;
     int tries=10;
     int NUM_GOAL_TRIES = 100;
+    int RESTART_SIZE_THRESHOLD = 10000;
     Action a;
     public int numNodesExpanded = 0;
     private boolean isUsingLateralVelocityObjective = true;
@@ -171,7 +172,7 @@ public class RRT {
             RRTNode n = getNearest(options, target);
             if (n!=null)
                 addNode(n); // add the node which is closest to the target
-            if (nodes.size()>5000){
+            if (nodes.size()>RESTART_SIZE_THRESHOLD){
                 RRTNode tmp = root;
                 nodes = new ArrayList<>();
                 nodes.add(tmp);
