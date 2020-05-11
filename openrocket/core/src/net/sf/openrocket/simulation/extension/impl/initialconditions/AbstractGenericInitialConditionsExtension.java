@@ -18,7 +18,6 @@ public abstract class AbstractGenericInitialConditionsExtension extends Abstract
 		String convertedStringConditions = InitialConditions.toJsonString(initialConditions);
 		convertedStringConditions = cleanJsonStringByRemovingArraySpaces(convertedStringConditions);
 		config.put(UNIQUE_PREFIX() + "InitialConditions", convertedStringConditions);
-		config.put(UNIQUE_PREFIX() + "InitialConditionsObject", initialConditions);
 		fireChangeEvent();
 	}
 
@@ -28,7 +27,9 @@ public abstract class AbstractGenericInitialConditionsExtension extends Abstract
 	}
 
 	public InitialConditions getInitialConditionsObject() {
-		return (InitialConditions) config.get(UNIQUE_PREFIX() + "InitialConditionsObject", defaultInitialConditions);
+		return InitialConditions.buildFromJsonString(
+				(String)config.get(UNIQUE_PREFIX() + "InitialConditions", defaultInitialConditions)
+		);
 	}
 
 	/** Default InitialConditions ***/
