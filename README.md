@@ -6,3 +6,13 @@ Google Drive Folder: https://drive.google.com/drive/u/0/folders/1jYqazN1r41Mgnby
 
 OpenRocket Documentation under core > doc > properties.txt
 
+---
+BUILD (start from "openrocket" directory):
+```
+cd swing
+ant jar
+cp build/jar/OpenRocket.jar ../
+cp build/jar/OpenRocket.jar ../build/jar/OpenRocket.jar
+cd ..
+```
+---
