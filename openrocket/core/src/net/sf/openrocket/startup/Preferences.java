@@ -152,6 +152,7 @@ public abstract class Preferences implements ChangeSource {
 	}
 	
 	public final boolean getAutoRunSimulations() {
+		// MODIFIED CODE HERE //
 		return this.getBoolean(AUTO_RUN_SIMULATIONS, false);
 	}
 	

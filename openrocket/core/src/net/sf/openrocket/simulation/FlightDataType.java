@@ -162,14 +162,47 @@ public class FlightDataType implements Comparable<FlightDataType> {
 	public static final FlightDataType TYPE_REFERENCE_LENGTH = newType(trans.get("FlightDataType.TYPE_REFERENCE_LENGTH"), "Lr", UnitGroup.UNITS_LENGTH, 100);
 	//// Reference area
 	public static final FlightDataType TYPE_REFERENCE_AREA = newType(trans.get("FlightDataType.TYPE_REFERENCE_AREA"), "Ar", UnitGroup.UNITS_AREA, 101);
-	
+
+	// MODIFIED CODE HERE
+
+	//// RL Thrust Extension
+
+	//// RL Thrust
+	public static final FlightDataType TYPE_RL_THRUST = newType(trans.get("FlightDataType.TYPE_RL_THRUST"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
+	public static final FlightDataType TYPE_RL_THRUST_LATERAL_X = newType(trans.get("FlightDataType.TYPE_RL_THRUST_LATERAL_X"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
+	public static final FlightDataType TYPE_RL_THRUST_LATERAL_Y = newType(trans.get("FlightDataType.TYPE_RL_THRUST_LATERAL_Y"), "%", UnitGroup.UNITS_COEFFICIENT, 102);
+
+	//// RL Position
+	public static final FlightDataType TYPE_RL_POSITION_X = newType(trans.get("FlightDataType.TYPE_RL_POSITION_X"), "Px", UnitGroup.UNITS_DISTANCE, 102);
+	public static final FlightDataType TYPE_RL_POSITION_Y = newType(trans.get("FlightDataType.TYPE_RL_POSITION_Y"), "Py", UnitGroup.UNITS_DISTANCE, 102);
+	public static final FlightDataType TYPE_RL_POSITION_Z = newType(trans.get("FlightDataType.TYPE_RL_POSITION_Z"), "Pz", UnitGroup.UNITS_DISTANCE, 102);
+
+	//// RL Position
+	public static final FlightDataType TYPE_RL_VELOCITY_X = newType(trans.get("FlightDataType.TYPE_RL_VELOCITY_X"), "Vx", UnitGroup.UNITS_VELOCITY, 102);
+	public static final FlightDataType TYPE_RL_VELOCITY_Y = newType(trans.get("FlightDataType.TYPE_RL_VELOCITY_Y"), "Vy", UnitGroup.UNITS_VELOCITY, 102);
+	public static final FlightDataType TYPE_RL_VELOCITY_Z = newType(trans.get("FlightDataType.TYPE_RL_VELOCITY_Z"), "Vz", UnitGroup.UNITS_VELOCITY, 102);
+
+	//// RL Angles
+	public static final FlightDataType TYPE_RL_ANGLE_X = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+	public static final FlightDataType TYPE_RL_ANGLE_Y = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+	public static final FlightDataType TYPE_RL_ANGLE_Z = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 103);
+
+	//// RL Angle Velocities
+	public static final FlightDataType TYPE_RL_ANGLE_VELOCITY_X = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_VELOCITY_X"), "d\u03a6", UnitGroup.UNITS_ROLL, 104);
+	public static final FlightDataType TYPE_RL_ANGLE_VELOCITY_Y = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_VELOCITY_Y"), "d\u03a6", UnitGroup.UNITS_ROLL, 104);
+	public static final FlightDataType TYPE_RL_ANGLE_VELOCITY_Z = newType(trans.get("FlightDataType.TYPE_RL_ANGLE_VELOCITY_Z"), "d\u03a6", UnitGroup.UNITS_ROLL, 104);
+
+	//// RL Gimbal Angles
+	public static final FlightDataType TYPE_RL_GIMBAL_X = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_X"), "\u03a6", UnitGroup.UNITS_ANGLE, 105);
+	public static final FlightDataType TYPE_RL_GIMBAL_Y = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_Y"), "\u03a6", UnitGroup.UNITS_ANGLE, 105);
+	public static final FlightDataType TYPE_RL_GIMBAL_Z = newType(trans.get("FlightDataType.TYPE_RL_GIMBAL_Z"), "\u03a6", UnitGroup.UNITS_ANGLE, 105);
 	
 	////  Orientation
 	//// Vertical orientation (zenith)
 	public static final FlightDataType TYPE_ORIENTATION_THETA = newType(trans.get("FlightDataType.TYPE_ORIENTATION_THETA"), "\u0398", UnitGroup.UNITS_ANGLE, 106);
 	//// Lateral orientation (azimuth)
 	public static final FlightDataType TYPE_ORIENTATION_PHI = newType(trans.get("FlightDataType.TYPE_ORIENTATION_PHI"), "\u03a6", UnitGroup.UNITS_ANGLE, 107);
-	
+
 	
 	////  Atmospheric conditions
 	//// Wind velocity
@@ -180,7 +213,7 @@ public class FlightDataType implements Comparable<FlightDataType> {
 	public static final FlightDataType TYPE_AIR_PRESSURE = newType(trans.get("FlightDataType.TYPE_AIR_PRESSURE"), "P", UnitGroup.UNITS_PRESSURE, 112);
 	//// Speed of sound
 	public static final FlightDataType TYPE_SPEED_OF_SOUND = newType(trans.get("FlightDataType.TYPE_SPEED_OF_SOUND"), "Vs", UnitGroup.UNITS_VELOCITY, 113);
-	
+
 	////  Simulation information
 	//// Simulation time step
 	public static final FlightDataType TYPE_TIME_STEP = newType(trans.get("FlightDataType.TYPE_TIME_STEP"), "dt", UnitGroup.UNITS_TIME_STEP, 200);
@@ -236,6 +269,18 @@ public class FlightDataType implements Comparable<FlightDataType> {
 		TYPE_CORIOLIS_ACCELERATION,
 		TYPE_REFERENCE_LENGTH,
 		TYPE_REFERENCE_AREA,
+		TYPE_RL_THRUST,
+		TYPE_RL_THRUST_LATERAL_X,
+		TYPE_RL_THRUST_LATERAL_Y,
+		TYPE_RL_ANGLE_X,
+		TYPE_RL_ANGLE_Y,
+		TYPE_RL_ANGLE_Z,
+		TYPE_RL_ANGLE_VELOCITY_X,
+		TYPE_RL_ANGLE_VELOCITY_Y,
+		TYPE_RL_ANGLE_VELOCITY_Z,
+		TYPE_RL_GIMBAL_X,
+		TYPE_RL_GIMBAL_Y,
+		TYPE_RL_GIMBAL_Z,
 		TYPE_ORIENTATION_THETA,
 		TYPE_ORIENTATION_PHI,
 		TYPE_WIND_VELOCITY,

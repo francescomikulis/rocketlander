@@ -63,6 +63,10 @@ class OpenRocketContentHandler extends AbstractElementHandler {
 			simulationsDefined = true;
 			return new SimulationsHandler(getDocument(), context);
 		}
+
+		if (element.equals("definitions")) {
+			return new DefinitionsHandler(getDocument(), context);
+		}
 		
 		warnings.add(Warning.fromString("Unknown element " + element + ", ignoring."));
 		

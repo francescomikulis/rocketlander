@@ -21,7 +21,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EventObject;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,7 +59,7 @@ import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
-import net.sf.openrocket.simulation.extension.impl.RLEpisodeManager;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLObjectFileStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +84,6 @@ import net.sf.openrocket.gui.dialogs.PrintDialog;
 import net.sf.openrocket.gui.dialogs.ScaleDialog;
 import net.sf.openrocket.gui.dialogs.SwingWorkerDialog;
 import net.sf.openrocket.gui.dialogs.WarningDialog;
-import net.sf.openrocket.gui.dialogs.optimization.GeneralOptimizationDialog;
 import net.sf.openrocket.gui.dialogs.preferences.PreferencesDialog;
 import net.sf.openrocket.gui.figure3d.photo.PhotoFrame;
 import net.sf.openrocket.gui.help.tours.GuidedTourSelectionDialog;
@@ -99,7 +97,6 @@ import net.sf.openrocket.gui.util.OpenFileWorker;
 import net.sf.openrocket.gui.util.SaveFileWorker;
 import net.sf.openrocket.gui.util.SwingPreferences;
 import net.sf.openrocket.l10n.Translator;
-import net.sf.openrocket.logging.Markers;
 import net.sf.openrocket.rocketcomponent.ComponentChangeEvent;
 import net.sf.openrocket.rocketcomponent.ComponentChangeListener;
 import net.sf.openrocket.rocketcomponent.Rocket;
@@ -160,6 +157,7 @@ public class BasicFrame extends JFrame {
 	private final RocketActions actions;
 
 	private SimulationPanel simulationPanel;
+	private RLPanel rlPanel;
 
 
 	/**
@@ -193,6 +191,7 @@ public class BasicFrame extends JFrame {
 
 
 		// MODIFIED CODE HERE log.debug("Constructing the BasicFrame UI");
+		rlPanel = new RLPanel(document);
 
 		// The main vertical split pane
 		JSplitPane vertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true);
@@ -208,6 +207,8 @@ public class BasicFrame extends JFrame {
 		tabbedPane.addTab(trans.get("BasicFrame.tab.Flightconfig"), null, new FlightConfigurationPanel(document));
 		//// Flight simulations
 		tabbedPane.addTab(trans.get("BasicFrame.tab.Flightsim"), null, simulationPanel);
+		//// RL Model Configurations
+		tabbedPane.addTab("RL Configurations", null, rlPanel);
 
 		// Add change listener to catch when the tabs are changed.  This is to run simulations 
 		// automagically when the simulation tab is selected.
@@ -268,7 +269,7 @@ public class BasicFrame extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				RLEpisodeManager.getInstance().storeActionValueFunction();
+				RLObjectFileStore.storeActionValueFunctions();
 				closeAction();
 			}
 		});
@@ -1664,6 +1665,8 @@ public class BasicFrame extends JFrame {
 		if (tab.equals(trans.get("BasicFrame.tab.Flightsim"))) {
 			simulationPanel.activating();
 		}
+		simulationPanel.reloadRLMethods();
+		rlPanel.reloadRLUIText();
 	}
 }
 

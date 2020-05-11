@@ -4,29 +4,22 @@ package net.sf.openrocket.gui.main;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.FlavorEvent;
-import java.awt.datatransfer.FlavorListener;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.event.*;
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Comparator;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.text.DefaultEditorKit;
 
-import net.sf.openrocket.simulation.extension.impl.RLEpisodeManager;
-import net.sf.openrocket.simulation.extension.impl.RLModel;
+import net.sf.openrocket.document.Definition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.MDPDefinition;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLModelSingleton;
+import net.sf.openrocket.simulation.extension.impl.rocketlander.RLObjectFileStore;
+import net.sf.openrocket.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +54,6 @@ import net.sf.openrocket.startup.Preferences;
 import net.sf.openrocket.unit.UnitGroup;
 import net.sf.openrocket.util.AlphanumComparator;
 
-import static net.sf.openrocket.gui.util.SwingPreferences.getMaxThreadCount;
-
 @SuppressWarnings("serial")
 public class SimulationPanel extends JPanel {
 
@@ -89,10 +80,20 @@ public class SimulationPanel extends JPanel {
 	private final JButton runButton;
 	private final JButton runMultipleButton;
 	private final JButton runMultipleExtremeButton;
-	private final JButton resetModelButton;
 	private final JButton deleteButton;
 	private final JButton plotButton;
 	private final JPopupMenu pm;
+
+	public void reloadRLMethods(){
+		// MODIFIED CODE HERE //
+
+		ArrayList<MDPDefinition> definitions = new ArrayList<>();
+		for (Definition definition: document.definitions) {
+			if (!definition.getIgnore())
+				definitions.add(MDPDefinition.buildFromJsonString(definition.getData()));
+		}
+		RLModelSingleton.getInstance().setDefinitions(definitions);
+	}
 
 	public SimulationPanel(OpenRocketDocument doc) {
 		super(new MigLayout("fill", "[grow][][][][][][grow]"));
@@ -177,9 +178,9 @@ public class SimulationPanel extends JPanel {
 		// MODIFIED CODE HERE
 
 		//// Run Multiple simulations
-		runMultipleButton = new JButton(trans.get("simpanel.but.runmultiplesimulations"));
+		runMultipleButton = new JButton("Run 500 Simulations");
 		//// Re-run the selected simulations
-		runMultipleButton.setToolTipText(trans.get("simpanel.but.ttip.runmultiplesimu"));
+		runMultipleButton.setToolTipText("Run 500 Simulations");
 		runMultipleButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -187,17 +188,8 @@ public class SimulationPanel extends JPanel {
 				if (selection.length == 0) {
 					return;
 				}
-				int multiplier = 1;
-				JPanel panel = new JPanel(new MigLayout());
-				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"With which multipier?", "", panel}, 1);
-				try {
-					if (multiplierFromPanel == null)
-						return;
-					multiplier = Integer.parseInt(multiplierFromPanel);
-				} catch (Exception exc) {
-					return;
-				}
 
+				int multiplier = 500;
 				Simulation[] sims = new Simulation[selection.length * multiplier];
 
 				for (int i = 0; i < selection.length; i++) {
@@ -209,10 +201,12 @@ public class SimulationPanel extends JPanel {
 						sims[i * multiplier + mult] = baseSimulation.duplicateSimulation(baseSimulation.getRocket());
 					}
 				}
-
+				RLModelSingleton.getInstance().setSmartPrintBuffer(true);
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, sims).setVisible(true);
+				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
+
 				// new SimulationRunDialog(document, sims);  // without UI
 				// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
 				fireMaintainSelection();
@@ -231,9 +225,9 @@ public class SimulationPanel extends JPanel {
 				if (selection.length == 0) {
 					return;
 				}
-				int multiplier = 1;
+				int multiplier = 200;
 				JPanel panel = new JPanel(new MigLayout());
-				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"Number of duplicates for the current selection?", "", panel}, 1);
+				String multiplierFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"Number of duplicates for the current selection?", "", panel}, multiplier);
 				try {
 					if (multiplierFromPanel == null)
 						return;
@@ -242,13 +236,13 @@ public class SimulationPanel extends JPanel {
 					return;
 				}
 
-				int trainMinutes = 1;
+				double trainMinutes = 0.2;
 				JPanel repPanel = new JPanel(new MigLayout());
-				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, 1);
+				String trainMinutesFromPanel = JOptionPane.showInputDialog(SimulationPanel.this, new Object[] {"How many minutes?", "", repPanel}, trainMinutes);
 				try {
 					if (trainMinutesFromPanel == null)
 						return;
-					trainMinutes = Integer.parseInt(trainMinutesFromPanel);
+					trainMinutes = Double.parseDouble(trainMinutesFromPanel);
 				} catch (Exception exc) {
 					return;
 				}
@@ -261,6 +255,8 @@ public class SimulationPanel extends JPanel {
 					// first one needs to be kept same object to preserve panel UI update
 					baseSims[i] = baseSimulation;
 				}
+
+				RLModelSingleton.getInstance().setSmartPrintBuffer(true);
 
 				long startTime = System.currentTimeMillis();
 				long startSaveTime = startTime;
@@ -276,18 +272,29 @@ public class SimulationPanel extends JPanel {
 					}
 					long t = System.currentTimeMillis();
 					//System.out.println("Scheduled " + copiedSims.length + "(" + outSizeMultiplier + " out of " + repeatCounter + ")");
-					new SimulationRunDialog(SwingUtilities.getWindowAncestor(
-							SimulationPanel.this), document, copiedSims).setVisible(true);
+					SimulationRunDialog dialog = new SimulationRunDialog(SwingUtilities.getWindowAncestor(
+							SimulationPanel.this), document, copiedSims);
+					final boolean[] userCancelledSimulations = {false};
+					dialog.addWindowListener(new WindowAdapter() {
+						@Override
+						public void windowClosing(WindowEvent e) {
+							userCancelledSimulations[0] = true;
+						}
+					});
+					dialog.setVisible(true);
 					// new SimulationRunDialog(document, copiedSims);  // without UI
 					// MODIFIED CODE HERE log.info("Running simulations took " + (System.currentTimeMillis() - t) + " ms");
-					fireMaintainSelection();
+					RLModelSingleton.getInstance().printAndClearStringBuffer();
+
+					if (userCancelledSimulations[0]) break;
 
 					if ((((System.currentTimeMillis() - startSaveTime) / 1000.0) / 60.0) > 15.0) {  // save every 15 minutes
-						RLEpisodeManager.getInstance().storeActionValueFunction();
+						RLObjectFileStore.storeActionValueFunctions();
 						startSaveTime = System.currentTimeMillis();
 					}
 				}
 
+				RLModelSingleton.getInstance().setSmartPrintBuffer(false);
 				long t = System.currentTimeMillis();
 				new SimulationRunDialog(SwingUtilities.getWindowAncestor(
 						SimulationPanel.this), document, baseSims).setVisible(true);
@@ -296,32 +303,6 @@ public class SimulationPanel extends JPanel {
 			}
 		});
 		this.add(runMultipleExtremeButton, "gapright para");
-
-		// MODIFIED CODE HERE
-
-		//// Reset the stateActionValueFunction
-		resetModelButton = new JButton(trans.get("simpanel.but.resetmodel"));
-		//// Re-run the selected simulations
-		resetModelButton.setToolTipText(trans.get("simpanel.but.ttip.resetmodel"));
-		resetModelButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JPanel panel = new JPanel(new MigLayout());
-				int ret = JOptionPane.showConfirmDialog(SimulationPanel.this,
-						new Object[] {
-								"Are you sure you want to reset the model?",
-								"<html><i>This operation cannot be undone.</i>",
-								"",
-								panel },
-						"Reset Model",
-						JOptionPane.OK_CANCEL_OPTION,
-						JOptionPane.WARNING_MESSAGE);
-				if (ret != JOptionPane.OK_OPTION)
-					return;
-				RLModel.getInstance().resetValueFunctionTable();
-			}
-		});
-		this.add(resetModelButton, "gapright para");
 
 		//// Delete simulations button
 		deleteButton = new JButton(trans.get("simpanel.but.deletesimulations"));
@@ -494,9 +475,8 @@ public class SimulationPanel extends JPanel {
 				new Column(trans.get("simpanel.col.Configuration")) {
 					@Override
 					public Object getValueAt(int row) {
-						if (row < 0 || row >= document.getSimulationCount()){
+						if (row < 0 || row >= document.getSimulationCount())
 							return null;
-						}
 						
 						Rocket rkt = document.getRocket();
 						FlightConfigurationId fcid = document.getSimulation(row).getId();

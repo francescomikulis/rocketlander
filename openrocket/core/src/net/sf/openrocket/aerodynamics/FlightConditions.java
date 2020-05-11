@@ -67,7 +67,14 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 	private double pitchRate = 0;
 	/** Current yaw rate. */
 	private double yawRate = 0;
-	
+
+	// MODIFIED CODE HERE
+	private Coordinate RLVelocity = Coordinate.NUL;
+	private Coordinate RLPosition = Coordinate.NUL;
+	private Coordinate RLAngle = Coordinate.NUL;
+	private Coordinate RLAngleVelocity = Coordinate.NUL;
+	private Coordinate RLThrust = Coordinate.NUL;
+	private Coordinate RLGimbal = Coordinate.NUL;
 	
 	private Coordinate pitchCenter = Coordinate.NUL;
 	
@@ -365,6 +372,65 @@ public class FlightConditions implements Cloneable, ChangeSource, Monitorable {
 		if (this.pitchCenter.equals(pitchCenter))
 			return;
 		this.pitchCenter = pitchCenter;
+		fireChangeEvent();
+	}
+
+	// MODIFIED CODE HERE
+
+	public Coordinate getRLVelocity() {
+		return RLVelocity;
+	}
+	public void setRLVelocity(Coordinate RLVelocity) {
+		if (this.RLVelocity.equals(RLVelocity))
+			return;
+		this.RLVelocity = RLVelocity;
+		fireChangeEvent();
+	}
+	public Coordinate getRLPosition() {
+		return RLPosition;
+	}
+	public void setRLPosition(Coordinate RLPosition) {
+		if (this.RLPosition.equals(RLPosition))
+			return;
+		this.RLPosition = RLPosition;
+		fireChangeEvent();
+	}
+	public Coordinate getRLAngle() {
+		return RLAngle;
+	}
+	public void setRLAngle(Coordinate RLAngle) {
+		if (this.RLAngle.equals(RLAngle))
+			return;
+		this.RLAngle = RLAngle;
+		fireChangeEvent();
+	}
+	public Coordinate getRLAngleVelocity() {
+		return RLAngleVelocity;
+	}
+	public void setRLAngleVelocity(Coordinate RLAngleVelocity) {
+		if (this.RLAngleVelocity.equals(RLAngleVelocity))
+			return;
+		this.RLAngleVelocity = RLAngleVelocity;
+		fireChangeEvent();
+	}
+
+	public Coordinate getRLThrust() {
+		return RLThrust;
+	}
+	public void setRLThrust(Coordinate RLThrust) {
+		if (this.RLThrust == (RLThrust))
+			return;
+		this.RLThrust = RLThrust;
+		fireChangeEvent();
+	}
+
+	public Coordinate getRLGimbal() {
+		return RLGimbal;
+	}
+	public void setRLGimbal(Coordinate RLGimbal) {
+		if (this.RLGimbal.equals(RLGimbal))
+			return;
+		this.RLGimbal = RLGimbal;
 		fireChangeEvent();
 	}
 	

@@ -557,7 +557,7 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 	
 
 	private void storeData(RK4SimulationStatus status, DataStore store) {
-		
+
 		FlightDataBranch data = status.getFlightData();
 		boolean extra = status.getSimulationConditions().isCalculateExtras();
 		
@@ -670,6 +670,26 @@ public class RK4SimulationStepper extends AbstractSimulationStepper {
 			data.setValue(FlightDataType.TYPE_ROLL_RATE, store.flightConditions.getRollRate());
 			
 			data.setValue(FlightDataType.TYPE_AOA, store.flightConditions.getAOA());
+
+			// CUSTOM DATA STORING HERE!  MODIFIED CODE HERE
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_X, store.flightConditions.getRLVelocity().x);
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_Y, store.flightConditions.getRLVelocity().y);
+			data.setValue(FlightDataType.TYPE_RL_VELOCITY_Z, store.flightConditions.getRLVelocity().z);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_X, store.flightConditions.getRLPosition().x);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_Y, store.flightConditions.getRLPosition().y);
+			data.setValue(FlightDataType.TYPE_RL_POSITION_Z, store.flightConditions.getRLPosition().z);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_X, store.flightConditions.getRLAngle().x);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_Y, store.flightConditions.getRLAngle().y);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_Z, store.flightConditions.getRLAngle().z);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_X, store.flightConditions.getRLAngleVelocity().x);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_Y, store.flightConditions.getRLAngleVelocity().y);
+			data.setValue(FlightDataType.TYPE_RL_ANGLE_VELOCITY_Z, store.flightConditions.getRLAngleVelocity().z);
+			data.setValue(FlightDataType.TYPE_RL_THRUST, store.flightConditions.getRLThrust().z);
+			data.setValue(FlightDataType.TYPE_RL_THRUST_LATERAL_X, store.flightConditions.getRLThrust().x);
+			data.setValue(FlightDataType.TYPE_RL_THRUST_LATERAL_Y, store.flightConditions.getRLThrust().y);
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_X, store.flightConditions.getRLGimbal().x);
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_Y, store.flightConditions.getRLGimbal().y);
+			data.setValue(FlightDataType.TYPE_RL_GIMBAL_Z, store.flightConditions.getRLGimbal().z);
 		}
 		
 

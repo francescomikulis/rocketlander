@@ -64,6 +64,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	private final Rocket rocket;
 	
 	private final ArrayList<Simulation> simulations = new ArrayList<Simulation>();
+	public final ArrayList<Definition> definitions = new ArrayList<Definition>();
 	private ArrayList<CustomExpression> customExpressions = new ArrayList<CustomExpression>();
 	
 	/*
@@ -97,7 +98,7 @@ public class OpenRocketDocument implements ComponentChangeListener {
 	private int savedID = -1;
 	
 	private final StorageOptions storageOptions = new StorageOptions();
-	
+
 	private final DecalRegistry decalRegistry = new DecalRegistry();
 	
 	private final List<DocumentChangeListener> listeners = new ArrayList<DocumentChangeListener>();

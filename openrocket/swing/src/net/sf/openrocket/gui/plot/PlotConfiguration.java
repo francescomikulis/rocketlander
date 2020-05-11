@@ -150,6 +150,35 @@ public class PlotConfiguration implements Cloneable {
 		config.setEvent(FlightEvent.Type.TUMBLE, true);
 		config.setEvent(FlightEvent.Type.EXCEPTION, true);
 		configs.add(config);
+
+		//// Reinforcement Learning
+		config = new PlotConfiguration(trans.get("PlotConfiguration.RocketLander"));
+		config.addPlotDataType(FlightDataType.TYPE_ALTITUDE, 0);
+		config.addPlotDataType(FlightDataType.TYPE_VELOCITY_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_Y);
+		config.addPlotDataType(FlightDataType.TYPE_RL_POSITION_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_Y);
+		config.addPlotDataType(FlightDataType.TYPE_RL_VELOCITY_Z);
+		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST_LATERAL_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST_LATERAL_Y);
+		config.addPlotDataType(FlightDataType.TYPE_RL_THRUST);
+		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_Y);
+		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_VELOCITY_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_ANGLE_VELOCITY_Y);
+		config.addPlotDataType(FlightDataType.TYPE_RL_GIMBAL_X);
+		config.addPlotDataType(FlightDataType.TYPE_RL_GIMBAL_Y);
+		config.setEvent(FlightEvent.Type.IGNITION, true);
+		config.setEvent(FlightEvent.Type.BURNOUT, true);
+		config.setEvent(FlightEvent.Type.APOGEE, true);
+		config.setEvent(FlightEvent.Type.RECOVERY_DEVICE_DEPLOYMENT, true);
+		config.setEvent(FlightEvent.Type.STAGE_SEPARATION, true);
+		config.setEvent(FlightEvent.Type.GROUND_HIT, true);
+		config.setEvent(FlightEvent.Type.TUMBLE, true);
+		config.setEvent(FlightEvent.Type.EXCEPTION, true);
+		configs.add(config);
 		
 		DEFAULT_CONFIGURATIONS = configs.toArray(new PlotConfiguration[0]);
 	}
